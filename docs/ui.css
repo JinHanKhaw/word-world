@@ -451,6 +451,8 @@ html.zh-on .ml-btns .gbtn .zhx{display:inline;margin:0;font-size:calc(var(--u)*1
 .ml-voice.ml-done .fb{justify-content:flex-start}
 .pg-foot .btn.primary .zhx{color:#fff1dc;opacity:.9}
 .ml-voice .fb:empty{display:none}
+/* the small games: the ring shows the group; no hand, because a hand at the group's corner pointed at one answer (the last) */
+.ml-opts>.ml-fx .ml-hand{display:none}
 
 /* ---- 30-hud.css ---- */
 /* HUD (owner: hud team): the plate, the counters, the menu, today's parts, the dock, the door.
@@ -1068,6 +1070,8 @@ mark.lv-cmark.lv-cspace{display:inline-block;min-width:calc(var(--u)*11)}
 .lv-ratebtns .btn.lv-sel{background:linear-gradient(180deg,#f58a3a,#e2631a);color:#fff6e6;border-color:#8e380c;box-shadow:0 calc(var(--u)*2.5) 0 #8e380c}
 .fb.lv-txt{display:block}
 .pg-foot.lv-second{margin-top:calc(var(--u)*10)}
+/* the second row draws over the sticky main row's paper padding (it covered the top of these buttons) */
+.lv-end>.pg-foot.lv-second{position:relative;z-index:2}
 .lv-end .stamp{margin-top:calc(var(--u)*6)}
 .lv-end>.stamp{position:absolute;right:calc(var(--u)*34);top:calc(var(--u)*64);margin:0}
 .lv-end{position:static}
@@ -1121,6 +1125,8 @@ mark.lv-cmark.lv-cspace{display:inline-block;min-width:calc(var(--u)*11)}
 .btn.lv-slow{min-height:calc(var(--u)*38);gap:calc(var(--u)*7);font-size:calc(var(--u)*15.5)}
 .btn.lv-slow .ic{font-size:calc(var(--u)*18)}
 .lv-pbzh{margin:0;font-family:var(--f-zh);font-size:calc(var(--u)*30);line-height:1.2;color:var(--ink)}
+/* the stamp between parts: a long part name ("old words", "orbit's training") stays inside the circle (it ran over the ring) */
+.lv-center .stamp.lv-ok>span:first-child{max-width:calc(var(--u)*62);letter-spacing:.06em;line-height:1.05}
 
 /* ---- 82-school.css ---- */
 /* ============ school words at the watchtower (owner: school team; prefix sc-) ============ */

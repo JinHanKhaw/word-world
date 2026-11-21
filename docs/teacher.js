@@ -182,7 +182,7 @@
       hear: ev(/^(card_heard|guide_again|story_heard|hear|heard)$|_heard$|^hear_/).length,
       story: ev(/^story_opened$/).map(x => x.detail && x.detail.level).filter(x => x != null),
       storyHeard: ev(/^story_heard$/).length,
-      sentences: ev(/^sentence_saved$/), skipped: ev(/^sentence_skipped$/).length,
+      sentences: ev(/^sentence_saved$/), copied: ev(/^sentence_copied$/).length, skipped: ev(/^sentence_skipped$/).length,
       drawn: e.filter(x => x.type === "drawn" && x.detail && x.detail.png),
       games: ev(/^game_(meaning|sentence)$/), claps: ev(/^clap$/), pauses: ev(/^quest_pause$/).length,
       play: s && s.play_used != null ? Math.round((+s.play_used || 0) / 60) : null, asleep: s && s.asleep_at ? s.asleep_at : null,
@@ -243,7 +243,7 @@
       '<dl class="kv">' +
       row("Levels", lvWeek.length ? (lvWeek.length > 1 ? lvWeek[0] + " to " + lvWeek[lvWeek.length - 1] : lvWeek[0]) + " done this week" : '<span class="muted">none this week</span>') +
       row("Words learned", learned.length ? learned.length + ": " + learned.map(w => '<span class="w">' + esc(w.word) + "</span>").join(", ") : '<span class="muted">none yet</span>') +
-      row("Can spell now", "<b>" + canSpell().length + "</b> words <span class=\"muted\">(memory level 2 or more)</span>") +
+      row("Can spell now", "<b>" + canSpell().length + "</b> word" + (canSpell().length === 1 ? "" : "s") + " <span class=\"muted\">(memory level 2 or more)</span>") +
       row("School drill", cur ? many(drills, "drill") + " this week · " + listDrillLine(cur.rows) : '<span class="muted">no list set</span> <button type="button" class="link" data-go="school">Paste the list</button>') +
       row("Practice dictation", lastTest ? "<b>" + lastTest.score + " of " + lastTest.total + "</b> on " + day3(lastTest.taken_on) + ' <span class="muted">(marked by himself)</span>' : '<span class="muted">' + (cur ? "on " + day3(W.addDays(cur.date, -1)) + ", the day before the dictation" : "none yet") + "</span>") +
       "</dl>";
@@ -320,7 +320,7 @@
       row("Days in his world", total + " in all") +
       row("Diamonds", diamondsEarned() + " earned, " + diamondsSpent() + " spent in the shop, " + (diamondsEarned() - diamondsSpent()) + " in his pocket · " + (b.cells.length + (b.cells3 || []).length) + " pieces placed in his build" + (T.pauses ? " · stopped " + many(T.pauses, "time") + " between parts" : "")) +
       row("Games", T.games.length ? T.games.filter(g => g.detail && g.detail.correct).length + " of " + T.games.length + " right" : "none played") +
-      row("Sentences", T.sentences.length + " written, " + T.skipped + " skipped") +
+      row("Sentences", T.copied + " copied, " + T.skipped + " skipped" + (T.sentences.length ? ", " + T.sentences.length + " of his own (the old step)" : "")) +
       row("Beats clapped", T.claps.length ? many(T.claps.length, "word") : "none") +
       row("Focus score", T.s && T.s.focus_score ? T.s.focus_score + " / 5" : "not given") + "</dl>";
     const att = T.attempts;
@@ -345,7 +345,7 @@
     const extra = words.filter(w => (w.weak_types || []).length).map(w => "<li><b>" + esc(w.word) + "</b>: extra game not yet right on the first try: " + esc(w.weak_types.join(", ")) + "</li>").join("");
     return (bad.length ? '<ul class="plain">' + bad.map(w => "<li><b>" + esc(w.word) + "</b>: not yet right " + w.wrong_streak + " times in a row</li>").join("") + "</ul>" : '<p class="muted">No word has slipped twice in a row.</p>') +
       (extra ? '<ul class="plain">' + extra + "</ul>" : "") +
-      (noSent ? '<p class="muted">' + noSent + " learned word" + (noSent > 1 ? "s have" : " has") + " no sentence of his own yet.</p>" : "");
+      "";   // (the line about "no sentence of his own" went with the My sentence step: he copies the word's sentence now)
   }
   // Buttons that appear on several tabs.
   function wireCommon() {
@@ -1159,7 +1159,7 @@
     // words he can spell now
     const ch = P.spell[L] - P.spell[L - 1];
     const spBody = !P.anyLevel ? needs("how many words he can spell now (memory level 2 or more) at the end of each week, and the change from the week before.", "Needs one finished level; a word reaches level 2 when it comes back right.") :
-      big(P.spell[L], "words at level 2 or more, " + (ch > 0 ? ch + " more than" : ch < 0 ? -ch + " fewer than" : "the same as") + " last week") +
+      big(P.spell[L], (P.spell[L] === 1 ? "word" : "words") + " at level 2 or more, " + (ch > 0 ? ch + " more than" : ch < 0 ? -ch + " fewer than" : "the same as") + " last week") +
       bars(P.spell, { labels, what: "Words at level 2 or more at the end of each week" }) + chartNote(P) +
       '<p class="one">' + (P.slippedWords.length ? many(P.slippedWords.length, "word") + " slipped back down a step this week: " + P.slippedWords.slice(0, 6).map(w => "<b>" + esc(w) + "</b>").join(", ") + "." : "No word slipped back down a step this week.") + "</p>";
     // help

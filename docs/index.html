@@ -966,7 +966,9 @@
   function showMailPopup(startAt) {
     const ritual = !ritualDone(), fresh = messages.filter(m => m.from_role === "teacher" && !m.read_at);
     const letter = messages.filter(m => m.from_role === "teacher").slice(-1)[0] || null;
-    const letters = fresh.length ? fresh.slice() : (letter ? [letter] : []);   // every letter he has not read yet, oldest first; else the last one
+    // every letter he has not read yet, oldest first. A letter he has read does not come back in the daily opening (the
+    // play test: day 2 began with day 1's letter again); it is there when he opens the mailbox himself.
+    const letters = fresh.length ? fresh.slice() : (!ritual && letter ? [letter] : []);
     const d = openDay(), todays = d ? dayWords(d).filter(w => w.level === 0) : [];
     const cards = todays.map(w => ({ w, turned: cardOpened(w), heard: cardOpened(w) })), n = streak();
     mail = { cards, i: Math.min(startAt || 0, Math.max(0, cards.length - 1)), ritual, day: d, letter };
@@ -1119,8 +1121,11 @@
   // "Wait…" until the recogniser is really listening; then at least ML_LIVE ms from that moment (or less when the word comes).
   // reason: "" (listened), "nomic" (no microphone or refused), "nostart" (it never began to listen).
   // The very first time on a device the browser asks "Allow the microphone?": answering takes longer than 6 s, so the
-  // wait is 30 s until the microphone has worked here once (remembered on this device).
-  const ML_LIVE = 6000, ML_START = 6000, ML_START_FIRST = 30000, ML_TAIL = 700;
+  // wait is 20 s until the microphone has worked here once (remembered on this device). Where the browser can say that it
+  // will not ask at all (the answer is already yes or no), the wait stays 6 s.
+  const ML_LIVE = 6000, ML_START = 6000, ML_START_FIRST = 20000, ML_TAIL = 700;
+  let mlPerm = "";   // the browser's own microphone permission: "granted", "denied", "prompt", or "" when it does not say
+  try { if (navigator.permissions && navigator.permissions.query) navigator.permissions.query({ name: "microphone" }).then(p => { mlPerm = p.state || ""; p.onchange = () => { mlPerm = p.state || ""; }; }).catch(() => {}); } catch (e) {}
   const mlMicKnown = () => { try { return localStorage.getItem("ww.mic.ok") === "1"; } catch (e) { return false; } };
   const mlMicWorked = () => { try { localStorage.setItem("ww.mic.ok", "1"); } catch (e) {} };
   let mlEndNow = null;   // ends the listening try that is running (the page was left)
@@ -1146,8 +1151,9 @@
     function goLive() { if (live || ended) return; live = true; open = true; clearTimeout(tStart); clearTimeout(tAllow); mlMicWorked(); ui.live(); tWin = setTimeout(windowEnd, ML_LIVE); }
     mlMicSet(true); mlEndNow = () => finish("left");
     ui.wait();
-    tStart = setTimeout(() => { if (!live) finish("nostart"); }, mlMicKnown() ? ML_START : ML_START_FIRST);
-    if (!mlMicKnown()) tAllow = setTimeout(() => { if (!live && !ended && ui.allow) ui.allow(); }, 3000);   // the browser is asking: say what to tap
+    const mayAsk = !mlMicKnown() && !(path === "speech" && (mlPerm === "granted" || mlPerm === "denied"));   // a permission question may be open
+    tStart = setTimeout(() => { if (!live) finish("nostart"); }, mayAsk ? ML_START_FIRST : ML_START);
+    if (mayAsk) tAllow = setTimeout(() => { if (!live && !ended && ui.allow) ui.allow(); }, 3000);   // the browser is asking: say what to tap
     // 1. the viewer's dictation
     if (dict) {
       const d = dict, offs = [];
@@ -1783,7 +1789,7 @@
     "Island test: ten words from this island.": "小岛测验：这个岛上的十个单词。", "Practise again": "再练一次",
     "Opens tomorrow. Two levels a day!": "明天开启。每天最多两关！", "No words here yet. Ask your teacher.": "这里还没有单词。问问你的老师。",
     "Opens on your start day.": "到你开始的那天就开启。", "All 50 levels done!": "50 关全部完成！", "Open today's word cards first.": "先打开今天的单词卡。",
-    "Tap Start.": "点“开始”。"
+    "Tap Start.": "点“开始”。", "Tap Go on.": "点“继续”。"
   }, [
     [/^Level (\d+) · Today$/, "第 $1 关 · 今天"], [/^Level (\d+) · Done$/, "第 $1 关 · 完成"], [/^Level (\d+) · Island test$/, "第 $1 关 · 小岛测验"],
     [/^(\d+) new words? · (\d+) old words? to check$/, "$1 个新单词 · $2 个旧单词要检查"], [/^(\d+) new words?$/, "$1 个新单词"], [/^(\d+) old words? to check$/, "$1 个旧单词要检查"],
@@ -1830,7 +1836,7 @@
       const fresh = dayWords(n).filter(w => w.level === 0).length, old = dueReviews().length, row = questRow(n);
       const parts = []; if (fresh) parts.push(cmCount(fresh, "new word")); if (old) parts.push(cmCount(old, "old word") + " to check");
       const lines = [parts.join(" · ")]; if (test) lines.push("Island test: ten words from this island.");
-      if (!parts.length && !test) lines[0] = "Tap Start.";
+      if (!parts.length && !test) lines[0] = row && !row.completed ? "Tap Go on." : "Tap Start.";   // the line names the button he sees
       return { eyebrow: "Level " + n + " · Today", lines, btn: (row && !row.completed ? "Go on with level " : "Start level ") + n, primary: true, go: () => {
         // a second level on the same day: its new word cards come first, as on the first level
         if (doneToday() > 0 && dayWords(n).some(w => w.level === 0 && !cardOpened(w))) { cmNote("Open today's word cards first."); showMailPopup(); return; }
@@ -2790,6 +2796,8 @@
   function stampOn(html) { const s = $("lvStamp"); if (s) { s.innerHTML = html; s.hidden = false; } }
   function gapHtml(s, k) { const kk = W.key(k); return W.esc(String(s).replace(/[\u2018\u2019]/g, "'")).replace(/[A-Za-z]+(?:&#39;[A-Za-z]+)?/g, t => W.key(t.replace(/&#39;/g, "'")).indexOf(kk) !== -1 ? '<span class="gapline"></span>' : t); }
   // Typing: the word stays hidden. After a miss: "Not yet. Try again." and the Hint button; nothing of the word shows unless he asks.
+  // (window.__ansGuardMs: only the test suites set it, to 0, because they send the same answer many times in a row on purpose.)
+  const ansGuard = { v: null, t: 0 }, ansGuardMs = () => (typeof window.__ansGuardMs === "number" ? window.__ansGuardMs : 800);
   function wireAnswer(onCheck) {
     const inp = $("ans"); inp.focus();
     inp.addEventListener("keydown", e => { if (q && q.peek && e.key.length === 1 && !e.ctrlKey && !e.metaKey) inp.value = ""; });   // a new try starts on a clean line
@@ -2798,7 +2806,15 @@
       if (!q || !q.peek) return; q.peek = false;
       $("ansLine").classList.remove("bad"); const f = $("fb"); f.className = "fb"; f.textContent = "Type it again.";
     });
-    $("wf").onsubmit = e => { e.preventDefault(); if (!$("ans").readOnly) onCheck($("ans").value); };
+    // A double press of Enter, or a double tap on Check, is ONE answer: the same text again within 0.8 s is not counted
+    // (found by the play test: two quick misses jumped him past a hint).
+    $("wf").onsubmit = e => {
+      e.preventDefault(); if ($("ans").readOnly) return;
+      const v = $("ans").value, now = Date.now();
+      if (v === ansGuard.v && now - ansGuard.t < ansGuardMs()) return;
+      ansGuard.v = v; ansGuard.t = now;
+      onCheck(v);
+    };
     if ($("hear")) $("hear").addEventListener("click", () => { if (!inp.readOnly) inp.focus(); });   // after hearing it again, the line is ready
     lvHint();
   }
@@ -3041,7 +3057,7 @@
         qb.querySelectorAll("#meetWord .beat").forEach((b, i) => b.classList.toggle("heard", heard[i]));
         pointAt(qb.querySelectorAll("#meetWord .beat"), nx);
         qb.querySelector(".pg-title + .do").innerHTML = nx >= 0 ? tapLine("Tap", bs[nx]) : "<b>Say</b> the word.";
-        $("meetHint").textContent = got + " of " + n + (n === 1 ? " beat heard" : " beats heard"); $("go").disabled = got < n;
+        $("meetHint").textContent = got ? got + " of " + n + (n === 1 ? " beat heard" : " beats heard") : ""; $("go").disabled = got < n;   // never a count that reads 0; one beat is "beat"
       };
       // he taps the beats in turn; each says itself; after the last one the whole word is said and Next opens
       qb.querySelectorAll("#meetWord .beat").forEach(b => b.onclick = () => {
@@ -3173,16 +3189,19 @@
   // A sentence read aloud the way the story page reads (W.speak says single words only).
   let lvTts = null;
   try { if (window.claude && window.claude.use) window.claude.use("tts").then(t => { lvTts = t || null; }).catch(() => {}); } catch (e) {}
+  // The sentence counts as a word for Orbit (W.wordBegin): his line ("Copy the sentence.") waits until it is over instead of
+  // cutting it at once (the page reader says one thing at a time).
   function sayLine(text) {
+    const wid = W.wordBegin ? W.wordBegin(700 + 85 * String(text).length) : 0, end = () => { if (W.wordEnd) W.wordEnd(wid); };
     try {
       const vs = "speechSynthesis" in window ? speechSynthesis.getVoices() : [];
       if (vs.length) {
         speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text), v = vs.find(x => /^en(-|_)GB/i.test(x.lang)) || vs.find(x => /^en/i.test(x.lang));
-        u.lang = "en-GB"; u.rate = 0.85; if (v) u.voice = v; speechSynthesis.speak(u); return true;
+        u.lang = "en-GB"; u.rate = 0.85; if (v) u.voice = v; u.onend = u.onerror = end; speechSynthesis.speak(u); return true;
       }
-      if (lvTts && lvTts.speak) { lvTts.speak(text).catch(() => {}); return true; }
+      if (lvTts && lvTts.speak) { const p = lvTts.speak(text); if (p && p.then) p.then(end, end); return true; }
     } catch (e) {}
-    return false;
+    end(); return false;
   }
   // The rude-word list (site/rude.js) for any old text that can still reach his screen (letters in the mailbox, see 10-mail.js).
   // A listed word counts as a whole token and also inside a longer one: with an ending ("idiots", "shitty", "dumbass"), with
@@ -3455,7 +3474,7 @@
       q = { ended: true };
       qp('<header class="pg-head"><span class="eyebrow">Practice · Level ' + day + '</span></header><div class="lv-center">' +
         '<div class="stamp lv-ok"><span>practice</span><b>' + ICON("check") + "</b><span>level " + day + "</span></div>" +
-        '<h3 class="pg-title">Practice done</h3><p class="do">First try right: <b>' + ok + " of " + total + "</b></p>" +
+        '<h3 class="pg-title">Practice done</h3>' + (ok ? '<p class="do">First try right: <b>' + ok + " of " + total + "</b></p>" : "") +   // never a score that reads 0
         '<p class="hint">No diamonds. Tomorrow gets easier.</p>' +
         '<footer class="pg-foot lv-mid"><button type="button" class="btn primary" id="toPath">' + ICON("map") + "Back to the map</button></footer></div>");
       W.sfx("pop"); $("toPath").onclick = () => { q = null; renderPath(); }; return;
@@ -3476,8 +3495,8 @@
       '<div class="stamp lv-ok"><span>level ' + day + "</span><b>done</b><span>day " + totalDays() + "</span></div>" +
       '<h3 class="pg-title">Level ' + day + " done</h3>" +
       '<p class="lv-gems">' + ICON("gem") + "<span>You earned " + earned + (earned === 1 ? " diamond." : " diamonds.") + "</span></p>" +
-      '<p class="do">First try right: <b>' + ok + " of " + total + "</b></p>" +
-      (isTest(day) ? '<p class="do">Island test: <b>' + (r.test_right || 0) + " / " + (r.test_total || 0) + "</b></p>" : "") +
+      (ok ? '<p class="do">First try right: <b>' + ok + " of " + total + "</b></p>" : "") +   // never a score that reads 0
+      (isTest(day) && r.test_right ? '<p class="do">Island test: <b>' + (r.test_right || 0) + " / " + (r.test_total || 0) + "</b></p>" : "") +
       (zoneDone && day < maxDay() ? '<p class="do lv-isle">' + ICON("isle") + "<span>" + W.esc(ZONES[zi].name) + " is complete! Next: " + W.esc(nextZone.name) + ".</span></p>" : "") +
       '<div class="lv-hints"><p class="hint">' + (ok === total ? "All correct!" : "Some words come back tomorrow.") + "</p>" +
       '<p class="hint">' + (openDay() ? "Level " + openDay() + " is open today." : nl ? "Level " + nl + " opens tomorrow." : "All levels done!") + "</p></div>" +
@@ -3687,8 +3706,12 @@
     W.speak(r.word, { slow: true });
     if (times < 2) return;
     const n = scSpoken;
-    Promise.all([scLastEnd.then(() => scPause(SC_GAP)), scPause(gapFrom || 0)]).then(() => {
+    // Between the two sayings the word still "has the voice": Orbit's line waits until the second saying is over
+    // (the play test heard his line start in the gap and get cut by the second saying).
+    let hold = 0;
+    Promise.all([scLastEnd.then(() => { if (W.wordBegin && tok === scTok) hold = W.wordBegin(SC_GAP + (gapFrom || 0) + 1500); return scPause(SC_GAP); }), scPause(gapFrom || 0)]).then(() => {
       if (tok === scTok && n === scSpoken && scCurRow() === r && scLive()) W.speak(r.word, { slow: true });
+      else if (hold && W.wordEnd) W.wordEnd(hold);
     });
   }
   // "Slowly": beat by beat when the game has the beats, else the whole word once more at the slowest speed.
@@ -4633,6 +4656,7 @@
     const stars = words.filter(w => w.level >= W.DIAMOND).length;   // star words: right on the first try at the 14-day meeting
     $("sBlocks").textContent = hdDia; $("sDia").textContent = stars;
     { const c = $("sDia").closest(".count"); if (c) c.hidden = !stars; }   // the star shows from his first star word on
+    { const c = $("sBlocks").closest(".count"); if (c) c.hidden = !hdDia; }   // the diamond counter shows from his first diamond on (never a 0)
   }
   // A tap on a counter: one small line under it for three seconds, then it goes.
   const HD_TIPS = [["#streakBox", "Days you played this week."], [".count.gem", "Diamonds: for building."], [".count.star", "Star words: you kept them."]];   // Chinese: ZH.add below
