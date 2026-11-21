@@ -1,523 +1,423 @@
 /* The story pages, one per level. Written by tools/story_to_js.py from story-zone1.md, story-zone2.md. Do not edit by hand. */
 window.WW_STORY = {
  "1": {
-  "title": "The Mailbox",
-  "words": [
-   "umbrella",
-   "lollipop"
-  ],
-  "en": "Your mailbox has an <b>umbrella<\/b> and a <b>lollipop<\/b>. You take your small boat to Sunny Island. Far away, you see the Jungle.",
-  "zh": "你的信箱里有一把雨伞和一根棒棒糖。你坐着小船去阳光岛。你看见远处有一片丛林。",
+  "title": "Ben and Orbit",
+  "en": "Ben lives on the beach. Orbit is his small robot.",
+  "zh": "Ben 住在海滩上。Orbit 是他的小机器人。",
   "zhs": [
-   "你的信箱里有一把雨伞和一根棒棒糖。",
-   "你坐着小船去阳光岛。",
-   "你看见远处有一片丛林。"
+   "Ben 住在海滩上。",
+   "Orbit 是他的小机器人。"
   ],
-  "q": "What is in your mailbox?",
-  "a": "a lollipop",
+  "q": "Where does Ben live?",
+  "a": "on the beach",
   "o": [
-   "a boat",
-   "the Jungle"
+   "in the sea",
+   "in a car"
   ],
-  "qzh": "你的信箱里有什么？",
-  "azh": "一根棒棒糖",
+  "qzh": "Ben 住在哪里？",
+  "azh": "在海滩上",
   "ozh": [
-   "一条小船",
-   "丛林"
+   "在海里",
+   "在车里"
   ]
  },
  "2": {
-  "title": "An Old Sign",
-  "words": [
-   "pumpkin",
-   "company"
-  ],
-  "en": "The Jungle is too far for your boat. You find a sign under a big <b>pumpkin<\/b>. It says: Sun Engine <b>Company<\/b>.",
-  "zh": "丛林太远了，你的小船到不了。你在一个大南瓜底下找到一块牌子。上面写着：太阳引擎公司。",
+  "title": "A box on the sand",
+  "en": "Ben and Orbit find a box. The box is on the sand.",
+  "zh": "Ben 和 Orbit 找到一个箱子。箱子在沙滩上。",
   "zhs": [
-   "丛林太远了，你的小船到不了。",
-   "你在一个大南瓜底下找到一块牌子。",
-   "上面写着：太阳引擎公司。"
+   "Ben 和 Orbit 找到一个箱子。",
+   "箱子在沙滩上。"
   ],
-  "q": "What is under the pumpkin?",
-  "a": "a sign",
+  "q": "Where is the box?",
+  "a": "on the sand",
   "o": [
-   "a boat",
-   "a lollipop"
+   "in the sea",
+   "in a tree"
   ],
-  "qzh": "南瓜底下有什么？",
-  "azh": "一块牌子",
+  "qzh": "箱子在哪里？",
+  "azh": "在沙滩上",
   "ozh": [
-   "一条小船",
-   "一根棒棒糖"
+   "在海里",
+   "在树上"
   ]
  },
  "3": {
-  "title": "A Photo from the Sky",
-  "words": [
-   "camera",
-   "parrot"
-  ],
-  "en": "Orbit flies up high with a <b>camera<\/b>. A green <b>parrot<\/b> sits on Orbit. The photo shows a wing on a hill.",
-  "zh": "Orbit 带着相机飞上了高空。一只绿鹦鹉落在了 Orbit 身上。照片上，山上有一只翅膀。",
+  "title": "A blue kite",
+  "en": "Ben opens the big box. The box has a blue kite.",
+  "zh": "Ben 打开大箱子。箱子里有一只蓝色的风筝。",
   "zhs": [
-   "Orbit 带着相机飞上了高空。",
-   "一只绿鹦鹉落在了 Orbit 身上。",
-   "照片上，山上有一只翅膀。"
+   "Ben 打开大箱子。",
+   "箱子里有一只蓝色的风筝。"
   ],
-  "q": "What sits on Orbit?",
-  "a": "a green parrot",
+  "q": "What is in the box?",
+  "a": "a blue kite",
   "o": [
-   "a pumpkin",
-   "a sign"
+   "a red ball",
+   "a big fish"
   ],
-  "qzh": "什么落在了 Orbit 身上？",
-  "azh": "一只绿鹦鹉",
+  "qzh": "箱子里有什么？",
+  "azh": "一只蓝色的风筝",
   "ozh": [
-   "一个南瓜",
-   "一块牌子"
+   "一个红色的球",
+   "一条大鱼"
   ]
  },
  "4": {
-  "title": "Up the Hill",
-  "words": [
-   "police",
-   "tulips"
-  ],
-  "en": "You walk up the hill through red <b>tulips<\/b>. The parrot comes with you. \"<b>Police<\/b>!\" it shouts at every flower.",
-  "zh": "你穿过红色的郁金香，往山上走。鹦鹉也跟着你。它对着每一朵花大喊：“警察！”",
+  "title": "The kite flies",
+  "en": "Ben runs with the blue kite. Orbit flies next to the kite.",
+  "zh": "Ben 拿着蓝色的风筝跑。Orbit 在风筝旁边飞。",
   "zhs": [
-   "你穿过红色的郁金香，往山上走。",
-   "鹦鹉也跟着你。",
-   "它对着每一朵花大喊：“警察！”"
+   "Ben 拿着蓝色的风筝跑。",
+   "Orbit 在风筝旁边飞。"
   ],
-  "q": "What grows on the hill?",
-  "a": "red tulips",
+  "q": "Who runs with the kite?",
+  "a": "Ben",
   "o": [
-   "a big pumpkin",
-   "a green parrot"
+   "a cat",
+   "a duck"
   ],
-  "qzh": "山上长着什么？",
-  "azh": "红色的郁金香",
+  "qzh": "谁拿着风筝跑？",
+  "azh": "Ben",
   "ozh": [
-   "一个大南瓜",
-   "一只绿鹦鹉"
+   "一只猫",
+   "一只鸭子"
   ]
  },
  "5": {
-  "title": "At the Top",
-  "words": [
-   "aeroplane",
-   "February"
-  ],
-  "en": "At the top is an old <b>aeroplane<\/b>. Its door says: Back in <b>February<\/b>. It has a good engine!",
-  "zh": "山顶上有一架旧飞机。舱门上写着：二月回来。它有一台好引擎！",
+  "title": "In a tree",
+  "en": "The kite is in a tree. Orbit flies and gets the kite.",
+  "zh": "风筝挂在一棵树上。Orbit 飞过去，把风筝拿了回来。",
   "zhs": [
-   "山顶上有一架旧飞机。",
-   "舱门上写着：二月回来。",
-   "它有一台好引擎！"
+   "风筝挂在一棵树上。",
+   "Orbit 飞过去，把风筝拿了回来。"
   ],
-  "q": "What is at the top?",
-  "a": "an old aeroplane",
+  "q": "Where is the kite?",
+  "a": "in a tree",
   "o": [
-   "the mailbox",
-   "a big pumpkin"
+   "in the box",
+   "on the bed"
   ],
-  "qzh": "山顶上有什么？",
-  "azh": "一架旧飞机",
+  "qzh": "风筝在哪里？",
+  "azh": "在树上",
   "ozh": [
-   "信箱",
-   "一个大南瓜"
+   "在箱子里",
+   "在床上"
   ]
  },
  "6": {
-  "title": "Down the Hill",
-  "words": [
-   "basket",
-   "picnic"
-  ],
-  "en": "You put the engine in a <b>basket<\/b>. You ride it down the hill! On the beach, you have a <b>picnic<\/b>.",
-  "zh": "你把引擎放进一个篮子里。你坐着篮子冲下了山坡！你在沙滩上吃了一顿野餐。",
+  "title": "Under the tree",
+  "en": "A Murk sleeps under the tree. The Murk is small and black.",
+  "zh": "一只 Murk 在树下睡觉。这只 Murk 又小又黑。",
   "zhs": [
-   "你把引擎放进一个篮子里。",
-   "你坐着篮子冲下了山坡！",
-   "你在沙滩上吃了一顿野餐。"
+   "一只 Murk 在树下睡觉。",
+   "这只 Murk 又小又黑。"
   ],
-  "q": "Where do you have a picnic?",
-  "a": "on the beach",
+  "q": "What sleeps under the tree?",
+  "a": "a Murk",
   "o": [
-   "up the hill",
-   "in the aeroplane"
+   "a dog",
+   "a bird"
   ],
-  "qzh": "你在哪里野餐？",
-  "azh": "在沙滩上",
+  "qzh": "什么在树下睡觉？",
+  "azh": "一只 Murk",
   "ozh": [
-   "在山上",
-   "在飞机里"
+   "一只狗",
+   "一只鸟"
   ]
  },
  "7": {
-  "title": "Night on the Beach",
-  "words": [
-   "sandwich",
-   "holiday"
-  ],
-  "en": "You stay on the beach for the night. It feels like a <b>holiday<\/b> by the fire. The parrot eats half your <b>sandwich<\/b>.",
-  "zh": "晚上，你留在沙滩上过夜。坐在火堆旁，就像在度假一样。鹦鹉吃掉了你半个三明治。",
+  "title": "Big yellow eyes",
+  "en": "The Murk opens its eyes. Its eyes are big and yellow.",
+  "zh": "Murk 睁开了眼睛。它的眼睛又大又黄。",
   "zhs": [
-   "晚上，你留在沙滩上过夜。",
-   "坐在火堆旁，就像在度假一样。",
-   "鹦鹉吃掉了你半个三明治。"
+   "Murk 睁开了眼睛。",
+   "它的眼睛又大又黄。"
   ],
-  "q": "Who eats half your sandwich?",
-  "a": "the parrot",
+  "q": "What colour are the eyes?",
+  "a": "yellow",
   "o": [
-   "Orbit",
-   "the engine"
+   "green",
+   "pink"
   ],
-  "qzh": "谁吃了你半个三明治？",
-  "azh": "鹦鹉",
+  "qzh": "眼睛是什么颜色的？",
+  "azh": "黄色",
   "ozh": [
-   "Orbit",
-   "引擎"
+   "绿色",
+   "粉色"
   ]
  },
  "8": {
-  "title": "Something Long",
-  "words": [
-   "animal",
-   "banana"
-  ],
-  "en": "In the night, the parrot brings a <b>banana<\/b>. Something long swims in the dark sea. What <b>animal<\/b> is it?",
-  "zh": "夜里，鹦鹉叼来一根香蕉。黑黑的海里，有个长长的东西游过去。那是什么动物呢？",
+  "title": "Hello, Murk",
+  "en": "Ben smiles at the small Murk. The Murk smiles at Ben.",
+  "zh": "Ben 对着小 Murk 笑。Murk 也对着 Ben 笑。",
   "zhs": [
-   "夜里，鹦鹉叼来一根香蕉。",
-   "黑黑的海里，有个长长的东西游过去。",
-   "那是什么动物呢？"
+   "Ben 对着小 Murk 笑。",
+   "Murk 也对着 Ben 笑。"
   ],
-  "q": "What does the parrot bring?",
-  "a": "a banana",
+  "q": "Who smiles at the Murk?",
+  "a": "Ben",
   "o": [
-   "a sandwich",
-   "a lollipop"
+   "a frog",
+   "a dog"
   ],
-  "qzh": "鹦鹉叼来了什么？",
-  "azh": "一根香蕉",
+  "qzh": "谁对着 Murk 笑？",
+  "azh": "Ben",
   "ozh": [
-   "三明治",
-   "一根棒棒糖"
+   "一只青蛙",
+   "一只狗"
   ]
  },
  "9": {
-  "title": "The Engine Doctor",
-  "words": [
-   "tomato",
-   "hospital"
-  ],
-  "en": "In the morning, the engine does not start. A <b>tomato<\/b> plant grows inside it! The engine has to go to <b>hospital<\/b>!",
-  "zh": "早上，引擎发动不起来。引擎里面竟然长着一棵番茄！引擎得去医院了！",
+  "title": "A mango",
+  "en": "Ben gives the Murk a mango. The Murk likes the mango.",
+  "zh": "Ben 给 Murk 一个芒果。Murk 很喜欢这个芒果。",
   "zhs": [
-   "早上，引擎发动不起来。",
-   "引擎里面竟然长着一棵番茄！",
-   "引擎得去医院了！"
+   "Ben 给 Murk 一个芒果。",
+   "Murk 很喜欢这个芒果。"
   ],
-  "q": "What grows in the engine?",
-  "a": "a tomato plant",
+  "q": "What does Ben give the Murk?",
+  "a": "a mango",
   "o": [
-   "red tulips",
-   "a big pumpkin"
+   "a kite",
+   "a ball"
   ],
-  "qzh": "引擎里长着什么？",
-  "azh": "一棵番茄",
+  "qzh": "Ben 给了 Murk 什么？",
+  "azh": "一个芒果",
   "ozh": [
-   "红色的郁金香",
-   "一个大南瓜"
+   "一只风筝",
+   "一个球"
   ]
  },
  "10": {
-  "title": "To the Jungle",
-  "words": [
-   "Saturday",
-   "fantastic"
-  ],
-  "en": "On <b>Saturday<\/b>, the engine starts. The fast ride is <b>fantastic<\/b>! A hundred parrots wait in the Jungle.",
-  "zh": "星期六，引擎发动了。一路飞快，太棒了！丛林里，一百只鹦鹉正等着你。",
+  "title": "Home in the trees",
+  "en": "The Murk wants to go home. The Murk lives in the trees.",
+  "zh": "Murk 想回家。Murk 住在树林里。",
   "zhs": [
-   "星期六，引擎发动了。",
-   "一路飞快，太棒了！",
-   "丛林里，一百只鹦鹉正等着你。"
+   "Murk 想回家。",
+   "Murk 住在树林里。"
   ],
-  "q": "Where do the parrots wait?",
-  "a": "in the Jungle",
+  "q": "Where does the Murk live?",
+  "a": "in the trees",
   "o": [
-   "on the beach",
-   "up the hill"
+   "on a boat",
+   "in a box"
   ],
-  "qzh": "鹦鹉们在哪里等？",
-  "azh": "在丛林里",
+  "qzh": "Murk 住在哪里？",
+  "azh": "在树林里",
   "ozh": [
-   "在沙滩上",
-   "在山上"
+   "在船上",
+   "在箱子里"
   ]
  },
  "11": {
-  "title": "A Jungle Friend",
-  "words": [
-   "rabbit",
-   "carrot"
-  ],
-  "en": "The parrots fly up into the trees. A small <b>rabbit<\/b> comes to your boat. You give it a <b>carrot<\/b> from your basket.",
-  "zh": "鹦鹉们呼啦一下飞上了树。一只小兔子跑到你的船边。你从篮子里拿出一根胡萝卜给它。",
+  "title": "A long walk",
+  "en": "Ben walks with the Murk. Orbit flies in front of them.",
+  "zh": "Ben 和 Murk 一起走。Orbit 在他们前面飞。",
   "zhs": [
-   "鹦鹉们呼啦一下飞上了树。",
-   "一只小兔子跑到你的船边。",
-   "你从篮子里拿出一根胡萝卜给它。"
+   "Ben 和 Murk 一起走。",
+   "Orbit 在他们前面飞。"
   ],
-  "q": "What do you give the rabbit?",
-  "a": "a carrot",
+  "q": "Who walks with the Murk?",
+  "a": "Ben",
   "o": [
-   "a banana",
-   "a sandwich"
+   "a monkey",
+   "a bird"
   ],
-  "qzh": "你给了兔子什么？",
-  "azh": "一根胡萝卜",
+  "qzh": "谁和 Murk 一起走？",
+  "azh": "Ben",
   "ozh": [
-   "一根香蕉",
-   "三明治"
+   "一只猴子",
+   "一只鸟"
   ]
  },
  "12": {
-  "title": "The Letter M",
-  "words": [
-   "happy",
-   "letter"
-  ],
-  "en": "You build a base under a big tree. The rabbit is <b>happy<\/b> there. On the tree you see a <b>letter<\/b>: M.",
-  "zh": "你在一棵大树下搭起了基地。小兔子在这儿住得很开心。树干上刻着一个字母：M。",
+  "title": "A pink shell",
+  "en": "Ben looks at the blue sea. Ben picks up a pink shell.",
+  "zh": "Ben 看着蓝色的大海。Ben 捡起一个粉色的贝壳。",
   "zhs": [
-   "你在一棵大树下搭起了基地。",
-   "小兔子在这儿住得很开心。",
-   "树干上刻着一个字母：M。"
+   "Ben 看着蓝色的大海。",
+   "Ben 捡起一个粉色的贝壳。"
   ],
-  "q": "What is on the tree?",
-  "a": "a letter",
+  "q": "What does Ben pick up?",
+  "a": "a pink shell",
   "o": [
-   "a pumpkin",
-   "a sign"
+   "a blue kite",
+   "a red ball"
   ],
-  "qzh": "树上有什么？",
-  "azh": "一个字母",
+  "qzh": "Ben 捡起了什么？",
+  "azh": "一个粉色的贝壳",
   "ozh": [
-   "一个南瓜",
-   "一块牌子"
+   "一只蓝色的风筝",
+   "一个红色的球"
   ]
  },
  "13": {
-  "title": "Where Is the Bread?",
-  "words": [
-   "butter",
-   "dinner"
-  ],
-  "en": "You eat bread and <b>butter<\/b> for <b>dinner<\/b>. You keep some bread by your bed. In the morning, it is gone!",
-  "zh": "晚饭你吃的是面包抹黄油。你留了一些面包放在床边。到了早上，面包不见了！",
+  "title": "Coconut juice",
+  "en": "Orbit finds a big coconut. Ben and the Murk drink it.",
+  "zh": "Orbit 找到一个大椰子。Ben 和 Murk 一起喝椰子汁。",
   "zhs": [
-   "晚饭你吃的是面包抹黄油。",
-   "你留了一些面包放在床边。",
-   "到了早上，面包不见了！"
+   "Orbit 找到一个大椰子。",
+   "Ben 和 Murk 一起喝椰子汁。"
   ],
-  "q": "What is gone in the morning?",
-  "a": "the bread",
+  "q": "What does Orbit find?",
+  "a": "a big coconut",
   "o": [
-   "the boat",
-   "the rabbit"
+   "a pink shell",
+   "a mango"
   ],
-  "qzh": "早上什么不见了？",
-  "azh": "面包",
+  "qzh": "Orbit 找到了什么？",
+  "azh": "一个大椰子",
   "ozh": [
-   "小船",
-   "兔子"
+   "一个粉色的贝壳",
+   "一个芒果"
   ]
  },
  "14": {
-  "title": "Small Footprints",
-  "words": [
-   "summer",
-   "rubber"
-  ],
-  "en": "The Jungle is hot, like <b>summer<\/b>. Small footprints go round your base. You draw them with a pencil and <b>rubber<\/b>.",
-  "zh": "丛林里很热，就像夏天一样。你的基地周围有一串小小的脚印。你拿铅笔和橡皮把它们画了下来。",
+  "title": "Birds in the trees",
+  "en": "The trees are big and green. Birds sing in the trees.",
+  "zh": "这里的树又大又绿。鸟儿在树上唱歌。",
   "zhs": [
-   "丛林里很热，就像夏天一样。",
-   "你的基地周围有一串小小的脚印。",
-   "你拿铅笔和橡皮把它们画了下来。"
+   "这里的树又大又绿。",
+   "鸟儿在树上唱歌。"
   ],
-  "q": "What goes round your base?",
-  "a": "small footprints",
+  "q": "Who sings in the trees?",
+  "a": "birds",
   "o": [
-   "a sign",
-   "a pumpkin"
+   "frogs",
+   "monkeys"
   ],
-  "qzh": "什么绕着你的基地？",
-  "azh": "小小的脚印",
+  "qzh": "谁在树上唱歌？",
+  "azh": "鸟儿",
   "ozh": [
-   "一块牌子",
-   "一个南瓜"
+   "青蛙",
+   "猴子"
   ]
  },
  "15": {
-  "title": "A Gift by the Bed",
-  "words": [
-   "bottle",
-   "puppet"
-  ],
-  "en": "There is a <b>bottle<\/b> by your bed. Inside you find a <b>puppet<\/b> with long hair. \"It looks like a Murk,\" says Orbit.",
-  "zh": "你的床边多了一个瓶子。瓶子里装着一个长毛的木偶。“它长得像一只 Murk。”Orbit 说。",
+  "title": "Hello, monkey",
+  "en": "A monkey sits in a tree. The monkey waves at Ben.",
+  "zh": "一只猴子坐在树上。猴子向 Ben 挥手。",
   "zhs": [
-   "你的床边多了一个瓶子。",
-   "瓶子里装着一个长毛的木偶。",
-   "“它长得像一只 Murk。”Orbit 说。"
+   "一只猴子坐在树上。",
+   "猴子向 Ben 挥手。"
   ],
-  "q": "What is in the bottle?",
-  "a": "a puppet",
+  "q": "Who waves at Ben?",
+  "a": "the monkey",
   "o": [
-   "a letter",
-   "a banana"
+   "the Murk",
+   "a bird"
   ],
-  "qzh": "瓶子里有什么？",
-  "azh": "一个木偶",
+  "qzh": "谁向 Ben 挥手？",
+  "azh": "猴子",
   "ozh": [
-   "一个字母",
-   "一根香蕉"
+   "Murk",
+   "一只鸟"
   ]
  },
  "16": {
-  "title": "A Gate for the Base",
-  "words": [
-   "hammer",
-   "kitten"
-  ],
-  "en": "\"Murks are small, like a <b>kitten<\/b>,\" says Orbit. \"They come at night.\" You make a gate with a <b>hammer<\/b>.",
-  "zh": "“Murk 很小，就像小猫一样。”Orbit 说。“它们晚上才出来。”你用锤子做了一道大门。",
+  "title": "A small lamp",
+  "en": "It is evening in the trees. Ben has a small lamp.",
+  "zh": "树林里到了傍晚。Ben 带着一盏小灯。",
   "zhs": [
-   "“Murk 很小，就像小猫一样。”Orbit 说。",
-   "“它们晚上才出来。”",
-   "你用锤子做了一道大门。"
+   "树林里到了傍晚。",
+   "Ben 带着一盏小灯。"
   ],
-  "q": "Who is small, like a kitten?",
-  "a": "Murks",
+  "q": "What does Ben have?",
+  "a": "a small lamp",
   "o": [
-   "Orbit",
-   "the aeroplane"
+   "a big kite",
+   "a red car"
   ],
-  "qzh": "谁像小猫一样小？",
-  "azh": "Murk",
+  "qzh": "Ben 带着什么？",
+  "azh": "一盏小灯",
   "ozh": [
-   "Orbit",
-   "飞机"
+   "一只大风筝",
+   "一辆红色的车"
   ]
  },
  "17": {
-  "title": "A Red Pepper",
-  "words": [
-   "pepper",
-   "ladder"
-  ],
-  "en": "At night you watch from a <b>ladder<\/b>. A small Murk tastes your red <b>pepper<\/b>. Then it runs away very fast!",
-  "zh": "晚上，你站在梯子上守着。一只小 Murk 尝了一口你的红辣椒。它马上飞快地跑掉了！",
+  "title": "Ten Murks",
+  "en": "Ben sees ten small Murks. The Murks are in the trees.",
+  "zh": "Ben 看见十只小 Murk。这些 Murk 在树林里。",
   "zhs": [
-   "晚上，你站在梯子上守着。",
-   "一只小 Murk 尝了一口你的红辣椒。",
-   "它马上飞快地跑掉了！"
+   "Ben 看见十只小 Murk。",
+   "这些 Murk 在树林里。"
   ],
-  "q": "Who tastes your pepper?",
-  "a": "a small Murk",
+  "q": "Where are the Murks?",
+  "a": "in the trees",
   "o": [
-   "the rabbit",
-   "the parrot"
+   "in the sea",
+   "on the beach"
   ],
-  "qzh": "谁尝了你的辣椒？",
-  "azh": "一只小 Murk",
+  "qzh": "这些 Murk 在哪里？",
+  "azh": "在树林里",
   "ozh": [
-   "兔子",
-   "鹦鹉"
+   "在海里",
+   "在海滩上"
   ]
  },
  "18": {
-  "title": "Ten Small Murks",
-  "words": [
-   "mirror",
-   "tunnel"
-  ],
-  "en": "The footprints go into a dark <b>tunnel<\/b>. Your <b>mirror<\/b> sends the sun inside. Ten small Murks sleep in there.",
-  "zh": "脚印一直通进一条黑黑的隧道。你用镜子把阳光照了进去。里面睡着十只小 Murk。",
+  "title": "The Murk family",
+  "en": "The small Murk sees its family. The Murk family is very happy.",
+  "zh": "小 Murk 看见了它的家人。Murk 一家非常开心。",
   "zhs": [
-   "脚印一直通进一条黑黑的隧道。",
-   "你用镜子把阳光照了进去。",
-   "里面睡着十只小 Murk。"
+   "小 Murk 看见了它的家人。",
+   "Murk 一家非常开心。"
   ],
-  "q": "Where do the Murks sleep?",
-  "a": "in a tunnel",
+  "q": "Who does the Murk see?",
+  "a": "its family",
   "o": [
-   "on the beach",
-   "up the hill"
+   "a monkey",
+   "a big fish"
   ],
-  "qzh": "Murk 们睡在哪里？",
-  "azh": "在隧道里",
+  "qzh": "小 Murk 看见了谁？",
+  "azh": "它的家人",
   "ozh": [
-   "在沙滩上",
-   "在山上"
+   "一只猴子",
+   "一条大鱼"
   ]
  },
  "19": {
-  "title": "A Gift for the Murks",
-  "words": [
-   "cotton",
-   "button"
-  ],
-  "en": "Their hair looks soft, like <b>cotton<\/b>. You leave a red <b>button<\/b> for them. \"Tonight they come to your gate,\" says Orbit.",
-  "zh": "它们的毛看起来软软的，像棉花一样。你给它们留下一颗红纽扣。“今晚它们会来你的大门口。”Orbit 说。",
+  "title": "Goodbye, Murk",
+  "en": "Ben gives the Murk his shell. The Murk waves goodbye to Ben.",
+  "zh": "Ben 把他的贝壳送给 Murk。Murk 向 Ben 挥手说再见。",
   "zhs": [
-   "它们的毛看起来软软的，像棉花一样。",
-   "你给它们留下一颗红纽扣。",
-   "“今晚它们会来你的大门口。”Orbit 说。"
+   "Ben 把他的贝壳送给 Murk。",
+   "Murk 向 Ben 挥手说再见。"
   ],
-  "q": "What do you leave for them?",
-  "a": "a red button",
+  "q": "Who gets the shell?",
+  "a": "the Murk",
   "o": [
-   "a red pepper",
-   "a carrot"
+   "the monkey",
+   "a bird"
   ],
-  "qzh": "你给它们留下了什么？",
-  "azh": "一颗红纽扣",
+  "qzh": "谁收到了贝壳？",
+  "azh": "Murk",
   "ozh": [
-   "一个红辣椒",
-   "一根胡萝卜"
+   "猴子",
+   "一只鸟"
   ]
  },
  "20": {
-  "title": "The Night Watch",
-  "words": [
-   "sudden",
-   "follow"
-  ],
-  "en": "A <b>sudden<\/b> sound comes from your gate. Your spelling sends the Murks home. They <b>follow<\/b> each other back to bed.",
-  "zh": "大门口突然传来一阵声音。你拼出单词，把 Murk 们送回了家。它们一只跟着一只，回去睡觉了。",
+  "title": "Good night, Ben",
+  "en": "Ben and Orbit go home. Ben smiles and goes to bed.",
+  "zh": "Ben 和 Orbit 回家了。Ben 笑着上床睡觉。",
   "zhs": [
-   "大门口突然传来一阵声音。",
-   "你拼出单词，把 Murk 们送回了家。",
-   "它们一只跟着一只，回去睡觉了。"
+   "Ben 和 Orbit 回家了。",
+   "Ben 笑着上床睡觉。"
   ],
-  "q": "Where do the Murks go?",
-  "a": "back to bed",
+  "q": "Where do Ben and Orbit go?",
+  "a": "home",
   "o": [
-   "into the sea",
-   "up the hill"
+   "to school",
+   "to the sea"
   ],
-  "qzh": "Murk 们去了哪里？",
-  "azh": "回去睡觉",
+  "qzh": "Ben 和 Orbit 去哪里？",
+  "azh": "回家",
   "ozh": [
-   "到海里",
-   "到山上"
+   "去学校",
+   "去海边"
   ]
  }
 };

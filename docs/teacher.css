@@ -211,6 +211,7 @@ td{padding:5px 8px;border-bottom:1px dotted var(--rule);vertical-align:top}
 .ai-note li::marker{color:var(--ember)}
 .ai-conf{font-size:13px;color:var(--ink-2)}
 .ai-by{font-size:12px;color:var(--ink-3);font-style:italic;border-top:1px dotted var(--rule);padding-top:4px;margin-top:8px}
+.pg-ai .ai-cost{font-size:12px;margin:4px 0 0}
 .pg-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;align-items:start}
 .pg-cards .box{margin-bottom:0;min-height:100%}
 .pv{margin:0 0 4px}.pv b{font-family:var(--f-display);font-weight:400;font-size:30px;line-height:1;margin-right:4px}

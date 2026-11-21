@@ -735,26 +735,26 @@ html.zh-on .sl-pill .zhk .zhx{font-size:calc(var(--u)*13.5);margin:0}
 .ht-tools .btn{min-height:calc(var(--u)*40);padding:0 calc(var(--u)*18);font-size:calc(var(--u)*16)}
 .ht-tools .btn.on{border-color:var(--ember-lo);color:var(--ember-lo)}
 .ht-tools .chip[aria-pressed="true"]{border-color:var(--ink);color:var(--ink);background:rgba(255,253,246,.7)}
-.ht-text{max-width:calc(var(--u)*580);font-size:calc(var(--u)*20);line-height:1.6;color:var(--ink)}
+.ht-text{max-width:calc(var(--u)*580);font-size:calc(var(--u)*24);line-height:1.5;color:var(--ink)}
+.ht-pair{display:block;margin:0 0 calc(var(--u)*6)}   /* one short sentence a line: easier to read */
 .ht-s{border-radius:calc(var(--u)*4);transition:background .2s;-webkit-box-decoration-break:clone;box-decoration-break:clone}
 .ht-s.now{background:rgba(255,176,102,.30);box-shadow:0 0 0 calc(var(--u)*2) rgba(255,176,102,.30)}
-.ht-text b{font-weight:700;background:linear-gradient(transparent 62%,rgba(232,105,30,.34) 62%)}
 .ht-zhon .ht-textzh{display:block}
 .ht-textzh{max-width:calc(var(--u)*580);margin:calc(var(--u)*10) 0 0;padding-top:calc(var(--u)*9);border-top:calc(var(--u)*1.2) dotted var(--ink-3);font-size:calc(var(--u)*17);line-height:1.6;color:var(--ink-2)}
 .ht-q{margin-top:calc(var(--u)*14);padding:calc(var(--u)*11) calc(var(--u)*18) calc(var(--u)*12)}
 .ht-q .kind{margin-bottom:calc(var(--u)*4)}
-.ht-qtext{margin:0;font-size:calc(var(--u)*18);font-weight:600}
+.ht-qtext{margin:0;font-size:calc(var(--u)*20);font-weight:600}
 .ht-q .btn.quiet{margin-top:calc(var(--u)*4)}
 .ht-a{margin:calc(var(--u)*6) 0 0;font-size:calc(var(--u)*18);color:var(--leaf);font-weight:600}
 /* 中文 on the story page: each Chinese sentence under its own English sentence; the question and its answers too */
 .ht-zl{display:none;font-family:var(--f-zh);font-weight:400;color:var(--ink-2)}
 .ht-zhon .ht-zl{display:block}
 .ht-zhon .ht-pair{display:block;margin:0 0 calc(var(--u)*8)}
-.ht-sz{font-size:calc(var(--u)*17);line-height:1.5;margin-top:calc(var(--u)*1)}
+.ht-sz{font-size:calc(var(--u)*19);line-height:1.5;margin-top:calc(var(--u)*1)}
 .ht-qtext .ht-zl{font-size:calc(var(--u)*16);margin-top:calc(var(--u)*2)}
-.ht-opts{display:flex;flex-wrap:wrap;gap:calc(var(--u)*10);margin:calc(var(--u)*10) 0 0}
-.ht-opt{flex-direction:column;gap:0;justify-content:center;min-height:calc(var(--u)*44);padding:calc(var(--u)*4) calc(var(--u)*18);font-size:calc(var(--u)*17);line-height:1.25}
-.ht-opt .ht-zl{font-size:calc(var(--u)*14);margin-top:calc(var(--u)*1)}
+.ht-opts{display:flex;flex-wrap:wrap;gap:calc(var(--u)*14);margin:calc(var(--u)*10) 0 0}
+.ht-opt{flex-direction:column;gap:0;justify-content:center;min-width:calc(var(--u)*120);min-height:calc(var(--u)*54);padding:calc(var(--u)*6) calc(var(--u)*22);font-size:calc(var(--u)*19);line-height:1.25}
+.ht-opt .ht-zl{font-size:calc(var(--u)*15);margin-top:calc(var(--u)*1)}
 .ht-opt:disabled{cursor:default}
 .ht-opt.ht-miss{opacity:.45}
 .ht-opt.ht-right{opacity:1;border-color:var(--leaf);color:var(--leaf);box-shadow:inset 0 0 0 calc(var(--u)*1.2) var(--leaf)}

@@ -1033,8 +1033,9 @@
     };
   }
 
-  // The one string Claude gets: instructions, the numbers as JSON, the format. No name, no id, none of his sentences.
-  function buildAiInput(P) {
+  // The numbers Claude gets, worked out here only (the Edge Function on the real site does not count again).
+  // No name, no id, none of his sentences. The names the page knows are cleaned out before they leave (WW_AI.scrub, site/ai-prompt.js).
+  function aiNumbers(P) {
     const L = P.last, sh = arr => arr.map(c => pct(shareOf(c))), n = arr => arr.map(c => c.n);
     const data = {
       weeks_starting_monday: P.weeks, this_week_starts: P.weeks[L], verdict_uses_weeks: P.win.map(i => P.weeks[i]),
@@ -1058,20 +1059,12 @@
       school_dictation: P.results.slice(-8).map(r => ({ date: r.date, right: +r.right, of: +r.total })),
       thresholds: RULES
     };
-    return [
-      "You are helping a tutor who teaches one learner English spelling once a week. Between lessons the learner plays a short spelling game on most days. Below are the numbers from the game, worked out by fixed rules, with this week last in every list.",
-      "Write for the tutor: plain English, short sentences.",
-      "Use ONLY the numbers given. Quote the number that supports every statement (for example \"11 of 14 right\").",
-      "If a count is under " + RULES.smallCount + ", say it is too small to trust.",
-      "Do not diagnose. Do not describe the learner as a person, only what the numbers show. Do not promise results. Call the learner \"the learner\".",
-      "",
-      "NUMBERS (JSON):",
-      JSON.stringify(data),
-      "",
-      "FORMAT: return only one JSON object, nothing before or after it:",
-      '{"headline": "one sentence", "changed": ["at most 3 items: what changed since last week, with numbers"], "patterns": ["at most 3 items: something in the slips a person might miss, with the words as evidence"], "next_lesson": ["at most 3 items: what to teach or check in the next lesson"], "confidence": "low" | "medium" | "high", "confidence_reason": "one sentence"}'
-    ].join("\n");
+    const AI = window.WW_AI;
+    if (!AI) throw { code: "no_prompt" };
+    return AI.scrub(data, [student && student.name, student && student.teacher_name, me && me.email ? String(me.email).split("@")[0] : ""]).data;
   }
+  // The one string Claude gets on claude.ai: the shared instructions (site/ai-prompt.js) around the numbers.
+  function buildAiInput(P) { return window.WW_AI.text(aiNumbers(P)); }
 
   // A small bar chart, drawn here: one bar a week, the value above it, the Monday below it. Pale bars rest on few answers.
   function bars(values, o) {
@@ -1179,7 +1172,41 @@
     if (sampleFor !== window.claude || !samplePromise) { sampleFor = window.claude; samplePromise = (async () => { try { return window.claude && typeof window.claude.use === "function" ? (await window.claude.use("sample")) || null : null; } catch (e) { return null; } })(); }
     return samplePromise;
   };
-  const OFF_SITE = "The analysis works on claude.ai. On your own website it will arrive once a week by itself.";
+  const OFF_SITE = "The analysis cannot be written from this copy of the page. It works on claude.ai and on your own website.";
+  // ---- the real website: no page ability there, so the button asks the Edge Function (deploy/functions/weekly-analysis) ----
+  const AI_FUNCTION = "weekly-analysis";
+  // Claude Opus 5.5 list prices, US dollars per million tokens, from the claude-api skill's model table (cached 2026-11-03),
+  // copied on 2026-11-21. Only for the rough cost line under a run; check the price page before quoting it.
+  const AI_PRICE = { input: 4, output: 20 };
+  const AI_SORRY = "The analysis could not be written. Try again in a minute.";
+  const onSite = () => !DEMO && !!(sb && sb.functions && typeof sb.functions.invoke === "function") && !!window.WW_AI;
+  function costLine(u) {
+    const i = Math.max(0, Math.round(+(u && u.input_tokens) || 0)), o = Math.max(0, Math.round(+(u && u.output_tokens) || 0));
+    if (!i && !o) return "";
+    const c = (i * AI_PRICE.input + o * AI_PRICE.output) / 1e4, f = n => n.toLocaleString("en-US");   // US cents
+    return "This run: " + f(i) + " tokens in, " + f(o) + " out, about " + (c < 1 ? "1 US cent or less" : Math.round(c) + " US cents") + ".";
+  }
+  // The function's own short message when it sent one (401, 403, 413, 429, 500, 502), else the general one.
+  async function fnMessage(err) {
+    try { const r = err && err.context; if (r && typeof r.json === "function") { const j = await r.json(); if (j && typeof j.message === "string" && j.message.length < 200) return j.message; } } catch (e) { }
+    return AI_SORRY;
+  }
+  function wireSite(P) {
+    const ctl = $("aiCtl");
+    ctl.innerHTML = '<div class="row"><button type="button" id="aiGo">Write this week\'s analysis</button><span class="muted" id="aiMsg">Sends the numbers on this page to Claude, without his name. Only when you press.</span></div><p class="muted ai-cost" id="aiCost" hidden></p>';
+    $("aiGo").onclick = async () => {
+      const b = $("aiGo"), msg = $("aiMsg"), cost = $("aiCost"); b.disabled = true; cost.hidden = true; msg.textContent = "Writing… this takes about a minute";
+      let res;
+      try { res = await sb.functions.invoke(AI_FUNCTION, { body: { numbers: aiNumbers(P) } }); } catch (e) { res = { data: null, error: e }; }
+      if (tab !== "progress" || $("aiGo") !== b) return;   // she left the tab; a kept result shows on her next visit
+      const data = res && !res.error ? res.data : null;
+      if (!data || !data.record || typeof data.record.json !== "string") { msg.textContent = res && res.error ? await fnMessage(res.error) : AI_SORRY; b.disabled = false; return; }
+      $("aiOut").innerHTML = analysisHtml(data.record, P);
+      msg.textContent = data.saved ? "Kept on this page for next time." : "Shown, but it could not be kept for next time.";
+      const line = costLine(data.usage); cost.textContent = line; cost.hidden = !line;
+      b.disabled = false;
+    };
+  }
   function analysisHtml(rec, P) {
     let o = null; try { o = typeof rec.json === "string" ? JSON.parse(rec.json) : rec.json; } catch (e) { o = null; }
     if (!o || typeof o.headline !== "string") return '<p class="muted">The last analysis could not be read.</p>';
@@ -1196,7 +1223,7 @@
     const sample = await getSample();
     if (tab !== "progress" || !$("aiBox")) return;
     const ctl = $("aiCtl");
-    if (!sample) { ctl.innerHTML = '<p class="muted">' + OFF_SITE + "</p>"; return; }
+    if (!sample) { if (onSite()) return wireSite(P); ctl.innerHTML = '<p class="muted">' + OFF_SITE + "</p>"; return; }
     ctl.innerHTML = '<div class="row"><button type="button" id="aiGo">Analyse this week</button><span class="muted" id="aiMsg">Sends the numbers on this page to Claude, without his name. Only when you press.</span></div>';
     $("aiGo").onclick = async () => {
       const b = $("aiGo"), msg = $("aiMsg"); b.disabled = true; msg.textContent = "Claude is reading the numbers…";

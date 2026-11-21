@@ -2030,7 +2030,8 @@
   ]);
   // ============ the story pages (owner: hut team) ============
   // showStory(level, onClose): one page of the story, on the journal page in #full. The level part calls it after a
-  // level; the hut calls it from "My story". Data: window.WW_STORY[level] = { title, words, en, zh, q, a } (site/story.js).
+  // level; the hut calls it from "My story". Data: window.WW_STORY[level] = { title, en, zh, zhs, q, a, o, qzh, azh, ozh }
+  // (site/story.js). A page belongs to its level by number only: it never uses, marks or waits for the level's words.
   const STORY_ZONE_ZH = { "Sunny Island": "阳光岛", "Jungle": "丛林", "Under the Sea": "海底", "Ice Cave": "冰洞", "Sky Castle": "天空城堡" };
   const STORY_PER_ZONE = 10;
   // The platform's reader, for frames where the browser has no voice (as W.speak does in common.js).
@@ -2041,7 +2042,7 @@
   function storyVoiceCheck() { const b = document.getElementById("htHear"); if (b) b.hidden = !storyCanSpeak(); }
   try { if ("speechSynthesis" in window) speechSynthesis.addEventListener("voiceschanged", storyVoiceCheck); } catch (e) {}
 
-  // Split the page into sentences, keeping the <b> marks. A sentence ends at . ! ? outside a quote, or at the end of a
+  // Split the page into sentences (any tags in the text stay with their sentence). A sentence ends at . ! ? outside a quote, or at the end of a
   // quote when the next word starts with a capital ("Stop! Police!" shouts the drone. stays one sentence).
   function storySentences(html) {
     const out = []; let cur = "", inQ = false, i = 0;
