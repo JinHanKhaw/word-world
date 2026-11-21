@@ -1,0 +1,2 @@
+three.min.js, GLTFLoader.js: three.js r128, MIT License, Copyright 2010-2021 Three.js Authors, https://github.com/mrdoob/three.js
+supabase.js, 591.supabase.js: @supabase/supabase-js 2.45.4, MIT License, Copyright (c) 2020 Supabase, https://github.com/supabase/supabase-js
