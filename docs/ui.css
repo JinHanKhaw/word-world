@@ -1347,6 +1347,14 @@ body.rd-on:not(.rd-morn) #guide .gd-say,body.rd-on:not(.rd-morn) #guide .say{max
 .rd-in .lv-rescue[hidden]{display:none}
 .rd-strip:has(.lv-rescue:not([hidden])) .rd-in .sound{position:absolute;right:calc(var(--u)*30);top:calc(var(--u)*48)}
 
+/* ---- 87-picker.css ---- */
+/* the word picker (picker team, prefix pk-): a word with no picture yet shows its Chinese meaning in the picture's frame */
+.paint.pk-zh{display:grid;place-items:center;border:calc(var(--u)*1.2) dashed var(--rule);border-radius:calc(var(--u)*8);background:rgba(255,253,246,.45);padding:calc(var(--u)*8);box-sizing:border-box}
+.paint-zh{font-family:var(--f-zh);font-size:calc(var(--u)*32);line-height:1.15;color:var(--ink-2);text-align:center;word-break:keep-all}
+.lv-cue .paint.pk-zh{width:calc(var(--u)*150)}
+.paint.small.pk-zh .paint-zh,.paint.sc-mini.pk-zh .paint-zh,.paint.rd-pic.pk-zh .paint-zh{font-size:calc(var(--u)*17)}
+.paint.small.pk-zh,.paint.sc-mini.pk-zh,.paint.rd-pic.pk-zh{padding:calc(var(--u)*3)}
+
 /* ---- 88-tester.css ---- */
 /* tester shortcuts in the menu (the test version only; part 88-tester) */
 .menulist .ts-head{margin:calc(var(--u)*8) 0 calc(var(--u)*2);padding:calc(var(--u)*8) calc(var(--u)*12) calc(var(--u)*2);border-top:calc(var(--u)*1) solid var(--glass-line);font-family:var(--f-display);font-size:calc(var(--u)*12.5);letter-spacing:.12em;text-transform:uppercase;color:var(--glow)}

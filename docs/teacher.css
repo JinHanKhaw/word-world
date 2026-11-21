@@ -272,3 +272,9 @@ table.away i{font-style:normal;font-family:ui-monospace,"SF Mono",Menlo,Consolas
 .sc-zh.filled{background:#fdf3df}
 .sc-zh.changed{box-shadow:inset 0 0 0 1px var(--ember)}
 .sc-nopic{margin-left:6px;font-size:12px;color:var(--ink-3);font-style:italic;white-space:nowrap}
+
+/* the word picker box (Words tab) */
+.pk-box .kv dd{margin:0}
+.pk-t td{vertical-align:top}
+.pk-how{margin:4px 0 0;padding-left:18px;color:var(--ink-2)}
+.pk-how li{margin:2px 0}

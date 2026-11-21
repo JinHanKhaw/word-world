@@ -962,14 +962,21 @@
   var cardTexs = {}, cardMats = {}, cardGeo = new THREE.BoxGeometry(0.78, 0.9, 0.05), cardEdgeGeo = cardGeo.clone().toNonIndexed(), baseGeo = new THREE.BoxGeometry(0.66, 0.1, 0.3), baseEdgeGeo = baseGeo.clone().toNonIndexed();
   smoothNormals(cardEdgeGeo); smoothNormals(baseEdgeGeo);
   var paperMat = toon({ color: C(0xf6ecd8) }, 0.2), edgeMat = outlineMat(0.02);
+  // The Chinese meaning of a word with no picture yet, as large as fits in a box of width w, centred at (x, y).
+  function zhIn(g, zh, x, y, w, color){
+    var fam = '"LXGW WenKai","Kaiti SC","STKaiti","KaiTi","Noto Serif SC",serif', fs = 64; g.textAlign = "center"; g.textBaseline = "middle";
+    do { g.font = fs + "px " + fam; fs -= 4; } while(g.measureText(zh).width > w && fs > 20);
+    g.fillStyle = color; g.fillText(zh, x, y);
+  }
   function cardMat(info){
-    var key = (info.src || "") + "|" + info.word + "|" + (info.pale ? 1 : 0);
+    var key = (info.src || "") + "|" + info.word + "|" + (info.pale ? 1 : 0) + "|" + (info.src ? "" : info.zh || "");
     if(cardMats[key]){ return cardMats[key]; }
     var c = document.createElement("canvas"); c.width = 256; c.height = 296; var g = c.getContext("2d"), t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = 4;
     function paint(img){
       g.clearRect(0, 0, 256, 296); g.fillStyle = "#fbf3e2"; g.fillRect(0, 0, 256, 296);
       g.fillStyle = "#efe2c6"; g.fillRect(16, 16, 224, 224);
       if(img){ var s = Math.min(img.width, img.height); g.save(); if(info.pale){ g.filter = "saturate(18%) brightness(1.15)"; } g.drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 16, 16, 224, 224); g.restore(); }
+      else if(!info.src && info.zh){ zhIn(g, info.zh, 128, 128, 200, info.pale ? "#a3968a" : "#5a4636"); }   // no picture yet: its Chinese meaning
       if(info.pale){ g.fillStyle = "rgba(251,243,226,0.5)"; g.fillRect(16, 16, 224, 224); }
       g.strokeStyle = "rgba(90,60,40,.4)"; g.lineWidth = 3; g.strokeRect(16, 16, 224, 224);
       var fam = (getComputedStyle(document.body).fontFamily || "sans-serif"), fs = 36; g.textAlign = "center"; g.textBaseline = "middle";

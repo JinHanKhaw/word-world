@@ -9,15 +9,18 @@
      start({ total, home, pushed, gate })   night at the gate: total Murks; the first home + pushed + gate are already done
                              (a watch picked up again after "Stop here"). Resolves when the line stands.
      advance(k)              Murk k comes to the front (the others step up behind it). Resolves when all stand still.
-     hit(k, card)            right on the first try: the card { word, src } flies, hits, Murk k rolls home like a ball
-     push(k, card)           right after a retry or hints: the card pushes Murk k back; it steps off the path and sits
+     hit(k, thing)           right on the first try: the word's own object { word, cut, ratio } (cut: its cut-out picture, or ""
+                             for a star) flies at Murk k and hits hard; the Murk rolls home like a ball
+     push(k, thing)          right after a retry or hints: the object hits softer and knocks Murk k aside; it sits beside the path
+     prime(thing)            load the object's picture before the throw (when his turn starts)
      closer(k)               a miss: Murk k takes one step closer and grows a little; at the gate it sits. Resolves true at the gate.
      morning()               the sun comes up; the Murks that stayed walk home
      stop()                  everything back as it was (camera, light, his place)
      waiting(on)             his turn (the front Murk's "It waits" tag shows) or a show
      tag                     where the tag goes on the screen: { x, y, vis } (CSS px), or null
      moving()                true while a show runs
-     probe()                 the root positions of every Murk, the card and the camera (for checks)
+     probe()                 the root positions of every Murk, the flying thing (card: its place; thing: "cut" or "star")
+                             and the camera (for checks)
    Lengths are world units (1 = one building square). The path runs out of the gate along +z. */
 (function(){
   "use strict";
@@ -134,6 +137,7 @@
     if(!L.murk){ asks.push(addScript("models/murk.js")); }
     if(!L.murkanim){ asks.push(addScript("models/murkanim.js")); }
     if(!L.murksit){ asks.push(addScript("models/murksit.js")); }
+    if(!window.WW_CUTS){ asks.push(addScript("img/words/cut/cuts.js")); }   /* which words have a cut-out to throw */
     loading = Promise.all(asks).then(function(){ return Promise.all([parse("murk"), parse("murkanim"), parse("murksit"), texture("img/murk.jpg")]); }).then(function(r){
       var g = r[0], ga = r[1], gs = r[2], map = r[3];
       if(!g || !map){ base = { shape: true }; return base; }
@@ -268,48 +272,116 @@
   }
   var shake = 0;
 
-  /* ---------- his word card: the painted picture with the word under it, on paper ---------- */
-  var cardFont = '700 30px "Atkinson Hyperlegible Next","Atkinson Hyperlegible",Verdana,sans-serif';
-  function cardMesh(card){
-    var c = document.createElement("canvas"); c.width = 256; c.height = 320; var g = c.getContext("2d");
-    var tex = new THREE.CanvasTexture(c); tex.encoding = THREE.sRGBEncoding; tex.anisotropy = 4;
-    function paper(){
-      g.clearRect(0, 0, 256, 320);
-      g.fillStyle = "#f6ebd3"; roundRect(g, 4, 4, 248, 312, 18); g.fill();
-      g.lineWidth = 5; g.strokeStyle = "#2c1f17"; g.stroke();
-      g.lineWidth = 1.6; g.strokeStyle = "rgba(44,31,23,.55)"; roundRect(g, 14, 14, 228, 292, 11); g.stroke();
-      g.fillStyle = "#2c1f17"; g.font = cardFont; g.textAlign = "center"; g.textBaseline = "alphabetic";
-      var w = String(card.word || ""), fs = 30; while(fs > 16){ g.font = cardFont.replace("30px", fs + "px"); if(g.measureText(w).width < 210){ break; } fs -= 2; }
-      g.fillText(w, 128, 286);
+  /* ---------- the thing he throws: the word's own object, cut out of its painting (img/words/cut/<word>.webp, listed in
+     img/words/cut/cuts.js by tools/make_cutouts.py), facing the camera, with a light rim so it reads against the night.
+     A word with no cut-out throws a bright star the same way. No card, no frame, no text. ---------- */
+  var texCache = {};
+  function thingTex(src){   /* resolves { tex, rim, ratio } or null; loaded once per picture */
+    if(!src){ return Promise.resolve(null); }
+    if(texCache[src]){ return texCache[src]; }
+    texCache[src] = new Promise(function(res){
+      var img = new Image();
+      img.onload = function(){
+        try{
+          var tex = new THREE.Texture(img); tex.encoding = THREE.sRGBEncoding; tex.anisotropy = 4; tex.needsUpdate = true;
+          /* the rim: the object's outline, blurred and painted warm white, a little bigger than the object */
+          var pad = 18, c = document.createElement("canvas"); c.width = img.width + pad * 2; c.height = img.height + pad * 2;
+          var g = c.getContext("2d");
+          g.filter = "blur(7px)"; g.drawImage(img, pad, pad); g.drawImage(img, pad, pad); g.filter = "none";
+          g.globalCompositeOperation = "source-in"; g.fillStyle = "#fff4d6"; g.fillRect(0, 0, c.width, c.height);
+          g.globalCompositeOperation = "source-over"; g.drawImage(c, 0, 0);
+          var rim = new THREE.CanvasTexture(c); rim.encoding = THREE.sRGBEncoding;
+          res({ tex: tex, rim: rim, ratio: img.width / img.height, grow: c.width / img.width });
+        }catch(e){ res(null); }
+      };
+      img.onerror = function(){ res(null); };
+      img.src = src;
+    });
+    return texCache[src];
+  }
+  /* the thing waits for its picture at most a moment; if it is not there by then, the star flies */
+  function getThing(card){
+    var src = card && card.cut;
+    if(!src){ return Promise.resolve(null); }
+    return Promise.race([thingTex(src), wait(0.5).then(function(){ return null; })]);
+  }
+  function plane(tex, w, h, order){
+    var m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false, side: THREE.DoubleSide, fog: false, toneMapped: false }));
+    m.renderOrder = order; return m;
+  }
+  var THING_H = 0.9;   /* its height when it leaves his hand, world units (the Murk is 1.6) */
+  function thingMesh(t){
+    var holder = new THREE.Group(), spin = new THREE.Group(), parts = [];
+    holder.add(spin);
+    var gl = sprite(GLOW_T, 0xffd9a0, true); gl.material.depthTest = false; gl.renderOrder = 20; gl.material.opacity = 0.42; holder.add(gl); parts.push(gl);
+    if(t){
+      var h = THING_H, w = h * t.ratio;
+      var rim = plane(t.rim, w * t.grow, h * t.grow, 21); rim.material.opacity = 0.9; spin.add(rim); parts.push(rim);
+      var obj = plane(t.tex, w, h, 22); spin.add(obj); parts.push(obj);
+      gl.scale.setScalar(Math.max(w, h) * 2.1);
+      holder.userData.kind = "cut";
+    } else {
+      var st = plane(STAR_T, 1.0, 1.0, 22); spin.add(st); parts.push(st);
+      gl.scale.setScalar(2.4); gl.material.opacity = 0.7; gl.material.color.copy(C(0xffe08a));
+      holder.userData.kind = "star";
     }
-    paper();
-    if(card.src){
-      var img = new Image(); img.onload = function(){ paper(); g.save(); g.globalCompositeOperation = "multiply"; var s = Math.min(196 / img.width, 196 / img.height), w = img.width * s, h = img.height * s; g.drawImage(img, 128 - w / 2, 36 + (196 - h) / 2, w, h); g.restore(); tex.needsUpdate = true; };
-      img.src = card.src;
-    }
-    var mesh = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 1.0), new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide, fog: false, toneMapped: false }));
-    var holder = new THREE.Group(); holder.add(mesh);
-    var gl = sprite(GLOW_T, 0xffb060, true); gl.scale.setScalar(1.9); gl.material.opacity = 0.55; gl.position.z = -0.02; holder.add(gl);
-    holder.userData.dispose = function(){ tex.dispose(); mesh.geometry.dispose(); mesh.material.dispose(); gl.material.dispose(); };
+    holder.userData.spin = spin;
+    holder.userData.fade = function(o){ parts.forEach(function(p){ p.material.opacity = o * (p === gl ? 0.5 : 1); }); };
+    holder.userData.dispose = function(){ parts.forEach(function(p){ if(p.geometry && p !== gl){ p.geometry.dispose(); } p.material.dispose(); }); };
     return holder;
   }
-  function roundRect(g, x, y, w, h, r){ g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
   var flying = null;
-  /* from his right hand in an arc to the Murk's chest, turning, growing a little */
-  function throwCard(m, card, big){
-    var c = cardMesh(card); flying = c; group.add(c);
-    var p0 = new THREE.Vector3(hero.position.x - 0.35, hero.position.y + 1.35, hero.position.z + 0.3);
-    var p2 = new THREE.Vector3(m.x, m.g.position.y + MURK_H * 0.62 * m.s, m.z - 0.3), p1 = p0.clone().lerp(p2, 0.5); p1.y += big ? 2.2 : 1.4;
-    var tmp = new THREE.Vector3(), dur = big ? 0.85 : 0.75;
-    W_sfx("flip");
-    return tween(dur, function(k){
-      var e = k, a = (1 - e) * (1 - e), b = 2 * (1 - e) * e, d = e * e;
-      tmp.set(a * p0.x + b * p1.x + d * p2.x, a * p0.y + b * p1.y + d * p2.y, a * p0.z + b * p1.z + d * p2.z);
-      c.position.copy(tmp); c.lookAt(camera.position); c.rotateZ(Math.sin(k * Math.PI * (big ? 3 : 2)) * 0.3 - 0.12); c.rotateY(Math.sin(k * Math.PI) * 0.35);
-      c.scale.setScalar(0.75 + k * (big ? 0.95 : 0.55));
-    }).then(function(){ return p2; });
+  /* from his hand in an arc to the Murk's chest: it pops into his hand, turns as it flies, and grows towards the end so
+     it stays big on the screen while it flies away from the camera */
+  function throwThing(m, card, big){
+    return getThing(card).then(function(t){
+      var c = thingMesh(t); flying = c; group.add(c);
+      var p0 = new THREE.Vector3(hero.position.x + 0.45, hero.position.y + 1.3, hero.position.z + 0.4);
+      var p2 = new THREE.Vector3(m.x, m.g.position.y + MURK_H * 0.58 * m.s, m.z - 0.35), p1 = p0.clone().lerp(p2, 0.5); p1.y += big ? 1.5 : 1.1;
+      var tmp = new THREE.Vector3(), dur = big ? 0.8 : 0.72, turns = big ? 1 : 0.75, spin = c.userData.spin;
+      W_sfx("flip");
+      return tween(dur, function(k){
+        var a = (1 - k) * (1 - k), b = 2 * (1 - k) * k, d = k * k;
+        tmp.set(a * p0.x + b * p1.x + d * p2.x, a * p0.y + b * p1.y + d * p2.y, a * p0.z + b * p1.z + d * p2.z);
+        c.position.copy(tmp); c.quaternion.copy(camera.quaternion);
+        /* one turn in the picture's plane (upright again at the hit), and a wobble as if it tumbles */
+        spin.rotation.z = -ease.inOut(k) * Math.PI * 2 * turns;
+        spin.scale.set(0.82 + 0.18 * Math.abs(Math.cos(k * Math.PI * 2.5)), 1, 1);
+        var pop = Math.min(1, k / 0.12);
+        c.scale.setScalar((0.35 + 0.65 * ease.out(pop)) * (0.9 + 0.75 * k * k));
+      }).then(function(){ return p2; });
+    });
   }
-  function dropCard(){ var c = flying; flying = null; if(!c){ return; } tween(0.35, function(k){ c.scale.setScalar((1.2 + k * 0.6) * (1 - k)); }).then(function(){ group.remove(c); c.userData.dispose(); }); }
+  /* the hit: a white flash, a ring, stars; the thing bounces back off the Murk, turning, and fades */
+  var RING_T = (function(){
+    var c = document.createElement("canvas"); c.width = c.height = 128; var g = c.getContext("2d");
+    g.strokeStyle = "rgba(255,240,200,1)"; g.lineWidth = 10; g.beginPath(); g.arc(64, 64, 52, 0, Math.PI * 2); g.stroke();
+    return new THREE.CanvasTexture(c);
+  })();
+  function impact(p, big){
+    var f = sprite(GLOW_T, 0xffffff, true); f.material.depthTest = false; f.renderOrder = 25; f.position.copy(p); group.add(f);
+    tween(big ? 0.32 : 0.26, function(k){ f.scale.setScalar((big ? 1.2 : 0.9) + k * (big ? 3.2 : 2.2)); f.material.opacity = 1 - k * k; }).then(function(){ group.remove(f); f.material.dispose(); });
+    var r = sprite(RING_T, 0xffe2a0, true); r.material.depthTest = false; r.renderOrder = 24; r.position.copy(p); group.add(r);
+    tween(big ? 0.42 : 0.34, function(k){ r.scale.setScalar(0.3 + ease.out(k) * (big ? 2.6 : 1.8)); r.material.opacity = 1 - k; }).then(function(){ group.remove(r); r.material.dispose(); });
+    burst(p, big ? 14 : 7, big ? 0.34 : 0.24);
+  }
+  function bounceOff(big){
+    var c = flying; flying = null; if(!c){ return; }
+    var p = c.position.clone(), s0 = c.scale.x, spin = c.userData.spin, r0 = spin.rotation.z, side = big ? -1 : 1;
+    tween(0.55, function(k){
+      c.position.set(p.x + side * k * 0.9, p.y + Math.sin(k * Math.PI) * 0.7 - k * 0.6, p.z - k * 1.2);
+      c.quaternion.copy(camera.quaternion); spin.rotation.z = r0 + side * k * 4;
+      c.scale.setScalar(s0 * (1 - 0.45 * k)); c.userData.fade(1 - k * k);
+    }).then(function(){ group.remove(c); c.userData.dispose(); });
+  }
+  /* the Murk takes the blow: a short squash and a lean back before it is knocked away */
+  function squash(m, big){
+    var a = big ? 0.3 : 0.18;
+    return tween(big ? 0.16 : 0.14, function(q){
+      var e = Math.sin(q * Math.PI * 0.5);
+      m.pivot.scale.set(1 + a * e, 1 - a * 1.1 * e, 1 + a * e); m.pivot.rotation.x = -e * (big ? 0.35 : 0.25);
+    });
+  }
   function W_sfx(k){ try{ if(window.WT && window.WT.sfx){ window.WT.sfx(k); } }catch(e){} }
 
   /* ---------- night and morning: the world's own lights turned down and blue; stars and a moon over the sky ---------- */
@@ -389,7 +461,7 @@
   /* ---------- every frame ---------- */
   var clock = 0, tagV = new THREE.Vector3(), rect = null, rectAt = -9;
   function frame(dt){
-    dt = Math.min(0.1, dt || 0.016); clock += dt;
+    dt = Math.min(0.1, dt || 0.016) * (window.__raidPace || 1); clock += dt;   /* __raidPace: checks only, slow motion for still frames */
     var i, t;
     if(tweens.length){
       var list = tweens.slice();
@@ -501,19 +573,21 @@
       }).then(function(){ m.pivot.position.y = MURK_H * 0.5; m.mode = "sit"; W_sfx("squash"); shake = 0.35; puff(m.x, m.z, 7, true); return wait(0.25); }).then(function(){ return true; });
     }));
   };
-  /* right on the first try: the card hits and the Murk rolls home like a ball, bouncing up the path */
+  /* right on the first try: the thrown thing hits hard and the Murk rolls home like a ball, bouncing up the path */
   R.hit = function(k, card){
     var m = murks[k]; if(!R.active || !m){ return Promise.resolve(false); }
     R.isWaiting = false;
-    return show(throwCard(m, card, true).then(function(p){
-      dropCard(); burst(p, 14, 0.34); W_sfx("right"); shake = 1;
+    return show(throwThing(m, card, true).then(function(p){
+      impact(p, true); bounceOff(true); W_sfx("drum"); W_sfx("right"); shake = 1;
       m.mode = "roll"; if(m.mixer){ play(m, "idle", 0.1, 2.2); }
-      var x0 = m.x, z0 = m.z, s0 = m.s, back = 1;
-      /* knocked up and back, curling into a ball */
+      return squash(m, true).then(function(){ return p; });
+    }).then(function(){
+      var x0 = m.x, z0 = m.z, s0 = m.s, back = 1, r0 = m.pivot.rotation.x, q0 = m.pivot.scale.clone();
+      /* knocked up and back by the blow, curling into a ball */
       return tween(0.55, function(q){
         var e = ease.out(q);
         place(m, x0 + (pathX(z0 + 2.5) - x0) * e, z0 + 2.5 * e); m.g.position.y += Math.sin(q * Math.PI) * 2.1;
-        m.pivot.rotation.x = -q * Math.PI * 2.2; m.pivot.scale.set(1 + 0.22 * e, 1 - 0.3 * e, 1 + 0.22 * e);
+        m.pivot.rotation.x = r0 - q * Math.PI * 2.2; m.pivot.scale.set(q0.x + (1.22 - q0.x) * e, q0.y + (0.7 - q0.y) * e, q0.z + (1.22 - q0.z) * e);
       }).then(function(){
         /* four bounces up the path, each smaller, rolling all the way */
         var hops = [[3.0, 1.0, 0.5], [2.6, 0.65, 0.42], [2.2, 0.38, 0.34], [2.8, 0.18, 0.3]], chain = Promise.resolve();
@@ -536,22 +610,28 @@
       }).then(function(){ m.mode = "gone"; m.g.visible = false; back = 0; return true; });
     }));
   };
-  /* right after a retry or hints: the card pushes it back; it stumbles, steps off the path and sits there */
+  /* right after a retry or hints: a softer hit knocks it aside; it stumbles, steps off the path and sits there */
   R.push = function(k, card){
     var m = murks[k]; if(!R.active || !m){ return Promise.resolve(false); }
     R.isWaiting = false;
-    return show(throwCard(m, card, false).then(function(p){
-      dropCard(); burst(p, 6, 0.22); W_sfx("pop"); shake = 0.4;
+    return show(throwThing(m, card, false).then(function(p){
+      impact(p, false); bounceOff(false); W_sfx("pop"); shake = 0.5;
+      m.mode = "stumble";
+      return squash(m, false);
+    }).then(function(){
+      var r0 = m.pivot.rotation.x, q0 = m.pivot.scale.clone();
+      function unsquash(e){ m.pivot.scale.set(q0.x + (1 - q0.x) * e, q0.y + (1 - q0.y) * e, q0.z + (1 - q0.z) * e); }
       if(m.atGate){   /* at the gate it only rocks back and stays sitting there till morning */
-        return tween(0.6, function(q){ m.pivot.rotation.x = -Math.sin(q * Math.PI) * 0.35; sizeTo(m, m.s + (1 - m.s) * q * 0.5); }).then(function(){ m.pivot.rotation.x = 0; return "gate"; });
+        return tween(0.6, function(q){ unsquash(q); m.pivot.rotation.x = r0 * (1 - q) - Math.sin(q * Math.PI) * 0.35; sizeTo(m, m.s + (1 - m.s) * q * 0.5); }).then(function(){ m.pivot.rotation.x = 0; m.mode = "sit"; return "gate"; });
       }
-      var x0 = m.x, z0 = m.z, s0 = m.s; m.mode = "stumble";
+      /* knocked aside: back and towards the side where it will sit, rocking, then it walks there */
+      var x0 = m.x, z0 = m.z, s0 = m.s, st = seat(seats++), side = st.x > x0 ? 1 : -1; m.seat = st;
       return tween(0.5, function(q){
-        var e = ease.out(q); place(m, x0 + (pathX(z0 + 1.3) - x0) * e, z0 + 1.3 * e); m.g.position.y += Math.sin(q * Math.PI) * 0.35;
-        m.pivot.rotation.x = -Math.sin(q * Math.PI) * 0.5; sizeTo(m, s0 + (1 - s0) * q);
+        var e = ease.out(q); place(m, x0 + (pathX(z0 + 1.1) - x0) * e + side * 0.9 * e, z0 + 1.1 * e); m.g.position.y += Math.sin(q * Math.PI) * 0.35;
+        m.pivot.rotation.x = r0 * (1 - q) - Math.sin(q * Math.PI) * 0.5; m.pivot.rotation.z = -side * Math.sin(q * Math.PI) * 0.3;
+        unsquash(Math.min(1, q * 1.6)); sizeTo(m, s0 + (1 - s0) * q);
       }).then(function(){
-        m.pivot.rotation.x = 0; puff(m.x, m.z, 4, false);
-        var st = seat(seats++); m.seat = st;
+        m.pivot.rotation.x = 0; m.pivot.rotation.z = 0; puff(m.x, m.z, 4, false);
         return wait(0.15).then(function(){ return walkTo(m, st.x, st.z, 1.7); });
       }).then(function(){
         m.mode = "sitting";
@@ -593,10 +673,11 @@
   };
   R.probe = function(){
     return { murks: murks.map(function(m){ return { i: m.i, mode: m.mode, x: +m.g.position.x.toFixed(4), y: +m.g.position.y.toFixed(4), z: +m.g.position.z.toFixed(4), s: +m.s.toFixed(4), rx: +m.pivot.rotation.x.toFixed(4), vis: m.g.visible }; }),
-      card: flying ? flying.position.toArray().map(function(v){ return +v.toFixed(4); }) : null,
+      card: flying ? flying.position.toArray().map(function(v){ return +v.toFixed(4); }) : null, thing: flying ? flying.userData.kind : null,
       cam: camera.position.toArray().map(function(v){ return +v.toFixed(3); }), tweens: tweens.length, rigged: !!(base && base.root), clips: base && base.clips ? Object.keys(base.clips) : [], scale: base && base.scale, tall: base && base.tall, box: murks[front] ? new THREE.Box3().setFromObject(murks[front].g).min.toArray().concat(new THREE.Box3().setFromObject(murks[front].g).max.toArray()).map(function(v){ return +v.toFixed(2); }) : null };
   };
   R.preload = load;
+  R.prime = function(card){ if(card && card.cut){ thingTex(card.cut); } };
 
   /* ---------- the watch-fire he owns: a flame on every one that stands on his island ---------- */
   var fireScanAt = 0, fireList = [];

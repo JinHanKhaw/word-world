@@ -666,7 +666,8 @@
       for (let d = first; d <= last; d++) plan += '<div class="pd ' + dayState(d) + (isTest(d) ? " test" : "") + '"><b>' + d + (isTest(d) ? " test" : "") + "</b>" + (words.filter(w => w.quest_day === d).map(w => esc(w.word) + (w.approved ? "" : " (draft)")).join(", ") || '<i class="ny">no words</i>') + "</div>";
       plan += "</div>";
     }
-    view.innerHTML = '<section class="box"><div class="bh"><h2>50 levels</h2><span class="eyebrow">level 1 opens on ' + esc(student.start_date || W.today()) + ", change it on the Student tab</span></div>" + plan +
+    view.innerHTML = '<section class="box pk-box" id="pkBox"><div class="bh"><h2>Word picker</h2><span class="eyebrow">levels 4 to 50, by fixed rules</span></div><p class="muted">Loading…</p></section>' +
+      '<section class="box"><div class="bh"><h2>50 levels</h2><span class="eyebrow">level 1 opens on ' + esc(student.start_date || W.today()) + ", change it on the Student tab</span></div>" + plan +
       '<p class="muted">Each level teaches the two words you give it, then checks older words that are due. He plays them in order: the next opens the day after he finishes, and at most two a day. Every 10th level is the island test: listen and type up to 10 of that island\'s words. A level with no approved words stays shut until you fill it.</p></section>' +
       '<section class="box"><div class="bh"><h2>Words</h2><span class="eyebrow">' + words.filter(w => w.approved && w.level === 0).length + " approved and waiting, " + words.filter(w => w.level > 0).length + " learned" + (unplanned ? ", " + unplanned + " with no level" : "") + "</span></div>" +
       '<div class="row"><button type="button" id="addBtn">Add a word</button><button type="button" class="ghost" id="bulkBtn">Paste words (bulk)</button><button type="button" class="ghost" id="autoDays">Give levels to words without one (' + (student.new_per_day || 2) + ' per level)</button><button type="button" class="ghost" id="approveAll">Approve all drafts</button></div>' +
@@ -687,6 +688,48 @@
     };
     view.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => editor(words.find(w => w.id === b.dataset.edit)));
     wireCommon();
+    pickerBox();
+  }
+  // ---------- the word picker (site/picker.js): on or off, the band for his next level and why, the words picked so far ----------
+  // The same rules and the same data as the game (src/js/87-picker.js), so what this box says is what the game will do.
+  async function pickerBox() {
+    const box = $("pkBox"); if (!box) return;
+    const P = window.WW_PICKER, POOL = window.WW_POOL || [], on = student.picker !== false;
+    const [a, e] = await Promise.all([
+      safe(sb.from("attempts").select("*").eq("student_id", student.id).in("kind", ["new", "review", "test", "probe"])),
+      safe(sb.from("events").select("*").eq("student_id", student.id).in("type", ["rescue", "picked"]))
+    ]);
+    if (!$("pkBox")) return;
+    const picked = ((e && e.data) || []).filter(x => x.type === "picked" && x.detail).sort((x, y) => (x.created_at < y.created_at ? -1 : 1));
+    let next = 1; while (next <= maxDay() && dayDone(next)) next++;
+    const has = k => words.some(w => W.key(w.word) === W.key(k));
+    let today = "";
+    if (!P) today = '<p class="muted">The picker script (picker.js) is not on this page.</p>';
+    else if (next > LEVELS) today = "<p>All 50 levels are done.</p>";
+    else {
+      const B = P.bandFor({ quests, attempts: (a && a.data) || [], events: (e && e.data) || [], words, level: next });
+      const lw = levelWords(next);
+      today = '<dl class="kv"><dt>Next level</dt><dd><b>' + next + "</b>" + (next < 4 ? " (levels 1 to 3 keep their own words)" : lw.length >= 2 ? " has its words: " + lw.map(w => esc(w.word)).join(", ") : lw.length ? " has 1 word; the picker adds 1 when the level opens" : " gets 2 words when the level opens") + "</dd>" +
+        "<dt>Band now</dt><dd><b>" + B.band + " of 9</b>" + (on ? "" : " (not used while the picker is off)") + "</dd>" +
+        "<dt>Why</dt><dd>" + esc(B.reason) + "</dd></dl>";
+    }
+    const rows = picked.map(x => { const d = x.detail, ws = Array.isArray(d.words) ? d.words : [], bs = Array.isArray(d.bands) ? d.bands : [];
+      return "<tr><td><b>" + esc(d.level) + "</b></td><td>" + ws.map((w, i) => esc(w) + (bs[i] ? ' <span class="muted">band ' + esc(bs[i]) + "</span>" : "") + (has(w) ? "" : ' <span class="tagw">deleted</span>')).join("<br>") +
+        "</td><td>" + esc(d.band || "") + '</td><td class="muted">' + esc(d.reason || "") + "</td><td>" + esc(rel(ld(x.created_at))) + "</td></tr>"; }).join("");
+    box.innerHTML = '<div class="bh"><h2>Word picker</h2><span class="eyebrow">levels 4 to 50, by fixed rules</span><span class="grow"></span>' +
+      '<button type="button" class="' + (on ? "" : "ghost ") + 'mini" id="pkSwitch" aria-pressed="' + on + '">' + (on ? "On" : "Off") + "</button></div>" +
+      '<p class="muted">' + (on ? "On: when a level opens without 2 approved words, the game picks the missing ones from the pool (" + POOL.length + " words), by his first tries." : "Off: each level gets the next words of the fixed course (the bank's order).") + "</p>" +
+      today +
+      '<div class="bh sub2"><h3>Words picked so far</h3><span class="eyebrow">' + many(picked.reduce((n, x) => n + ((x.detail.words || []).length), 0), "word") + "</span></div>" +
+      (rows ? '<div class="scroll"><table class="pk-t"><tr><th>Level</th><th>Words</th><th>Band</th><th>Why</th><th>When</th></tr>' + rows + "</table></div>" : '<p class="muted">None yet.</p>') +
+      '<div class="bh sub2"><h3>To overrule it</h3></div><ul class="pk-how"><li>Give a level your own word: Add a word, set its level, choose approved. The picker only fills what is missing.</li>' +
+      "<li>Change a picked word: press Edit on its row below.</li><li>Delete a picked word: it is not picked again; the picker fills the gap when the level opens.</li>" +
+      "<li>Rules: start at band 5; 80% or more first tries right, half a band up; 50% or less, half a band down; Look and copy needed, half a band more down; the never-taught word right, a quarter up. One band a day at most.</li></ul>";
+    $("pkSwitch").onclick = async () => {
+      const { error } = await sb.from("students").update({ picker: !on }).eq("id", student.id);
+      if (error) { banner(error.message); return; }
+      student.picker = !on; pickerBox();
+    };
   }
   // A word's checks. Returns an error line or "". The word is kept as typed; duplicates are found with W.key.
   function checkWord(word, chunks, sen, dq, da, focus, selfId) {
@@ -1028,6 +1071,8 @@
     return {
       today: t, weeks, last, days, win, thisCounts, mem, away, long, probe, islands, spell, before0, grew, slippedWords, anyLevel,
       help, hintsPer, hintWords, patterns, weekMins, perLevel, typed, slips, verdict,
+      // the word picker's choices this week ("picked" events, src/js/87-picker.js): level, band, words, the reason
+      picks: E.filter(e => e.type === "picked" && e.detail && wi(ld(e.created_at)) === N - 1).map(e => ({ level: e.detail.level, band: e.detail.band, words: e.detail.words || [], reason: e.detail.reason || "" })),
       pooled: { long: longW, probe: probeW, help: helpW, days: daysW, growN, rising, hintsRising }, totals: { old: memAll.n, probe: probeAll.n, firstTries: help.reduce((s, h) => s + h.n, 0) },
       results: (D.results || []).filter(r => r && r.date && +r.total > 0).slice().sort((a, b) => (a.date < b.date ? -1 : 1))
     };
@@ -1056,6 +1101,7 @@
       slips_this_week: P.slips.slice(0, 40),
       hints_by_word_this_week: P.hintWords.slice(0, 20),
       patterns: P.patterns ? P.patterns.map(p => ({ pattern: p.name, this_week: p.now, four_weeks_before: p.before, examples: p.examples.map(x => ({ word: x.word, typed: x.typed })) })) : "not available",
+      word_picker_this_week: { about: "the words the game picked for new levels, by fixed rules; band 1 easiest to 9 hardest", picks: P.picks || [] },
       school_dictation: P.results.slice(-8).map(r => ({ date: r.date, right: +r.right, of: +r.total })),
       thresholds: RULES
     };
