@@ -18,19 +18,21 @@
     apostrophe:   { en: "The apostrophe", zh: "撇号", about_en: "The apostrophe left out, or put in another place.", about_zh: "撇号漏掉了，或者放错了位置。" },
     other:        { en: "Other letters", zh: "其他字母", about_en: "Another letter in place of the right one.", about_zh: "用了别的字母。" }
   };
-  // Orbit's tip: two short sentences (nine words or fewer each) that name what to look at.
+  // Orbit's tip: one or two short sentences (seven words or fewer each) that say what to DO. No questions: the tutor found
+  // "Which vowel letter makes that sound?" confusing (23 November).
   const TIPS = {
-    double:       { en: "Look where two beats meet. Is there a double letter there?", zh: "看两拍连接的地方。那里有双写字母吗？" },
-    vowel:        { en: "Say each beat slowly. Which vowel letter makes that sound?", zh: "慢慢读每一拍。哪个元音字母发这个音？" },
-    silent_e:     { en: "Look at the end of the word. Does it need a quiet e?", zh: "看单词的最后。它需要一个不发音的 e 吗？" },
-    ending:       { en: "Say the last beat clearly. Type every letter in it.", zh: "把最后一拍读清楚。把它的每个字母都打出来。" },
-    beat_missing: { en: "Clap the beats first. Type the word one beat at a time.", zh: "先拍出每一拍。一拍一拍地打这个单词。" },
-    m_before_pb:  { en: "Before p or b, write m. Your lips close for m, p and b.", zh: "在 p 或 b 前面写 m。发 m、p、b 时嘴唇要合上。" },
-    cluster:      { en: "Say each sound in the beat slowly. Every sound needs its own letter.", zh: "慢慢读出这一拍里的每个音。每个音都要有自己的字母。" },
-    order:        { en: "Look at the letters in order. Say each letter as you type.", zh: "按顺序看字母。边打边说每个字母。" },
-    apostrophe:   { en: "Look for the small mark, like in don't. Type that mark too.", zh: "注意那个小撇号，比如 don't。也要把它打出来。" },
-    other:        { en: "Look at each beat closely. Then cover it and type it.", zh: "仔细看每一拍。然后盖住它，再打出来。" }
+    double:       { en: "See the two same letters. Type both.", zh: "看两个一样的字母。两个都要打。" },
+    vowel:        { en: "Look at the orange letters. Type them carefully.", zh: "看橙色的字母。认真把它们打出来。" },
+    silent_e:     { en: "The last e is quiet. Type it too.", zh: "最后的 e 不发音。也要把它打出来。" },
+    ending:       { en: "Look at the last beat. Type every letter.", zh: "看最后一拍。每个字母都要打。" },
+    beat_missing: { en: "Clap each beat. Type every beat.", zh: "拍出每一拍。每一拍都要打。" },
+    m_before_pb:  { en: "Before p or b, write m.", zh: "在 p 或 b 前面写 m。" },
+    cluster:      { en: "Say each sound slowly. Type every sound.", zh: "慢慢读每个音。每个音都要打。" },
+    order:        { en: "Look at the letter order. Type slowly.", zh: "看字母的顺序。慢慢打。" },
+    apostrophe:   { en: "Look for the small mark. Type it too.", zh: "找到那个小撇号。也要把它打出来。" },
+    other:        { en: "Look at each beat. Then type it.", zh: "看每一拍。然后把它打出来。" }
   };
+
 
   const key = s => String(s == null ? "" : s).toLowerCase().replace(/[‘’`´]/g, "'").replace(/[^a-z']/g, "");
   const letters = s => key(s).replace(/'/g, "");
@@ -260,8 +262,8 @@
     chk("summary: double first with 3", s[0].code === "double" && s[0].count === 3 && s[0].examples.length === 3 && s[0].name_en === "Double letters");
     chk("summary: retry not counted, mixed first clue only", s.find(x => x.code === "vowel").count === 1 && s.find(x => x.code === "ending").count === 1);
     chk("summary: empty", summary([]).length === 0 && summary(null).length === 0);
-    // tips: two sentences, nine words or fewer each, Chinese present
-    CODES.forEach(c => { const t = tip(c), ss = t.en.split(/(?<=[.?!])\s+/); chk("tip " + c, ss.length === 2 && ss.every(x => x.split(/\s+/).length <= 9) && /[一-鿿]/.test(t.zh)); });
+    // tips: one or two sentences, seven words or fewer each, no question, Chinese present
+    CODES.forEach(c => { const t = tip(c), ss = t.en.split(/(?<=[.?!])\s+/); chk("tip " + c, ss.length >= 1 && ss.length <= 2 && ss.every(x => x.split(/\s+/).length <= 7) && t.en.indexOf("?") < 0 && /[一-鿿]/.test(t.zh)); });
     // wordsFor
     const bankWords = Object.keys(B).map(w => ({ word: w, chunks: B[w] }));
     const dbl = wordsFor("double", bankWords).map(w => w.word);

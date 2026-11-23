@@ -1261,6 +1261,38 @@ mark.lv-cmark.lv-cspace{display:inline-block;min-width:calc(var(--u)*11)}
 .sc-page .pg-foot .btn{padding:0 calc(var(--u)*15);gap:calc(var(--u)*8)}
 .sc-page .pg-foot{gap:calc(var(--u)*10)}
 
+/* ---- 83-pairs.css ---- */
+/* "Which word did you hear?" (src/js/83-pairs.js): the sound button, two big word buttons, one feedback line. Prefix pr-. */
+.pr-play{display:flex;flex-direction:column;align-items:center;gap:calc(var(--u)*16);margin:calc(var(--u)*16) 0 calc(var(--u)*2)}
+.pr-ear{display:flex;flex-direction:column;align-items:center;gap:calc(var(--u)*8)}
+.pr-ear .kind{margin:0}
+.pr-ear .sound[disabled]{cursor:default;opacity:.75}
+.pr-pick{display:flex;justify-content:center;gap:calc(var(--u)*56);margin:calc(var(--u)*4) 0 0}
+/* one word = one big paper button; the whole button is the tap target */
+.pr-word{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:calc(var(--u)*10);min-width:calc(var(--u)*236);min-height:calc(var(--u)*124);padding:calc(var(--u)*10) calc(var(--u)*34) calc(var(--u)*14);
+  border:calc(var(--u)*1.6) solid var(--ink);border-radius:calc(var(--u)*12);background:linear-gradient(180deg,#fffaf0,#f8eed8);box-shadow:0 calc(var(--u)*4) 0 rgba(44,31,23,.85),0 calc(var(--u)*6) calc(var(--u)*14) rgba(90,60,30,.18);
+  font-family:var(--f-body);font-size:calc(var(--u)*60);font-weight:600;line-height:1;letter-spacing:.02em;color:var(--ink);cursor:pointer;
+  transition:transform .08s,box-shadow .08s,background .2s,border-color .2s,opacity .2s}
+.pr-word::after{content:"";position:absolute;inset:calc(var(--u)*5);border:calc(var(--u)*1) solid var(--ink);border-radius:calc(var(--u)*8);opacity:.25;pointer-events:none}
+.pr-word:hover{transform:translateY(calc(var(--u)*-2))}
+.pr-word:active{transform:translateY(calc(var(--u)*3));box-shadow:0 calc(var(--u)*1) 0 rgba(44,31,23,.85)}
+.pr-word:focus-visible{outline:calc(var(--u)*2.5) solid var(--glow);outline-offset:calc(var(--u)*4)}
+.pr-word .ic{font-size:calc(var(--u)*40);stroke-width:2.8;color:var(--leaf)}
+/* while a word is being said the buttons wait (a tap does nothing) */
+.pr-hush .pr-word{cursor:default;opacity:.62;transform:none}
+/* "Listen to both": the button whose word is being said lights up */
+.pr-hush .pr-word.pr-lit,.pr-word.pr-lit{opacity:1;border-color:var(--ember-lo);background:linear-gradient(180deg,#fff1dc,#ffd9ad);box-shadow:0 calc(var(--u)*4) 0 var(--ember-lo),0 0 calc(var(--u)*26) rgba(255,140,50,.55);transform:translateY(calc(var(--u)*-3))}
+/* right: green edge and a tick; the second miss: the word it was, outlined in green */
+.pr-word.pr-right{border-color:var(--leaf);box-shadow:0 calc(var(--u)*4) 0 var(--leaf);background:linear-gradient(180deg,#f6fbef,#e3f0d6)}
+.pr-word.pr-show{border:calc(var(--u)*2.6) solid var(--leaf);box-shadow:0 calc(var(--u)*4) 0 var(--leaf);opacity:1}
+.pr-fb{justify-content:center;min-height:calc(var(--u)*30);margin:calc(var(--u)*2) 0 0;font-size:calc(var(--u)*19)}
+.pr-fb .ic{font-size:calc(var(--u)*22)}
+.pr-end .pg-title{margin-top:calc(var(--u)*10)}
+.pr-end .pg-foot{margin-top:calc(var(--u)*18)}
+/* tap targets of at least 44 px on a small screen (calc(var(--u)*1) is 0.8 px at 1024 x 640) */
+.pr-head #pauseBtn{min-height:calc(var(--u)*56);margin:calc(var(--u)*-16) 0;padding:0 calc(var(--u)*4)}
+.pr-end #prGo{min-height:calc(var(--u)*58);padding:0 calc(var(--u)*30)}
+
 /* ---- 84-training.css ---- */
 /* Orbit's training: the tip page. The word pages use the level's own classes. Owner: patterns team. */
 /* the tip: a pinned note with Orbit's face where the kit puts the icon */

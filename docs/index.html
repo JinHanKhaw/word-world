@@ -4,24 +4,25 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Word World</title>
-<link rel="stylesheet" href="fonts.css?v=202611231359">
-<link rel="stylesheet" href="ui.css?v=202611231359">
+<link rel="stylesheet" href="fonts.css?v=202611231457">
+<link rel="stylesheet" href="ui.css?v=202611231457">
 <!-- Backend. On claude.ai these two files stand in for the database (progress stays in this browser).
      On the real site, load supabase-js and config.js here instead. -->
-<script src="bank.js?v=202611231359"></script>
-<script src="probes.js?v=202611231359"></script>
-<script src="rude.js?v=202611231359"></script>
-<script src="vendor/supabase.js?v=202611231359"></script>
-<script src="config.js?v=202611231359"></script>
-<script src="common.js?v=202611231359"></script>
-<script src="zh.js?v=202611231359"></script>
-<script src="audio.js?v=202611231359"></script>
-<script src="patterns.js?v=202611231359"></script>
-<script src="pool.js?v=202611231359"></script>
-<script src="picker.js?v=202611231359"></script>
-<script src="img/words/pics.js?v=202611231359"></script>
-<script src="img/school/pics.js?v=202611231359"></script>
-<script src="story.js?v=202611231359"></script>
+<script src="bank.js?v=202611231457"></script>
+<script src="probes.js?v=202611231457"></script>
+<script src="rude.js?v=202611231457"></script>
+<script src="vendor/supabase.js?v=202611231457"></script>
+<script src="config.js?v=202611231457"></script>
+<script src="common.js?v=202611231457"></script>
+<script src="zh.js?v=202611231457"></script>
+<script src="audio.js?v=202611231457"></script>
+<script src="patterns.js?v=202611231457"></script>
+<script src="pool.js?v=202611231457"></script>
+<script src="picker.js?v=202611231457"></script>
+<script src="img/words/pics.js?v=202611231457"></script>
+<script src="img/school/pics.js?v=202611231457"></script>
+<script src="story.js?v=202611231457"></script>
+<script src="pairs.js?v=202611231457"></script>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -129,17 +130,17 @@
   <div id="full" class="modal full" hidden><div class="journal"><div class="cover"></div><article class="page paper modal-card"><button type="button" class="pgclose" id="fullClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button><div id="fullBody"></div></article></div></div>
 </div>
 
-<script src="vendor/three.min.js?v=202611231359"></script>
-<script src="vendor/GLTFLoader.js?v=202611231359"></script>
-<script src="models/hero.js?v=202611231359"></script>
-<script src="models/heroidle.js?v=202611231359"></script>
-<script src="models/tower.js?v=202611231359"></script>
-<script src="models/pod.js?v=202611231359"></script>
-<script src="models/tree.js?v=202611231359"></script>
-<script src="models/watchfire.js?v=202611231359"></script><!-- night watch (raid team): the watch-fire he owns -->
-<script src="world3d.js?v=202611231359"></script>
-<script src="orbit3d.js?v=202611231359"></script>
-<script src="raid3d.js?v=202611231359"></script><!-- night watch (raid team): the island test as a watch at the gate -->
+<script src="vendor/three.min.js?v=202611231457"></script>
+<script src="vendor/GLTFLoader.js?v=202611231457"></script>
+<script src="models/hero.js?v=202611231457"></script>
+<script src="models/heroidle.js?v=202611231457"></script>
+<script src="models/tower.js?v=202611231457"></script>
+<script src="models/pod.js?v=202611231457"></script>
+<script src="models/tree.js?v=202611231457"></script>
+<script src="models/watchfire.js?v=202611231457"></script><!-- night watch (raid team): the watch-fire he owns -->
+<script src="world3d.js?v=202611231457"></script>
+<script src="orbit3d.js?v=202611231457"></script>
+<script src="raid3d.js?v=202611231457"></script><!-- night watch (raid team): the island test as a watch at the gate -->
 <script>
 (function () {
   const W = window.WT, $ = id => document.getElementById(id);
@@ -182,8 +183,22 @@
     if (w.error || s.error || qs.error) { banner("Could not load your words. Check the internet and reload."); return false; }
     words = w.data || []; sessions = s.data || []; quests = qs.data || []; messages = m.data || [];
     todaySession = sessions.find(x => x.day === t) || null;
+    freshStart();
     await fromOldLadder();
     return true;
+  }
+  // A record that starts from nothing (the tutor wiped a test play, or a new child on a used laptop): what an earlier
+  // player left on this device about levels, cards and games must not carry over. Settings of the device itself stay
+  // (sound, the 中文 switch, the microphone that worked, Orbit's memory of which lines he has said).
+  const FRESH_KEYS = ["ww.rounds.", "ww.mix.", "ww.probes.", "ww.watch.", "ww.game.", "wt.card.", "ww.sleep.warned.", "ww.pairs.", "ww.quick."];
+  function freshStart() {
+    if (sessions.length || quests.length || words.some(w => w.level > 0 || w.last_seen || w.introduced_on)) return false;
+    try {
+      const gone = [];
+      for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && FRESH_KEYS.some(p => k.indexOf(p) === 0)) gone.push(k); }
+      gone.forEach(k => localStorage.removeItem(k));
+      return gone.length > 0;
+    } catch (e) { return false; }
   }
   // An old save from the five-step ladder (1, 3, 7, 14, 30 days): words on step 4 or 5 move once to the new ladder
   // (W.fromOldLadder in common.js says how). A saved due date is kept or cleared, never moved earlier.
@@ -317,10 +332,10 @@
   // A second example sentence, for a word with two meanings.
   const SENT2 = { company: { en: "My friend keeps me company.", zh: "我的朋友陪着我。" } };
 
-  // Orbit, the guide. Any part may call Guide.say("key"), Guide.text(en, zh), Guide.step(stepName), Guide.right(word, how),
+  // Orbit, the guide. Any part may call Guide.say("key"), Guide.text(en, zh), Guide.show(en, zh) (shown, not said), Guide.step(stepName), Guide.right(word, how),
   // Guide.wrong(word, tries), Guide.quiet(). 07-guide.js supplies the behaviour; until it has loaded, the calls do nothing.
   const Guide = { impl: null };
-  ["say", "text", "step", "right", "wrong", "quiet", "day", "levelEnd"].forEach(k => { Guide[k] = function () { return Guide.impl && Guide.impl[k] ? Guide.impl[k].apply(Guide.impl, arguments) : undefined; }; });
+  ["say", "text", "show", "step", "right", "wrong", "quiet", "day", "levelEnd"].forEach(k => { Guide[k] = function () { return Guide.impl && Guide.impl[k] ? Guide.impl[k].apply(Guide.impl, arguments) : undefined; }; });
 
   // ============ Orbit, the guide drone (owner: guide team) ============
   // One short spoken line when there is something to do, then quiet. The bubble always shows the line;
@@ -898,6 +913,8 @@
       return gdShow(L, true);
     },
     text(en, zh) { return gdShow({ key: "", en: String(en || ""), zh: zh ? String(zh) : "" }, true); },
+    // shown in the bubble, not said: for a page whose own text is being read aloud (the sentence he copies)
+    show(en, zh) { return gdShow({ key: "", en: String(en || ""), zh: zh ? String(zh) : "" }, false); },
     step(name, vars) {
       const L = gdLineOf(name, vars); if (!L) return false;
       const m = gdLoad(); m.steps = m.steps || {}; const n = m.steps[name] || 0;
@@ -2196,7 +2213,7 @@
         if (vs.length) {
           // the device's voice, the careful way (W.devSay in common.js: the tutor's voice and speed, a retry, a record)
           W.devSay([{ text, rate: 0.9 }], { onend: ok => { if (ok) next(); else if (run === storyRun) storyStopReading(); } });
-        } else if (storyTts) storyTts.speak(text).then(next, next);
+        } else if (storyTts) (W.read ? W.read(text, { rate: 0.9 }) : storyTts.speak(text)).then(next, next);
         else storyStopReading();
       } catch (e) { storyStopReading(); }
     };
@@ -2801,10 +2818,19 @@
     if (type === "extra") return [weak.length ? weak[(w.wrong_streak || 0) % weak.length] : pool[w.level % pool.length]]; // ONE extra game when an old word was not right (his weak kinds take turns)
     return ["listen"];
   }
-  function zoneTestWords(day) { // the island's words he has met, weakest first, not the ones already in today's old words
+  // The island test's words (ten at most): up to three words he "knows well" from before this island (star words of earlier
+  // islands, or learned outside a level: the quick check), the longest unseen first; then this island's words he has met,
+  // weakest first. Never a word that is already in today's old words. (The tutor, 23 November: words he knows well must
+  // come back later; a miss in the test puts such a word back into daily practice, as for any star word.)
+  const TEST_OLD = 3;
+  function zoneTestWords(day) {
     const zi = zoneOf(day), due = new Set(dueReviews().map(w => w.id)), t = today();
-    return words.filter(w => w.level > 0 && w.quest_day && zoneOf(w.quest_day) === zi && !due.has(w.id) && w.last_seen !== t)
-      .sort((a, b) => a.level !== b.level ? a.level - b.level : (b.wrong_streak || 0) - (a.wrong_streak || 0)).slice(0, 10);
+    const free = w => w.level > 0 && !due.has(w.id) && w.last_seen !== t;
+    const older = words.filter(w => free(w) && w.level >= W.DIAMOND && (!w.quest_day || zoneOf(w.quest_day) < zi))
+      .sort((a, b) => String(a.last_seen || "") < String(b.last_seen || "") ? -1 : String(a.last_seen || "") > String(b.last_seen || "") ? 1 : 0).slice(0, TEST_OLD);
+    const here = words.filter(w => free(w) && w.quest_day && zoneOf(w.quest_day) === zi)
+      .sort((a, b) => a.level !== b.level ? a.level - b.level : (b.wrong_streak || 0) - (a.wrong_streak || 0)).slice(0, 10 - older.length);
+    return here.concat(older);
   }
   // Up to two older words for the mixed round: on the ladder, from this island (earlier islands if none), not due today,
   // not seen today, not in today's other parts; weakest first.
@@ -3387,7 +3413,7 @@
     try {
       const vs = "speechSynthesis" in window ? speechSynthesis.getVoices() : [];
       if (vs.length) { W.devSay([{ text, rate: 0.85 }], { onend: end }); return true; }
-      if (lvTts && lvTts.speak) { const p = lvTts.speak(text); if (p && p.then) p.then(end, end); return true; }
+      if (lvTts && lvTts.speak) { const p = W.read ? W.read(text) : lvTts.speak(text); if (p && p.then) p.then(end, end); return true; }
     } catch (e) {}
     end(); return false;
   }
@@ -3470,6 +3496,7 @@
       if (q !== qq) return;
       W.sfx("right"); tl.copy = { misses: 0 }; renderCopy(w, s);
     }
+    if (!tl.got && !tl.said) { tl.said = true; sayLine(s); }   // he hears the whole sentence once, then puts its words in order
     Guide.step("sentence");
   }
   // After the tiles: the sentence stays on the page; he types it. Only "Skip" leaves without it (logged).
@@ -3482,6 +3509,10 @@
       '<button type="submit" class="btn primary" id="check">Check</button></form><p class="fb" id="fb" aria-live="polite"></p>' +
       '<footer class="pg-foot"><span class="grow"></span><button type="button" class="btn quiet" id="skip">Skip</button></footer>');
     $("lvSay").onclick = () => { sayLine(s); $("copy").focus(); };
+    // He has to type it (the tutor, 23 November): nothing can be pasted or dropped into the line, and the sentence above
+    // cannot be selected or copied.
+    ["paste", "drop"].forEach(ev => $("copy").addEventListener(ev, e => { e.preventDefault(); $("fb").className = "fb"; $("fb").textContent = "Type it, letter by letter."; }));
+    ["copy", "cut", "contextmenu", "selectstart", "dragstart"].forEach(ev => $("tlBuilt").addEventListener(ev, e => e.preventDefault()));
     $("copy").oninput = () => { if (!$("ansLine").classList.contains("bad")) return; $("ansLine").classList.remove("bad"); $("fb").className = "fb"; $("fb").textContent = ""; $("tlBuilt").innerHTML = copyHtml(s, -1); };
     $("cf").onsubmit = e => {
       e.preventDefault(); const inp = $("copy"); if (cp.done || inp.readOnly || !copyNorm(inp.value)) return;
@@ -3497,8 +3528,10 @@
       W.sfx("right"); logEvent("sentence_copied", { word: k, misses: cp.misses }); later(nextStep, 1000);
     };
     $("skip").onclick = () => { if (cp.done) return; logEvent("sentence_skipped", { word: k, at: "copy", misses: cp.misses }); nextStep(); };
+    // The sentence itself is read aloud when the page opens. Orbit's "Copy the sentence." is shown, not said: the tutor heard
+    // only his line (23 November), because it took the voice before the sentence had started.
     sayLine(s); $("copy").focus();
-    Guide.text("Copy the sentence.", "把这个句子抄一遍。");
+    Guide.show("Copy the sentence.", "把这个句子抄一遍。");
   }
 
   // ---- one new-rule word at the end of a level: a word he was never taught that follows the island's rule ----
@@ -4298,6 +4331,270 @@
     [/^Word (\d+) of (\d+)$/, "第 $1 个词，共 $2 个"], [/^(\d+) of (\d+) right$/, "对了 $1 个，共 $2 个"], [/^(\d+) of (\d+)$/, "$1 / $2"],
     [/^Practice dictation: (\d+) of (\d+)\.$/, "听写练习：$1 / $2。"],
     [/^Yes! You spelled (\S+) without looking\.$/, "对了！你没有看就拼出了 $1。"]
+  ]);
+  // ============ "Which word did you hear?" (owner: pairs helper, prefix pr-) ============
+  // A short listening game inside the level: two words that differ only in the vowel (bed / bid). He hears ONE of them and
+  // taps the one he heard. Not yet: both words are said in one voice (A, a pause, B), each button lighting while its word
+  // is said, then a freshly chosen word from the same pair is asked; a second miss shows which one it was and moves on.
+  // 3 pairs a day, under a minute, no diamonds. The words are said with up to three of the device's own English voices in
+  // turn (learning a sound from one speaker alone does not carry over well to other speakers).
+  // The level calls (another helper wires it, after the quick check, before the two main words):
+  //   if (typeof pairsStep === "function" && pairsReady()) pairsStep(next); else next();
+  // Data: site/pairs.js (window.WW_PAIR_LIST, window.WW_PAIR_CONTRASTS, window.WW_PAIRS_STATS for the tutor's page).
+  // Events: "pair" { a, b, contrast, target, chosen, right, try, voice } for every answer, "pairs_done" { right, of }.
+  const PR_PER_DAY = 3, PR_RATE = 0.8, PR_DAYS = 30, PR_FRESH = 7;
+  const PR_READER = ["buttery", "airy", "glassy"];   // three of the claude.ai reader's voices (the names site/common.js uses)
+  const PR_GAP = 600;                                // the pause between word A and word B
+  let prEv = null, prLoading = null, prDone = "", prRun = 0;
+
+  const prList = () => (window.WW_PAIR_LIST || []).filter(p => Array.isArray(p) && p[0] && p[1] && p[2]);
+  function prContrasts(list) {
+    const out = (window.WW_PAIR_CONTRASTS || []).map(c => c[0]);
+    (list || prList()).forEach(p => { if (out.indexOf(p[2]) < 0) out.push(p[2]); });
+    return out;
+  }
+  const prDay = e => { try { return e && e.created_at ? W.dkey(new Date(e.created_at)) : ""; } catch (x) { return ""; } };
+  const prPairKey = (a, b) => String(a).toLowerCase() + "/" + String(b).toLowerCase();
+  const prFlag = () => "ww.pairs." + (student ? student.id : "") + "." + today();
+  // A small random stream with a seed: the same student and day give the same pairs, targets and sides after a reload.
+  function prRand(seed) {
+    let h = 2166136261;
+    for (let i = 0; i < seed.length; i++) h = Math.imul(h ^ seed.charCodeAt(i), 16777619);
+    return () => { h = (h + 0x6D2B79F5) | 0; let t = h; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  }
+
+  // ---- which pairs today (pure: events, student id, day) ----
+  // Only events from before today count, so a reload in the middle of today's game gives the same three pairs.
+  // Per contrast, the share right on the first try in the last 30 days; the main contrast is the one with the lowest share
+  // (no answers yet: the first one, "e-i"). It gives 2 pairs; 1 more comes from another contrast: the one played least
+  // recently (never played first, in list order). Inside a contrast the pairs go in list order, on from the last one
+  // played; a pair right on the first try at both of its last two plays within 7 days waits (unless every pair waits).
+  function pairsChoose(events, sid, day, list) {
+    list = list || prList();
+    const from = W.addDays(day, -PR_DAYS), fresh = W.addDays(day, -PR_FRESH);
+    const firsts = (events || []).filter(e => e && e.type === "pair" && e.detail && +e.detail.try === 1)
+      .map(e => ({ d: e.detail, day: prDay(e), at: String(e.created_at || "") }))
+      .filter(e => e.day && e.day >= from && e.day < day)
+      .sort((x, y) => (x.at < y.at ? -1 : x.at > y.at ? 1 : 0));
+    const order = prContrasts(list).filter(c => list.some(p => p[2] === c));
+    if (!order.length) return [];
+    const st = {}; order.forEach((c, i) => { st[c] = { c, i, right: 0, of: 0, last: "" }; });
+    firsts.forEach(e => { const s = st[e.d.contrast]; if (!s) return; s.of++; if (e.d.right) s.right++; s.last = e.at; });
+    const played = order.filter(c => st[c].of > 0);
+    const main = played.length ? played.slice().sort((x, y) => st[x].right / st[x].of - st[y].right / st[y].of || st[x].i - st[y].i)[0] : order[0];
+    const others = order.filter(c => c !== main).sort((x, y) => (st[x].last < st[y].last ? -1 : st[x].last > st[y].last ? 1 : st[x].i - st[y].i));
+    const taken = new Set();
+    function pick(c, n) {
+      const pairs = list.filter(p => p[2] === c), out = [];
+      if (!pairs.length) return out;
+      const mine = firsts.filter(e => e.d.contrast === c);
+      let start = 0;
+      if (mine.length) { const l = mine[mine.length - 1].d, at = pairs.findIndex(p => prPairKey(p[0], p[1]) === prPairKey(l.a, l.b)); if (at >= 0) start = at + 1; }
+      const waits = p => {
+        const plays = mine.filter(e => prPairKey(e.d.a, e.d.b) === prPairKey(p[0], p[1])).slice(-2);
+        return plays.length === 2 && plays.every(e => e.d.right && e.day >= fresh);
+      };
+      for (const pass of [0, 1]) for (let k = 0; k < pairs.length && out.length < n; k++) {
+        const p = pairs[(start + k) % pairs.length], key = prPairKey(p[0], p[1]) + "|" + c;
+        if (taken.has(key) || (pass === 0 && waits(p))) continue;
+        taken.add(key); out.push(p);
+      }
+      return out;
+    }
+    const a = pick(main, 2);
+    let b = [];
+    for (const c of others) { b = pick(c, 1); if (b.length) break; }
+    const got = [a[0], b[0], a[1]].filter(Boolean);
+    if (got.length < PR_PER_DAY) got.push(...pick(main, PR_PER_DAY - got.length));
+    const rnd = prRand(String(sid) + "|" + day + "|pairs");
+    return got.slice(0, PR_PER_DAY).map(p => {
+      const flip = rnd() < 0.5;
+      return { a: p[0], b: p[1], c: p[2], left: flip ? p[1] : p[0], right: flip ? p[0] : p[1], targets: [rnd() < 0.5 ? p[0] : p[1], rnd() < 0.5 ? p[0] : p[1]] };
+    });
+  }
+  // For the tutor's page (later): per contrast, first tries of the last 14 days (site/pairs.js, also loadable there).
+  function pairsStats(events, now) { return typeof window.WW_PAIRS_STATS === "function" ? window.WW_PAIRS_STATS(events, now) : []; }
+
+  // ---- can it run now ----
+  function prCanSpeak() {
+    try { return !!(W.hasReader && W.hasReader()) || !!(W.devOk && W.devOk() && W.voiceList().length > 0); } catch (e) { return false; }
+  }
+  // The voices to take turns with: on claude.ai's reader three of its voices; on the device up to three of its own normal
+  // English voices (W.voiceRank below 20: not a network voice, not a joke voice); just one when the device has one.
+  function prVoices() {
+    if (W.hasReader && W.hasReader()) return [0, 1, 2];
+    const out = [];
+    try { W.voiceList().forEach((v, i) => { if (out.length < 3 && W.voiceRank(v) < 20) out.push(i); }); } catch (e) {}
+    return out.length ? out : [0];
+  }
+  function prLoad() {
+    if (!student) return Promise.resolve(null);
+    if (prLoading) return prLoading;
+    const since = new Date(Date.now() - (PR_DAYS + 1) * 864e5).toISOString(), sid = student.id;
+    prLoading = (async () => {
+      try {
+        const r = await sb.from("events").select("*").eq("student_id", sid).in("type", ["pair", "pairs_done"]).gte("created_at", since);
+        if (r.error) return null;
+        if (student && student.id === sid) prEv = r.data || [];
+        return r.data || [];
+      } catch (e) { return null; } finally { prLoading = null; }
+    })();
+    return prLoading;
+  }
+  function prPlayedToday() {
+    if (!student) return false;
+    if (prDone === student.id + "|" + today()) return true;
+    try { if (localStorage.getItem(prFlag()) === "1") return true; } catch (e) {}
+    return !!(prEv && prEv.some(e => e.type === "pairs_done" && prDay(e) === today()));
+  }
+  function pairsReady() {
+    try {
+      if (!student || !q || q.ended || practising() || (q.day && isTest(q.day))) return false;
+      if (student.pause_new === true) return false;
+      if (!prList().length || !prCanSpeak()) return false;
+      if (!prEv) prLoad();   // for the next time this is asked; pairsStep checks again itself
+      return !prPlayedToday();
+    } catch (e) { return false; }
+  }
+  // once he is known, today's answers are loaded, so pairsReady() knows about a game played on another device
+  (function prWatch(n) { if (prEv || n > 120) return; if (student && typeof sb !== "undefined") { prLoad(); return; } setTimeout(() => prWatch(n + 1), 1500); })(0);
+
+  // ---- speaking: one word at a time, nothing over it ----
+  // prSay(text, voice, onend, held): says one word slowly with that voice. The word counts as a word for Orbit
+  // (W.wordBegin / W.wordEnd), so his line waits until it is over; held: the caller holds one ticket for several words.
+  function prSay(text, n, onend, held) {
+    let fin = false, safety = 0;
+    const id = held ? 0 : W.wordBegin(1500 + 300 * String(text).length);
+    const end = () => { if (fin) return; fin = true; clearTimeout(safety); if (id) W.wordEnd(id); if (onend) onend(); };
+    safety = setTimeout(end, 9000);   // a voice that never says it is over: the game still goes on
+    try {
+      if (W.hasReader && W.hasReader()) W.read(text, { rate: PR_RATE * W.voice().rate, voice: PR_READER[n % PR_READER.length] }).then(end, end);
+      else if (W.devOk && W.devOk()) W.devSay([{ text, rate: PR_RATE }], { voice: n, onend: end });
+      else end();
+    } catch (e) { end(); }
+  }
+
+  // ---- the game ----
+  function prHead() {
+    let trail = "";
+    try { if (q && q.items && cur()) trail = lvTrail(cur()); } catch (e) {}
+    return '<header class="pg-head pr-head"><span class="eyebrow">' + (q && q.day ? "Level " + q.day + " · " : "") + "Listening</span>" + trail +
+      '<button type="button" class="btn quiet" id="pauseBtn">Stop here</button></header>';
+  }
+  function pairsStep(next) {
+    let called = false;
+    const go = () => { if (called) return; called = true; try { next(); } catch (e) { try { console.warn("pairs", e); } catch (x) {} } };
+    if (!student || !q || typeof next !== "function") return go();
+    const myQ = q, run = ++prRun;
+    prLoad().then(ev => {
+      if (q !== myQ || run !== prRun) return;   // he left the level while it loaded: the level is gone, nothing to go on to
+      if (ev && ev.some(e => e.type === "pairs_done" && prDay(e) === today())) { prDone = student.id + "|" + today(); return go(); }
+      const list = pairsChoose(ev || prEv || [], student.id, today());
+      if (!list.length) return go();
+      prPlay(list, myQ, run, go);
+    });
+  }
+  function prPlay(list, myQ, run, go) {
+    const voices = prVoices();
+    const g = { i: 0, right: 0, said: 0, busy: false };
+    const alive = () => q === myQ && run === prRun && !!$("prPick");
+    const later2 = (fn, ms) => setTimeout(() => { if (alive()) fn(); }, ms);
+    const btns = () => Array.from(qb.querySelectorAll(".pr-word"));
+    const fb = (cls, html) => { const f = $("prFb"); if (f) { f.className = "fb" + (cls ? " " + cls : ""); f.innerHTML = html; } };
+    const hush = on => { g.busy = on; const p = $("prPick"); if (p) p.classList.toggle("pr-hush", on); const h = $("prHear"); if (h) h.disabled = on; };
+    // the word he must hear now, in the next voice of the turn
+    function ask(it) {
+      it.slot = voices[g.said % voices.length]; g.said++;
+      sayTarget(it);
+    }
+    function sayTarget(it) {
+      hush(true);
+      prSay(it.target, it.slot, () => { if (alive()) hush(false); });
+    }
+    function page() {
+      const it = list[g.i];
+      it.tries = 0; it.target = it.targets[0];
+      qp(prHead() + title("Which word did you hear?", "<b>Listen.</b> <b>Tap</b> the word.") +
+        '<div class="pr-play"><div class="pr-ear">' + soundBtn("prHear", "Hear it again") + '<p class="kind pr-count">Pair ' + (g.i + 1) + " of " + list.length + "</p></div>" +
+        '<div class="pr-pick" id="prPick">' + [it.left, it.right].map(w => '<button type="button" class="pr-word nozh" data-w="' + W.esc(w) + '">' + W.esc(w) + "</button>").join("") + "</div>" +
+        '<p class="fb pr-fb" id="prFb" aria-live="polite"></p></div>');
+      $("pauseBtn").onclick = () => { prRun++; pauseQuest(); showPage("world"); };
+      $("prHear").onclick = () => { if (!g.busy && !it.over) sayTarget(it); };
+      btns().forEach(b => b.onclick = () => tap(it, b));
+      ask(it);
+      if (g.i === 0) Guide.text("Listen. Tap the word you hear.", "听一听。点你听到的词。");   // waits until the word is over
+    }
+    function tap(it, b) {
+      if (g.busy || it.over || !alive()) return;
+      const chosen = b.dataset.w, right = chosen === it.target;
+      it.tries++;
+      logEvent("pair", { a: it.a, b: it.b, contrast: it.c, target: it.target, chosen, right, try: it.tries, voice: it.slot });
+      if (right) {
+        it.over = true; if (it.tries === 1) g.right++;
+        b.classList.add("pr-right"); b.insertAdjacentHTML("afterbegin", ICON("check"));
+        W.sfx("right"); fb("good", ICON("check") + "Yes. That is " + W.esc(it.target) + ".");
+        hush(true); $("prPick").classList.remove("pr-hush");
+        return later2(nextPair, 1500);
+      }
+      W.sfx("notyet");
+      if (it.tries === 1) {
+        // both words in ONE voice (the voice the word was said in), each button lighting while its word is said
+        fb("bad", "Not yet. Listen to both."); hush(true); Guide.quiet();
+        const [bl, br] = btns(), v = it.slot, ticket = W.wordBegin(9000);
+        const lit = (el, on) => el && el.classList.toggle("pr-lit", on);
+        later2(() => {
+          lit(bl, true);
+          prSay(it.left, v, () => {
+            lit(bl, false); if (!alive()) return W.wordEnd(ticket);
+            setTimeout(() => {
+              if (!alive()) return W.wordEnd(ticket);
+              lit(br, true);
+              prSay(it.right, v, () => {
+                lit(br, false); W.wordEnd(ticket); if (!alive()) return;
+                later2(() => { it.target = it.targets[1]; fb("", "Listen again. Tap the word."); ask(it); }, 700);
+              }, true);
+            }, PR_GAP);
+          }, true);
+        }, 500);
+        return;
+      }
+      // the second miss: which one it was, said once more, then on
+      it.over = true; hush(true); $("prPick").classList.remove("pr-hush");
+      btns().forEach(x => x.classList.toggle("pr-show", x.dataset.w === it.target));
+      fb("", "It was " + W.esc(it.target) + ".");
+      later2(() => prSay(it.target, it.slot, () => later2(nextPair, 1200)), 400);
+    }
+    function nextPair() {
+      g.i++;
+      if (g.i < list.length) return page();
+      // the end: one calm line; a count only when it is not 0
+      const of = list.length, right = g.right;
+      logEvent("pairs_done", { right, of });
+      prDone = student.id + "|" + today();
+      try { localStorage.setItem(prFlag(), "1"); } catch (e) {}
+      qp(prHead() + '<div class="lv-center pr-end"><div class="stamp lv-ok"><span class="nozh">listening</span><b>' + ICON("check") + "</b><span>done</span></div>" +
+        '<h3 class="pg-title">Good listening.</h3>' + (right ? '<p class="do">You heard <b>' + right + " of " + of + "</b>.</p>" : "") +
+        '<footer class="pg-foot lv-mid"><button type="button" class="btn primary" id="prGo">Go on' + ICON("arrow") + "</button></footer></div>");
+      $("pauseBtn").onclick = () => { prRun++; pauseQuest(); showPage("world"); };
+      W.sfx("pop");
+      $("prGo").onclick = () => { if (q !== myQ) return; prRun++; go(); };
+      $("prGo").focus();
+      Guide.text("Good listening.", "听得很好。");
+    }
+    page();
+  }
+  window.WW_PAIRS_API = { ready: () => pairsReady(), step: next => pairsStep(next), stats: (ev, now) => pairsStats(ev, now), choose: (ev, sid, day) => pairsChoose(ev, sid, day), voices: () => prVoices() };
+
+  if (ZH) ZH.add({
+    "Which word did you hear?": "你听到的是哪个词？", "Listen. Tap the word.": "听一听。点你听到的词。",
+    "Listen. Tap the word you hear.": "听一听。点你听到的词。",
+    "Not yet. Listen to both.": "还没对。两个都听一听。", "Listen again. Tap the word.": "再听一次。点你听到的词。",
+    "Good listening.": "听得很好。"
+  }, [
+    [/^Level (\d+) · Listening$/, "第 $1 关 · 听一听"], [/^Listening$/, "听一听"],
+    [/^Pair (\d+) of (\d+)$/, "第 $1 组，共 $2 组"],
+    [/^Yes\. That is ([A-Za-z]+)\.$/, "对了。这是 $1。"], [/^It was ([A-Za-z]+)\.$/, "刚才说的是 $1。"],
+    [/^You heard (\d+) of (\d+)\.$/, "$2 个里你听对了 $1 个。"]
   ]);
 
   // ============ Orbit's training (owner: patterns team) ============

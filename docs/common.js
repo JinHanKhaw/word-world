@@ -77,6 +77,7 @@
   // then on the reader speaks, as if the device had no voice. (The real website has no reader: there the device voice is
   // tried again every time.)
   let devDead = false;
+  try { devDead = sessionStorage.getItem("ww.dev.dead") === "1"; } catch (e) {}   // found silent earlier in this visit: the reader speaks at once after a reload
   const noVoice = () => { try { return devDead || !("speechSynthesis" in window) || speechSynthesis.getVoices().length === 0; } catch (e) { return true; } };
   W.devDead = () => devDead;
   // The device voice the tutor chose (students.voice_name, students.voice_rate); the game sets W.voicePrefs after sign-in.
@@ -120,6 +121,9 @@
   //  - end events that never come: the utterances are kept until they end, and a timer ends the turn by itself.
   // What happened is told to W.onSpeech (the game logs it as a "speech" event): the first start with each voice in a
   // session, and every failure, so "the browser spoke" and "the browser never started" can be told apart afterwards.
+  // W.devSay(parts, { voice: n }): the n-th of the device's own English voices (W.voiceList; 0 is the usual one), for a game
+  // that wants several speakers. On claude.ai the reader has four voices of its own; n picks among them.
+  const READER_VOICES = ["buttery", "airy", "glassy", "rounded"];
   const DEV_START = 2500, DEV_QUIET = 1000;
   let devSeq = 0, devCur = null, devKeep = [], devFailNotes = 0, devSilent = 0;
   const devOkSeen = {};
@@ -134,7 +138,7 @@
   }
   // One more try that stayed silent. Two in a row, with the page reader at hand (claude.ai): the device voice counts as
   // silent from now on and the reader speaks (noVoice() above). Any start event sets the count back to none.
-  function devSilentUp() { if (++devSilent >= 2 && reader && reader.speak) devDead = true; }
+  function devSilentUp() { if (++devSilent >= 2 && reader && reader.speak) { devDead = true; try { sessionStorage.setItem("ww.dev.dead", "1"); } catch (e) {} } }
   W.devStop = function () {
     devSeq++; const c = devCur; devCur = null;
     try { if ("speechSynthesis" in window) speechSynthesis.cancel(); } catch (e) {}
@@ -156,7 +160,7 @@
     const readIt = () => {
       devCur = me; me.byReader = true; me.quiet = null;
       try { if (o.onstart) o.onstart(); } catch (e) {}
-      W.read(list.map(p => String(p.text)).join(list.length > 1 ? ". " : ""), { rate: (list[0].rate || o.rate || 1) * f }).then(ok => { if (mine === devSeq) end(!!ok); });
+      W.read(list.map(p => W.readerText(String(p.text))).join(list.length > 1 ? ". " : ""), { rate: (list[0].rate || o.rate || 1) * f, voice: READER_VOICES[(o.voice || 0) % READER_VOICES.length] }).then(ok => { if (mine === devSeq) end(!!ok); });
     };
     if (devDead && reader && reader.speak) { try { if ("speechSynthesis" in window) speechSynthesis.cancel(); } catch (e) {} readIt(); return stop; }
     if (!W.devOk()) { end(false); return () => {}; }
@@ -166,7 +170,7 @@
     const run = n => {
       if (mine !== devSeq || done) return;
       try { if (s.paused) s.resume(); } catch (e) {}
-      const c = W.voice(n), name = (c.voice && c.voice.name) || "", t0 = Date.now();
+      const c = W.voice((o.voice || 0) + n), name = (c.voice && c.voice.name) || "", t0 = Date.now();
       let started = false, total = 0;
       cur = n;
       me.quiet = () => !started && cur === n && Date.now() - t0 >= DEV_QUIET;
@@ -176,7 +180,7 @@
         try { s.cancel(); } catch (e) {}
         if (why !== "not-allowed") devSilentUp();
         const toReader = devDead && why !== "not-allowed" && !!(reader && reader.speak);
-        const next = !toReader && n === 0 && why !== "not-allowed" ? W.voice(1).voice : null;
+        const next = !toReader && n === 0 && why !== "not-allowed" ? W.voice((o.voice || 0) + 1).voice : null;
         devNote(Object.assign({ ok: false, why, voice: name, local: c.local, tried: n + 1, again: !!next, ms: Date.now() - t0 }, toReader ? { reader: true } : {}, state()));
         if (toReader) return readIt();
         if (next) setTimeout(() => run(1), 150); else end(false);
@@ -257,7 +261,10 @@
       const go = () => {
         if (mine !== readSeq) return res(false);
         let p;
-        try { p = rate ? reader.speak(String(text), { rate }) : reader.speak(String(text)); } catch (e) { return res(false); }
+        // language "en": without it the reader guesses the language of each short text, and a word part such as "ing" was
+        // spelled out letter by letter (the tutor, 23 November)
+        const opt = { language: "en" }; if (rate) opt.rate = rate; if (o && o.voice && o.voice !== READER_VOICES[0]) opt.voice = o.voice;
+        try { p = reader.speak(String(text), opt); } catch (e) { return res(false); }
         if (!p || !p.then) return res(true);
         p.then(() => res(true), e => {
           if (e && e.code === "busy" && n < 8 && mine === readSeq) { n++; if (n === 1 || n === 5) micOff(); setTimeout(go, 400); }
@@ -268,6 +275,10 @@
     });
   };
   W.readStop = function () { readSeq++; try { if (reader && reader.stop) reader.stop(); } catch (e) {} };
+  // A word ending said by itself (a beat he taps): the page reader spelled "ing" out as letters (the tutor, 23 November). Written
+  // the way a book writes an ending, "-ing", a reader says it as a sound. Only on the reader path; a device voice says "ing".
+  const READER_PART = {}; "ing ed er est ly tion sion ture ment ness ful less ous".split(" ").forEach(x => { READER_PART[x] = "-" + x; });
+  W.readerText = t => READER_PART[t] || t;
   // o.slow: for words he has no picture or sentence for (the school list): clearly slower, not dragged out.
   W.speak = function (word, o) {
     const slow = !!(o && o.slow);
@@ -275,7 +286,7 @@
       const f = W.voice().rate, text = W.key(word);
       if (reader && noVoice()) {
         const id = W.wordBegin(9000);
-        W.read(text, { rate: (slow ? 0.75 : 0.88) * f }).then(() => W.wordEnd(id));
+        W.read(W.readerText(text), { rate: (slow ? 0.75 : 0.88) * f }).then(() => W.wordEnd(id));
         return true;
       }
       if (!("speechSynthesis" in window)) return false;
@@ -291,7 +302,7 @@
       const f = W.voice().rate, parts = W.cleanChunks(chunks).split("-").filter(Boolean);
       if (reader && noVoice()) {
         const id = W.wordBegin(12000);
-        W.read(parts.join(". ") + ".", { rate: f }).then(() => W.wordEnd(id));
+        W.read(parts.map((x, i) => (i > 0 && i === parts.length - 1 ? W.readerText(x) : x)).join(". ") + ".", { rate: f }).then(() => W.wordEnd(id));
         return true;
       }
       if (!("speechSynthesis" in window)) return false;
