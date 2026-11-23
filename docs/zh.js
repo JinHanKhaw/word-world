@@ -158,7 +158,7 @@
   }
   let on = false, scheduled = false;
   function apply(root) {
-    if (!root) return;
+    if (!root || !on) return;   // switched off: nothing is added (a refresh queued just before the switch must not bring the lines back)
     root.querySelectorAll(SEL).forEach(el => {
       if (el.matches(SKIP) || el.closest(".zhx, .chat, .opts, .compare")) return;
       const old = el.querySelector(":scope > .zhx"), en = keyOf(el);
@@ -173,10 +173,12 @@
     on = !!v; try { localStorage.setItem("wt.zh", on ? "1" : "0"); } catch (e) {}
     document.documentElement.classList.toggle("zh-on", on);
     on ? apply(root || document.body) : clear();
+    if (!on) setTimeout(() => { if (!on) clear(); }, 60);   // and once more, for a line that was being drawn at that moment
+    try { document.dispatchEvent(new CustomEvent("ww-zh", { detail: { on } })); } catch (e) {}   // Orbit's bubble follows the switch at once
   }
   function init(root) {
     let saved = false; try { saved = localStorage.getItem("wt.zh") === "1"; } catch (e) {}
-    new MutationObserver(() => { if (!on || scheduled) return; scheduled = true; setTimeout(() => { scheduled = false; apply(root || document.body); }, 0); })
+    new MutationObserver(() => { if (!on || scheduled) return; scheduled = true; setTimeout(() => { scheduled = false; if (on) apply(root || document.body); }, 0); })
       .observe(root || document.body, { childList: true, subtree: true, characterData: true });
     set(saved, root);
   }

@@ -369,6 +369,7 @@ html.zh-on .ml-btns .gbtn .zhx{display:inline;margin:0;font-size:calc(var(--u)*1
 .ml-voice{margin-top:calc(var(--u)*12)}
 .ml-sayrow{display:flex;align-items:center;gap:calc(var(--u)*16)}
 .ml-mic.live{border-color:var(--ember);color:var(--ember-lo);box-shadow:0 calc(var(--u)*3) 0 #8e380c,0 0 0 calc(var(--u)*5) rgba(232,105,30,.22)}
+.ml-mic.live.hears{border-color:var(--leaf);color:var(--leaf);box-shadow:0 calc(var(--u)*3) 0 #2c5a29,0 0 0 calc(var(--u)*5) rgba(63,125,58,.24)}
 .ml-mic.live::before{content:"";position:absolute;right:calc(var(--u)*6);top:calc(var(--u)*6);width:calc(var(--u)*11);height:calc(var(--u)*11);border-radius:50%;background:var(--rose);box-shadow:0 0 calc(var(--u)*8) var(--rose);animation:mlblink 1s ease-in-out infinite}
 @keyframes mlblink{50%{opacity:.35}}
 .ml-saytext{flex:1;min-width:0}
@@ -1039,6 +1040,8 @@ body.b3-on #worldwrap{display:none}
 .clue .zh{font-size:calc(var(--u)*16)}
 /* the sentence to copy: one line of text (not flex items), the first place that differs marked in the game's ember */
 .lv-sline.lv-cmodel{display:block;text-align:center}
+/* the sentence in Chinese, under the English one */
+.lv-szh{text-align:center;font-size:calc(var(--u)*18);color:var(--ink-2);margin:calc(var(--u)*2) 0 calc(var(--u)*10)}
 mark.lv-cmark{background:rgba(232,105,30,.18);color:var(--ember-lo);border-radius:calc(var(--u)*3);box-shadow:inset 0 calc(var(--u)*-2.6) 0 var(--ember);padding:0 calc(var(--u)*1)}
 mark.lv-cmark.lv-cspace{display:inline-block;min-width:calc(var(--u)*11)}
 .line.lv-long input{font-size:calc(var(--u)*22);letter-spacing:.01em;height:calc(var(--u)*46)}

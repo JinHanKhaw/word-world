@@ -78,16 +78,111 @@
   // W.voice() -> { voice, rate }: the chosen voice when this device has it, else a British voice, else any English one (or
   // null); rate is a factor on the rates used today (0.85 for "slower"). W.utter(text, rate) makes an utterance with both.
   W.voicePrefs = { name: "", rate: "normal" };
-  W.voice = function () {
+  // Which voice. Only voices that live on the device are wanted: a network voice ("Google UK English ...") sends the text
+  // it speaks to its maker's server and is known to jam the browser's speech queue. Order: British first, then the other
+  // English ones; the joke voices and the robot-like ones of macOS last among the local voices; network voices only when
+  // the device has no English voice of its own (then W.voice().local is false and Orbit's lines, which can hold his name,
+  // are not spoken with it: 07-guide.js).
+  const ODD_VOICE = /^(Albert|Bad News|Bahh|Bells|Boing|Bubbles|Cellos|Good News|Jester|Organ|Superstar|Trinoids|Whisper|Wobble|Zarvox|Fred|Junior|Kathy|Ralph|Eddy|Flo|Grandma|Grandpa|Reed|Rocko|Sandy|Shelley)\b/i;
+  W.voiceLocal = v => !!v && v.localService !== false && v.local !== false;
+  W.voiceRank = v => (W.voiceLocal(v) ? 0 : 100) + (ODD_VOICE.test((v && v.name) || "") ? 20 : 0) +
+    (/^en[-_]GB/i.test((v && v.lang) || "") ? 0 : /^en[-_](AU|IE|NZ|ZA)/i.test((v && v.lang) || "") ? 3 : /^en[-_]US/i.test((v && v.lang) || "") ? 5 : 7);
+  W.voiceList = function () {
     let vs = []; try { vs = ("speechSynthesis" in window && speechSynthesis.getVoices()) || []; } catch (e) {}
-    const p = W.voicePrefs || {}, chosen = p.name ? vs.find(v => v.name === p.name) : null;
-    const v = chosen || vs.find(v => /^en(-|_)GB/i.test(v.lang)) || vs.find(v => /^en/i.test(v.lang)) || null;
-    return { voice: v, rate: p.rate === "slower" ? 0.85 : 1, chosen: !!chosen };
+    const en = Array.prototype.filter.call(vs, v => /^en([-_]|$)/i.test(v.lang || "")).map((v, i) => ({ v, i, r: W.voiceRank(v) }));
+    en.sort((a, b) => a.r - b.r || a.i - b.i);
+    const list = en.map(x => x.v), p = W.voicePrefs || {}, chosen = p.name ? list.find(v => v.name === p.name && W.voiceLocal(v)) : null;
+    return chosen ? [chosen].concat(list.filter(v => v !== chosen)) : list;
   };
-  W.utter = function (text, rate) {
-    const c = W.voice(), u = new SpeechSynthesisUtterance(text);
+  // W.voice(n) -> { voice, rate, chosen, local }: the n-th best voice (0: the tutor's choice when this device has it, else
+  // the best one); rate is a factor on the rates used today (0.85 for "slower").
+  W.voice = function (n) {
+    const p = W.voicePrefs || {}, list = W.voiceList(), v = list[n || 0] || null;
+    return { voice: v, rate: p.rate === "slower" ? 0.85 : 1, chosen: !!(v && p.name && v.name === p.name), local: W.voiceLocal(v) };
+  };
+  W.utter = function (text, rate, n) {
+    const c = W.voice(n), u = new SpeechSynthesisUtterance(text);
     u.lang = (c.voice && c.voice.lang) || "en-GB"; u.rate = (rate || 1) * c.rate; if (c.voice) u.voice = c.voice;
     return u;
+  };
+  // ---- the device's own voice: one careful way to speak -----------------------------------------------------------
+  // Everything said with the browser's voice goes through W.devSay(parts, o). parts: texts or { text, rate }, said one
+  // after another. o.rate: the rate for parts without one; o.onstart(); o.onend(ok). Returns a function that stops it.
+  // Browsers have several ways to stay silent without saying so; this guards against the known ones:
+  //  - a queue that is stuck or paused from before: cancel() and resume() first;
+  //  - a new utterance swallowed by the cancel() just before it: a short wait when something was still being said;
+  //  - a voice that never starts: no start event after DEV_START ms, or an error -> once more with the next voice;
+  //  - end events that never come: the utterances are kept until they end, and a timer ends the turn by itself.
+  // What happened is told to W.onSpeech (the game logs it as a "speech" event): the first start with each voice in a
+  // session, and every failure, so "the browser spoke" and "the browser never started" can be told apart afterwards.
+  const DEV_START = 2500;
+  let devSeq = 0, devCur = null, devKeep = [], devFailNotes = 0;
+  const devOkSeen = {};
+  W.devOk = () => { try { return "speechSynthesis" in window && typeof SpeechSynthesisUtterance !== "undefined"; } catch (e) { return false; } };
+  W.onSpeech = null;
+  W.lastSpeech = null;   // { ok, voice, at }: the last start or failure (the voice test reads it)
+  function devNote(d) {
+    W.lastSpeech = { ok: !!d.ok, voice: d.voice || "", at: Date.now(), why: d.why || "" };
+    if (d.ok) { if (devOkSeen[d.voice || "-"]) return; devOkSeen[d.voice || "-"] = 1; }
+    else if (++devFailNotes > 8) return;
+    try { if (typeof W.onSpeech === "function") W.onSpeech(d); } catch (e) {}
+  }
+  W.devStop = function () {
+    devSeq++; const c = devCur; devCur = null;
+    try { if ("speechSynthesis" in window) speechSynthesis.cancel(); } catch (e) {}
+    if (c) c.end(false);
+  };
+  W.devSay = function (parts, o) {
+    o = o || {};
+    const list = (Array.isArray(parts) ? parts : [parts]).map(p => (typeof p === "string" ? { text: p } : p)).filter(p => p && String(p.text || "").trim());
+    let done = false, tStart = 0, tEnd = 0, cur = -1;   // cur: the try whose events count (-1 between two tries)
+    const end = ok => { if (done) return; done = true; clearTimeout(tStart); clearTimeout(tEnd); if (devCur === me) { devCur = null; devKeep = []; } try { if (o.onend) o.onend(!!ok); } catch (e) {} };
+    const me = { end };
+    if (devCur) { const c = devCur; devCur = null; c.end(false); }   // whoever was speaking is told that it is over
+    const mine = ++devSeq;
+    if (!list.length || !W.devOk()) { end(false); return () => {}; }
+    const s = speechSynthesis; devCur = me;
+    let busy = false; try { busy = !!(s.speaking || s.pending); s.cancel(); } catch (e) {}
+    const state = () => { const st = {}; try { st.speaking = !!s.speaking; st.pending = !!s.pending; st.paused = !!s.paused; st.voices = s.getVoices().length; } catch (e) {} return st; };
+    const run = n => {
+      if (mine !== devSeq || done) return;
+      try { if (s.paused) s.resume(); } catch (e) {}
+      const c = W.voice(n), name = (c.voice && c.voice.name) || "", t0 = Date.now();
+      let started = false, total = 0;
+      cur = n;
+      const fail = why => {
+        if (mine !== devSeq || done || cur !== n) return;
+        cur = -1; clearTimeout(tStart); clearTimeout(tEnd);
+        try { s.cancel(); } catch (e) {}
+        const next = n === 0 && why !== "not-allowed" ? W.voice(1).voice : null;
+        devNote(Object.assign({ ok: false, why, voice: name, local: c.local, tried: n + 1, again: !!next, ms: Date.now() - t0 }, state()));
+        if (next) setTimeout(() => run(1), 150); else end(false);
+      };
+      const us = list.map((p, i) => {
+        const u = new SpeechSynthesisUtterance(String(p.text)), rate = (p.rate || o.rate || 1) * c.rate;
+        u.lang = (c.voice && c.voice.lang) || "en-GB"; u.rate = rate; if (c.voice) u.voice = c.voice;
+        total += (500 + 95 * String(p.text).length) / Math.max(0.3, rate);
+        if (i === 0) u.onstart = () => {
+          if (mine !== devSeq || done || started || cur !== n) return;
+          started = true; clearTimeout(tStart);
+          devNote({ ok: true, voice: name, local: c.local, tried: n + 1, ms: Date.now() - t0 });
+          tEnd = setTimeout(() => end(true), total * 1.5 + 2500);   // no end event ever: the turn still ends
+          try { if (o.onstart) o.onstart(); } catch (e) {}
+        };
+        u.onerror = e => {
+          if (mine !== devSeq || done || cur !== n) return;
+          const er = (e && e.error) || "error";
+          if (er === "interrupted" || er === "canceled") end(false); else fail(er);
+        };
+        if (i === list.length - 1) u.onend = () => { if (mine === devSeq && cur === n) end(true); };
+        return u;
+      });
+      devKeep = us;   // kept until the end: a browser may drop the events of an utterance nobody holds
+      try { us.forEach(u => s.speak(u)); } catch (e) { return fail("throw"); }
+      tStart = setTimeout(() => { if (!started) fail("nostart"); }, DEV_START);
+    };
+    if (busy) setTimeout(() => run(0), 90); else run(0);
+    return () => { if (mine === devSeq && !done) W.devStop(); };
   };
   // ---- one voice, the word first ----------------------------------------------------------------------------------
   // Everything spoken shares one voice: a word he must hear (W.speak, W.speakChunks, the school words) and Orbit's line.
@@ -97,7 +192,7 @@
   //   2. when a word starts, whoever was talking is told first (W.onWord), so a recorded line never plays over it;
   //   3. "busy" is not the end: W.read asks again for a few seconds and switches off a microphone nobody is waiting
   //      for (W.micOn is true only while the mailbox listens to him).
-  let wordId = 0, wordOn = 0, wordT = 0, wordUtter = null, readSeq = 0;
+  let wordId = 0, wordOn = 0, wordT = 0, readSeq = 0;
   const wordWait = [], wordHooks = [];
   W.micOn = false;
   W.wordBusy = () => !!wordOn;
@@ -162,10 +257,8 @@
       }
       if (!("speechSynthesis" in window)) return false;
       const id = W.wordBegin(1200 + 300 * text.length);
-      speechSynthesis.cancel();
-      const u = W.utter(text, slow ? 0.62 : 0.8);
-      u.onend = u.onerror = () => W.wordEnd(id); wordUtter = u;   // kept, so the browser does not drop its end event
-      speechSynthesis.speak(u); return true;
+      W.devSay([{ text, rate: slow ? 0.62 : 0.8 }], { onend: () => W.wordEnd(id) });
+      return true;
     } catch (e) { return false; }
   };
   try { if ("speechSynthesis" in window) speechSynthesis.getVoices(); } catch (e) {}
@@ -180,8 +273,7 @@
       }
       if (!("speechSynthesis" in window)) return false;
       const id = W.wordBegin(1500 + 900 * parts.length);
-      speechSynthesis.cancel();
-      parts.forEach((p, i) => { const u = W.utter(p, 0.6); if (i === parts.length - 1) { u.onend = u.onerror = () => W.wordEnd(id); wordUtter = u; } speechSynthesis.speak(u); });
+      W.devSay(parts.map(p => ({ text: p, rate: 0.6 })), { onend: () => W.wordEnd(id) });
       return true;
     } catch (e) { return false; }
   };

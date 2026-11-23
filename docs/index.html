@@ -4,24 +4,24 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Word World</title>
-<link rel="stylesheet" href="fonts.css">
-<link rel="stylesheet" href="ui.css">
+<link rel="stylesheet" href="fonts.css?v=202611231315">
+<link rel="stylesheet" href="ui.css?v=202611231315">
 <!-- Backend. On claude.ai these two files stand in for the database (progress stays in this browser).
      On the real site, load supabase-js and config.js here instead. -->
-<script src="bank.js"></script>
-<script src="probes.js"></script>
-<script src="rude.js"></script>
-<script src="vendor/supabase.js"></script>
-<script src="config.js"></script>
-<script src="common.js"></script>
-<script src="zh.js"></script>
-<script src="audio.js"></script>
-<script src="patterns.js"></script>
-<script src="pool.js"></script>
-<script src="picker.js"></script>
-<script src="img/words/pics.js"></script>
-<script src="img/school/pics.js"></script>
-<script src="story.js"></script>
+<script src="bank.js?v=202611231315"></script>
+<script src="probes.js?v=202611231315"></script>
+<script src="rude.js?v=202611231315"></script>
+<script src="vendor/supabase.js?v=202611231315"></script>
+<script src="config.js?v=202611231315"></script>
+<script src="common.js?v=202611231315"></script>
+<script src="zh.js?v=202611231315"></script>
+<script src="audio.js?v=202611231315"></script>
+<script src="patterns.js?v=202611231315"></script>
+<script src="pool.js?v=202611231315"></script>
+<script src="picker.js?v=202611231315"></script>
+<script src="img/words/pics.js?v=202611231315"></script>
+<script src="img/school/pics.js?v=202611231315"></script>
+<script src="story.js?v=202611231315"></script>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -129,17 +129,17 @@
   <div id="full" class="modal full" hidden><div class="journal"><div class="cover"></div><article class="page paper modal-card"><button type="button" class="pgclose" id="fullClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button><div id="fullBody"></div></article></div></div>
 </div>
 
-<script src="vendor/three.min.js"></script>
-<script src="vendor/GLTFLoader.js"></script>
-<script src="models/hero.js"></script>
-<script src="models/heroidle.js"></script>
-<script src="models/tower.js"></script>
-<script src="models/pod.js"></script>
-<script src="models/tree.js"></script>
-<script src="models/watchfire.js"></script><!-- night watch (raid team): the watch-fire he owns -->
-<script src="world3d.js"></script>
-<script src="orbit3d.js"></script>
-<script src="raid3d.js"></script><!-- night watch (raid team): the island test as a watch at the gate -->
+<script src="vendor/three.min.js?v=202611231315"></script>
+<script src="vendor/GLTFLoader.js?v=202611231315"></script>
+<script src="models/hero.js?v=202611231315"></script>
+<script src="models/heroidle.js?v=202611231315"></script>
+<script src="models/tower.js?v=202611231315"></script>
+<script src="models/pod.js?v=202611231315"></script>
+<script src="models/tree.js?v=202611231315"></script>
+<script src="models/watchfire.js?v=202611231315"></script><!-- night watch (raid team): the watch-fire he owns -->
+<script src="world3d.js?v=202611231315"></script>
+<script src="orbit3d.js?v=202611231315"></script>
+<script src="raid3d.js?v=202611231315"></script><!-- night watch (raid team): the island test as a watch at the gate -->
 <script>
 (function () {
   const W = window.WT, $ = id => document.getElementById(id);
@@ -414,6 +414,13 @@
       if (open) { try { logEvent("guide_zh", { key: gdLine.key || "" }); } catch (x) {} }
       gdHideLater(9000); gdPlace(); gdMeasure();
     });
+    // the 中文 switch (top right) is turned on or off: the line in the bubble follows at once
+    document.addEventListener("ww-zh", e => {
+      if (!gdLine || !gdLine.zh) return;
+      const on = !!(e.detail && e.detail.on), zh = root.querySelector("#gdZh");
+      zh.hidden = !on; root.querySelector("#gdChip").classList.toggle("on", false);
+      gdPlace(); gdMeasure();
+    });
     // a tap on his bubble says the line again, as a tap on him does
     root.querySelector("#gdSay").addEventListener("click", e => { if (e.target.closest && e.target.closest("#gdChip")) return; gdAgain(); });
     // keep the bubble beside the page whenever a stage opens or closes, or the window changes size
@@ -518,16 +525,10 @@
   }
 
   // ---- the voice ----
-  function gdPickVoice() {
-    if (gdVoice) return gdVoice;
-    let vs = []; try { vs = speechSynthesis.getVoices() || []; } catch (e) {}
-    if (!vs.length) return null;
-    const names = ["Google UK English Male", "Daniel", "Microsoft Ryan", "Microsoft George", "Google UK English Female", "Arthur", "Oliver"];
-    for (const nm of names) { const v = vs.find(v => v.name && v.name.indexOf(nm) === 0) || vs.find(v => v.name && v.name.indexOf(nm) >= 0); if (v) return (gdVoice = v); }
-    gdVoice = vs.find(v => /^en[-_]GB/i.test(v.lang)) || vs.find(v => /^en\b|^en[-_]/i.test(v.lang)) || null;
-    return gdVoice;
-  }
-  try { if ("speechSynthesis" in window) { speechSynthesis.getVoices(); speechSynthesis.addEventListener && speechSynthesis.addEventListener("voiceschanged", gdPickVoice); } } catch (e) {}
+  // Orbit speaks with the same voice as the words (W.voice in site/common.js): one that lives on the device. A network
+  // voice is never given his lines: they can hold the child's name, and a network voice sends its text to its maker.
+  function gdPickVoice() { const c = W && W.voice ? W.voice() : null; return c && c.local ? c.voice : null; }
+  try { if ("speechSynthesis" in window) speechSynthesis.getVoices(); } catch (e) {}
 
   function gdTalk(on, token) {
     if (token !== undefined && token !== gdToken) return;
@@ -545,7 +546,7 @@
     try { if (gdAudio) { gdAudio.pause(); gdAudio = null; } } catch (e) {}
     // A word that is being said is not Orbit's to stop (its own start has already silenced Orbit's line).
     const word = gdWordBusy();
-    try { if (gdUtter && "speechSynthesis" in window) { gdUtter = null; if (!word) speechSynthesis.cancel(); } } catch (e) {}
+    try { if (gdUtter) { const stop = gdUtter; gdUtter = null; if (!word && typeof stop === "function") stop(); } } catch (e) {}
     try { if (gdReading && !word) { if (W && W.readStop) W.readStop(); else if (gdReader && gdReader.stop) gdReader.stop(); } } catch (e) {}
     gdReading = false;
     gdTalk(false);
@@ -579,13 +580,16 @@
   }
   function gdSynth(text, tok, begin) {
     try {
-      if (!("speechSynthesis" in window) || typeof SpeechSynthesisUtterance === "undefined") return false;
+      if (!W || !W.devSay || !W.devOk || !W.devOk()) return false;
       const c = gdVoiceNow(), v = c.voice;
-      if (!v && gdReader) return false;   // no voices in this frame: the platform reader speaks instead
-      const u = new SpeechSynthesisUtterance(text); u.lang = v ? v.lang : "en-GB"; u.rate = 0.92 * c.rate; if (v) u.voice = v;
-      u.onstart = () => { if (tok === gdToken) gdTalk(true); };
-      u.onend = u.onerror = () => { if (tok === gdToken && gdUtter === u) { gdUtter = null; gdTalk(false, tok); } };
-      gdUtter = u; begin(); speechSynthesis.speak(u); return true;
+      if (!v) return false;   // no voice of the device's own here: the platform reader speaks instead, or the line is only shown
+      begin();
+      let stop = null;
+      stop = W.devSay([{ text, rate: 0.92 }], {
+        onstart: () => { if (tok === gdToken) gdTalk(true); },
+        onend: () => { if (tok === gdToken && gdUtter === stop) { gdUtter = null; gdTalk(false, tok); } }
+      });
+      gdUtter = stop; return true;
     } catch (e) { return false; }
   }
   function gdRead(text, tok, begin) {
@@ -808,8 +812,8 @@
   }
   // Orbit's voice: the chosen voice when this device has it, else the one he has used so far; rate as chosen.
   function gdVoiceNow() {
-    const c = W && W.voice ? W.voice() : { voice: null, rate: 1, chosen: false };
-    return { voice: c.chosen ? c.voice : gdPickVoice(), rate: c.rate || 1 };
+    const c = W && W.voice ? W.voice() : { voice: null, rate: 1, chosen: false, local: false };
+    return { voice: c.local ? c.voice : null, rate: c.rate || 1 };
   }
   let gdVoicesSent = "";
   const gdVoicesKey = l => JSON.stringify((Array.isArray(l) ? l : []).map(v => [String(v.name), String(v.lang), !!v.local]).sort());
@@ -832,12 +836,20 @@
     return true;
   }
   try { if ("speechSynthesis" in window && speechSynthesis.addEventListener) speechSynthesis.addEventListener("voiceschanged", () => { gdVoicesSave(); }); } catch (e) {}
+  // What the device's voice did (site/common.js, W.devSay): the first start with each voice in a session and every time
+  // it did not start, as "speech" events. The tutor's page and the database can then tell "it spoke" from "it never began".
+  try { if (W) W.onSpeech = d => { try { logEvent("speech", d); } catch (e) {} }; } catch (e) {}
   // The menu item "Voice test": one line in the voice and speed chosen for him.
   const GD_VOICE_TEST = "Umbrella. Take your umbrella. Tap each beat.";
+  // A short click first (the game's own sound), then the line (the device's voice): so "I hear the click but no voice"
+  // and "I hear nothing at all" can be told apart. Afterwards the bubble says what to do when it stayed silent.
+  let gdVtT = 0;
   function gdVoiceTest() {
     gdVoicePrefs();
+    try { if (W.sfx) W.sfx("pop"); } catch (e) {}
     gdShow({ key: "voice_test", en: GD_VOICE_TEST, zh: "" }, false);
     const said = speakLine(GD_VOICE_TEST, "");
+    clearTimeout(gdVtT); gdVtT = setTimeout(() => { try { gdShow({ key: "voice_test2", en: "No sound? Turn the sound up.", zh: "没有声音？把音量调大。" }, false); } catch (e) {} }, 7000);
     try { logEvent("voice_test", { voice: (W.voicePrefs && W.voicePrefs.name) || "", rate: (W.voicePrefs && W.voicePrefs.rate) || "normal" }); } catch (e) {}
     const menu = document.getElementById("menu"); if (menu) menu.open = false;
     return said;
@@ -1098,11 +1110,24 @@
   // ---- hearing the word: generous, because this is speaking practice, not a test ----
   // It counts when, in ANY text the recogniser offered (partial results, final results, every alternative):
   //  - the word's letters appear anywhere ("i said pumpkin" and "pump kin" both hold "pumpkin"), or
-  //  - one heard word, or two heard words joined, is a near miss: the same first two letters as the word, and at least
-  //    60 % of the letters of the longer of the two in common (letters counted with repeats, in any order).
+  //  - one heard word, or two heard words joined, is a near miss: at most one letter apart from the word (two letters for
+  //    a word of seven letters or more; only for words of four letters or more), or the same first two letters as the
+  //    word and at least 60 % of the letters of the longer of the two in common (counted with repeats, in any order).
   const mlWords = s => String(s || "").toLowerCase().replace(/[’']/g, "").replace(/[^a-z]+/g, " ").trim().split(" ").filter(Boolean);
+  // How many letters apart two words are (one letter added, dropped, or changed counts 1).
+  function mlApart(a, b) {
+    let prev = []; for (let j = 0; j <= b.length; j++) prev[j] = j;
+    for (let i = 1; i <= a.length; i++) {
+      const row = [i];
+      for (let j = 1; j <= b.length; j++) row[j] = Math.min(prev[j] + 1, row[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      prev = row;
+    }
+    return prev[b.length];
+  }
   function mlNear(h, t) {
     if (!h || !t) return false; if (h === t) return true;
+    // one letter apart (two for a long word) is the same word to a listener: "lillipop" for lollipop, "camara" for camera
+    if (t.length >= 4 && mlApart(h, t) <= (t.length >= 7 ? 2 : 1)) return true;
     if (t.length < 2 || h.slice(0, 2) !== t.slice(0, 2)) return false;
     const left = {}; for (const ch of t) left[ch] = (left[ch] || 0) + 1;
     let n = 0; for (const ch of h) if (left[ch] > 0) { left[ch]--; n++; }
@@ -1145,6 +1170,7 @@
       const s = String(typeof x === "string" ? x : x && (x.text || x.transcript) || "").trim(); if (!s || ended) return;
       if (texts[texts.length - 1] !== s) texts.push(s);
       if (!live) goLive();                    // words came in: it was listening, whatever the state said
+      try { if (ui.hear) ui.hear(); } catch (e) {}   // the page shows that his voice arrives
       if (ui.check(texts)) finish("");        // heard it: answer at once
     };
     const windowEnd = () => { open = false; if (ended) return; stopping = true; try { stopIt(); } catch (e) {} tWin = setTimeout(() => finish(""), ML_TAIL); };
@@ -1241,10 +1267,11 @@
       afterSaid();
     };
     let tries = 0, path = "", heardAll = [];
+    // again: "heard" when his voice arrived but the word did not fit (say it slowly), "quiet" when nothing arrived (louder)
     const micReady = again => {
       if (!here()) return;
-      const rec = $("rec"); rec.disabled = false; rec.classList.remove("live", "wait"); $("ml-wave").hidden = true;
-      vdo(again ? "Say it again, a little louder." : "Tap the mic. Say <b>" + W.esc(w.word) + "</b>.");
+      const rec = $("rec"); rec.disabled = false; rec.classList.remove("live", "wait", "hears"); $("ml-wave").hidden = true;
+      vdo(again === "heard" ? "Say it again, slowly." : again ? "Say it again, a little louder." : "Tap the mic. Say <b>" + W.esc(w.word) + "</b>.");
       mlAsk(fbody, rec);
     };
     if (cardOpened(w)) { note("Good. You said it.", "good"); afterSaid(); }
@@ -1252,12 +1279,13 @@
     else fallbackTaps(true);
     $("rec").onclick = () => {
       const rec = $("rec"); if (rec.disabled) return;
-      try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}   // the computer's voice must not be heard as his
+      try { if (W.devStop) W.devStop(); else if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}   // the computer's voice must not be heard as his
       $("vfb").className = "fb"; $("vfb").textContent = "";
       mlListen({
         wait() { rec.disabled = true; rec.classList.add("wait"); rec.classList.remove("live"); vdo("Wait…"); mlAsk(fbody, null); },
         allow() { if (!here()) return; vdo("Tap <b>Allow</b>."); },
         live() { if (!here()) return; rec.classList.remove("wait"); rec.classList.add("live"); $("ml-wave").hidden = false; vdo("Say it now."); },
+        hear() { if (!here() || rec.classList.contains("hears")) return; rec.classList.add("hears"); vdo("I hear you."); },
         check: texts => !!mlHeard(texts, w.word),
         done(texts, reason, p) {
           if (!here()) return;
@@ -1275,7 +1303,7 @@
           const extra = { heard: heardAll.join(" / "), tries, path: p };
           if (how) { note("Yes. I heard " + w.word + ".", "good"); finishOk(p, Object.assign(extra, { match: how })); }
           else if (tries >= 2) { note("Good. You said it.", "good"); finishOk(p, Object.assign(extra, { match: heard ? "accepted" : "accepted_noise" })); }
-          else { micReady(true); try { W.speak(w.word); } catch (e) {} }
+          else { micReady(heard ? "heard" : "quiet"); try { W.speak(w.word); } catch (e) {} }
         }
       });
     };
@@ -1359,7 +1387,7 @@
     "Magic word": "魔法单词", "What it means": "意思", "My sentence": "我的句子",
     "Tap the card to turn it over": "点卡片，把它翻过来", "Tap the word to hear it": "点单词，听一听",
     "Hear it. Say it.": "听一听，说一说。", "Said": "说过了", "Two small games": "两个小游戏", "Back to the cards": "回到卡片",
-    "Wait…": "等一下…", "Tap Allow.": "点“允许”。", "Say it now.": "现在说。", "Say it again, a little louder.": "再说一遍，大声一点。", "Good. You said it.": "很好。你说了。",
+    "Wait…": "等一下…", "Tap Allow.": "点“允许”。", "Say it now.": "现在说。", "Say it again, a little louder.": "再说一遍，大声一点。", "Say it again, slowly.": "再说一遍，慢一点。", "I hear you.": "我听到你了。", "Good. You said it.": "很好。你说了。",
     "Say it 3 times. Tap each time.": "说3遍。每说一遍点一下。", "I said it": "我说了", "Done. You said it 3 times.": "完成了。你说了3遍。",
     "Tap Two small games.": "点“两个小游戏”。", "Tap Back to the cards.": "点“回到卡片”。",
     "No sound here. Read it out loud.": "这里没有声音。大声读出来。", "Read it": "看信", "Next letter": "下一封信", "The quest marker is jumping. Go to the map table!": "任务标记在跳。去地图桌！"
@@ -2077,7 +2105,7 @@
   let storyRun = 0;
   function storyStopReading() {
     storyRun++;
-    try { if ("speechSynthesis" in window) speechSynthesis.cancel(); } catch (e) {}
+    try { if (W.devStop) W.devStop(); else if ("speechSynthesis" in window) speechSynthesis.cancel(); } catch (e) {}
     document.querySelectorAll(".ht-s.now").forEach(s => s.classList.remove("now"));
     const b = document.getElementById("htHear"); if (b) { b.classList.remove("on"); b.innerHTML = ICON("speaker") + "Hear it"; }
   }
@@ -2092,9 +2120,8 @@
       mark(i); const text = storyPlain(spans[i].innerHTML), next = () => { if (run === storyRun) setTimeout(() => step(i + 1), 250); };
       try {
         if (vs.length) {
-          // the tutor's chosen voice and speed (W.utter in common.js), else the story's own choice as before
-          const u = W.utter ? W.utter(text, 0.9) : new SpeechSynthesisUtterance(text); if (!W.utter) { u.lang = "en-GB"; u.rate = 0.9; try { if (v) u.voice = v; } catch (e) {} }
-          u.onend = next; u.onerror = next; speechSynthesis.speak(u);
+          // the device's voice, the careful way (W.devSay in common.js: the tutor's voice and speed, a retry, a record)
+          W.devSay([{ text, rate: 0.9 }], { onend: ok => { if (ok) next(); else if (run === storyRun) storyStopReading(); } });
         } else if (storyTts) storyTts.speak(text).then(next, next);
         else storyStopReading();
       } catch (e) { storyStopReading(); }
@@ -3049,7 +3076,7 @@
       const heard = q.meet;
       qp(head() + title("Meet the word", tapLine("Tap", bs[Math.max(0, heard.indexOf(false))])) +
         '<div class="meet lv-meet">' + pkPicHtml(w) + "<div>" + beatsHtml(w, { tap: true, heard, id: "meetWord" }) +
-        '<p class="mean nozh">' + W.esc(w.meaning_en) + (w.meaning_zh ? ' <span class="zh">' + W.esc(w.meaning_zh) + "</span>" : "") + "</p></div></div>" + pkRuleHtml(w) +
+        '<p class="mean nozh">' + W.esc(w.meaning_en) + (w.meaning_zh ? ' <span class="zh">' + W.esc(w.meaning_zh) + "</span>" : "") + "</p></div></div>" +   // the rule box ("Sunny Island rule ...") is gone: the tutor found it confusing (23 November)
         '<footer class="pg-foot"><button type="button" class="btn" id="hear">' + ICON("speaker") + 'Hear the word</button><span class="grow"></span><span class="hint" id="meetHint" aria-live="polite"></span>' +
         '<button type="button" class="btn primary" id="go" disabled>Next' + ICON("arrow") + "</button></footer>");
       const show = () => {
@@ -3195,10 +3222,7 @@
     const wid = W.wordBegin ? W.wordBegin(700 + 85 * String(text).length) : 0, end = () => { if (W.wordEnd) W.wordEnd(wid); };
     try {
       const vs = "speechSynthesis" in window ? speechSynthesis.getVoices() : [];
-      if (vs.length) {
-        speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text), v = vs.find(x => /^en(-|_)GB/i.test(x.lang)) || vs.find(x => /^en/i.test(x.lang));
-        u.lang = "en-GB"; u.rate = 0.85; if (v) u.voice = v; u.onend = u.onerror = end; speechSynthesis.speak(u); return true;
-      }
+      if (vs.length) { W.devSay([{ text, rate: 0.85 }], { onend: end }); return true; }
       if (lvTts && lvTts.speak) { const p = lvTts.speak(text); if (p && p.then) p.then(end, end); return true; }
     } catch (e) {}
     end(); return false;
@@ -3245,6 +3269,8 @@
     return { ok: false, at: Math.min(i, ml.length - 1) };
   }
   const copyHtml = (model, at) => { const m = copyNorm(model); return at < 0 ? W.esc(m) : W.esc(m.slice(0, at)) + '<mark class="lv-cmark' + (m[at] === " " ? " lv-cspace" : "") + '">' + (m[at] === " " ? "&nbsp;" : W.esc(m[at])) + "</mark>" + W.esc(m.slice(at + 1)); };
+  // The sentence's meaning in Chinese, under the English sentence on both pages (the tutor, 23 November: he must know what he copies).
+  const szhHtml = w => (w && w.sentence_zh ? '<p class="zh lv-szh nozh" lang="zh-Hans">' + W.esc(w.sentence_zh) + "</p>" : "");
   function renderTiles(w) {
     const k = w.word, s = String(w.sentence_en || "").trim();
     if (!s || !W.hasWord(s, k)) { logEvent("sentence_none", { word: k }); return nextStep(); }   // no example sentence with the word: nothing to build or copy
@@ -3258,7 +3284,7 @@
     }
     const tl = q.tl, n = tl.tiles.length;
     qp(head() + title("Copy the sentence", "<b>Tap</b> the words in order.") +
-      '<p class="lv-sline nozh" id="tlBuilt">' + tl.tiles.map((t, i) => i < tl.got ? '<span class="lv-tgot">' + W.esc(t) + "</span>" : '<span class="lv-tslot"></span>').join("") + "</p>" +
+      '<p class="lv-sline nozh" id="tlBuilt">' + tl.tiles.map((t, i) => i < tl.got ? '<span class="lv-tgot">' + W.esc(t) + "</span>" : '<span class="lv-tslot"></span>').join("") + "</p>" + szhHtml(w) +
       '<div class="lv-tiles" id="tlTiles">' + tl.order.map((o, j) => '<button type="button" class="lv-tile nozh" data-j="' + j + '"' + (tl.used[j] ? " disabled" : "") + ">" + W.esc(tl.tiles[o]) + "</button>").join("") + "</div>" +
       '<p class="fb" id="fb" aria-live="polite"></p>');
     qb.querySelectorAll(".lv-tile").forEach(btn => btn.onclick = () => {
@@ -3286,7 +3312,7 @@
   function renderCopy(w, s) {
     const k = w.word, cp = q.tl.copy;
     qp(head() + title("Copy the sentence", "<b>Copy</b> the sentence.") +
-      '<div class="lv-sdone"><p class="lv-sline lv-sfull lv-cmodel nozh" id="tlBuilt">' + copyHtml(s, -1) + '</p><button type="button" class="sound" id="lvSay" aria-label="Hear the sentence">' + ICON("speaker") + "</button></div>" +
+      '<div class="lv-sdone"><p class="lv-sline lv-sfull lv-cmodel nozh" id="tlBuilt">' + copyHtml(s, -1) + '</p><button type="button" class="sound" id="lvSay" aria-label="Hear the sentence">' + ICON("speaker") + "</button></div>" + szhHtml(w) +
       '<form class="answer lv-copy" id="cf" autocomplete="off"><label class="line lv-long" id="ansLine">' + ICON("pencil") +
       '<input type="text" id="copy" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="200" placeholder="copy the sentence here" aria-label="Copy the sentence"></label>' +
       '<button type="submit" class="btn primary" id="check">Check</button></form><p class="fb" id="fb" aria-live="polite"></p>' +
@@ -3680,9 +3706,7 @@
           return;
         }
         if (!("speechSynthesis" in window)) return;
-        const u = W.utter(said, rate);
-        u.onend = u.onerror = () => { min = true; spoke = true; fin(); };
-        speechSynthesis.speak(u);
+        W.devSay([{ text: said, rate }], { onend: () => { min = true; spoke = true; fin(); } });
       } catch (e) {}
     });
   }
@@ -3694,7 +3718,7 @@
     const r = scCurRow();
     if (r && scLive() && W.key(word) && W.key(word) === W.key(r.word)) {
       scSpoken++;
-      try { if ("speechSynthesis" in window) speechSynthesis.cancel(); } catch (e) {}
+      try { if (W.devStop) W.devStop(); } catch (e) {}
       scLastEnd = scSay(r.word, SC_RATE);
       return true;
     }
@@ -3717,7 +3741,7 @@
   // "Slowly": beat by beat when the game has the beats, else the whole word once more at the slowest speed.
   async function scSlowly(r) {
     const tok = ++scTok, bs = scBeats(r);
-    try { if ("speechSynthesis" in window) speechSynthesis.cancel(); } catch (e) {}
+    try { if (W.devStop) W.devStop(); } catch (e) {}
     logEvent("school_slowly", { word: r.word, beats: bs.length });
     if (!bs.length) { await scSay(r.word, SC_RATE_SLOWEST); return; }
     for (let i = 0; i < bs.length; i++) {
@@ -3729,7 +3753,7 @@
   // Leaving a page: the school word stops. (Orbit no longer stops a word that is being said, so the page does it itself.)
   function scQuiet() {
     scTok++;
-    try { if ("speechSynthesis" in window) speechSynthesis.cancel(); } catch (e) {}
+    try { if (W.devStop) W.devStop(); } catch (e) {}
     try { if (scReading && W.readStop) { scReading = false; W.readStop(); } } catch (e) {}
   }
 
