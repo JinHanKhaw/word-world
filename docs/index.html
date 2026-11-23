@@ -4,24 +4,24 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Word World</title>
-<link rel="stylesheet" href="fonts.css?v=202611231315">
-<link rel="stylesheet" href="ui.css?v=202611231315">
+<link rel="stylesheet" href="fonts.css?v=202611231359">
+<link rel="stylesheet" href="ui.css?v=202611231359">
 <!-- Backend. On claude.ai these two files stand in for the database (progress stays in this browser).
      On the real site, load supabase-js and config.js here instead. -->
-<script src="bank.js?v=202611231315"></script>
-<script src="probes.js?v=202611231315"></script>
-<script src="rude.js?v=202611231315"></script>
-<script src="vendor/supabase.js?v=202611231315"></script>
-<script src="config.js?v=202611231315"></script>
-<script src="common.js?v=202611231315"></script>
-<script src="zh.js?v=202611231315"></script>
-<script src="audio.js?v=202611231315"></script>
-<script src="patterns.js?v=202611231315"></script>
-<script src="pool.js?v=202611231315"></script>
-<script src="picker.js?v=202611231315"></script>
-<script src="img/words/pics.js?v=202611231315"></script>
-<script src="img/school/pics.js?v=202611231315"></script>
-<script src="story.js?v=202611231315"></script>
+<script src="bank.js?v=202611231359"></script>
+<script src="probes.js?v=202611231359"></script>
+<script src="rude.js?v=202611231359"></script>
+<script src="vendor/supabase.js?v=202611231359"></script>
+<script src="config.js?v=202611231359"></script>
+<script src="common.js?v=202611231359"></script>
+<script src="zh.js?v=202611231359"></script>
+<script src="audio.js?v=202611231359"></script>
+<script src="patterns.js?v=202611231359"></script>
+<script src="pool.js?v=202611231359"></script>
+<script src="picker.js?v=202611231359"></script>
+<script src="img/words/pics.js?v=202611231359"></script>
+<script src="img/school/pics.js?v=202611231359"></script>
+<script src="story.js?v=202611231359"></script>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -129,17 +129,17 @@
   <div id="full" class="modal full" hidden><div class="journal"><div class="cover"></div><article class="page paper modal-card"><button type="button" class="pgclose" id="fullClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button><div id="fullBody"></div></article></div></div>
 </div>
 
-<script src="vendor/three.min.js?v=202611231315"></script>
-<script src="vendor/GLTFLoader.js?v=202611231315"></script>
-<script src="models/hero.js?v=202611231315"></script>
-<script src="models/heroidle.js?v=202611231315"></script>
-<script src="models/tower.js?v=202611231315"></script>
-<script src="models/pod.js?v=202611231315"></script>
-<script src="models/tree.js?v=202611231315"></script>
-<script src="models/watchfire.js?v=202611231315"></script><!-- night watch (raid team): the watch-fire he owns -->
-<script src="world3d.js?v=202611231315"></script>
-<script src="orbit3d.js?v=202611231315"></script>
-<script src="raid3d.js?v=202611231315"></script><!-- night watch (raid team): the island test as a watch at the gate -->
+<script src="vendor/three.min.js?v=202611231359"></script>
+<script src="vendor/GLTFLoader.js?v=202611231359"></script>
+<script src="models/hero.js?v=202611231359"></script>
+<script src="models/heroidle.js?v=202611231359"></script>
+<script src="models/tower.js?v=202611231359"></script>
+<script src="models/pod.js?v=202611231359"></script>
+<script src="models/tree.js?v=202611231359"></script>
+<script src="models/watchfire.js?v=202611231359"></script><!-- night watch (raid team): the watch-fire he owns -->
+<script src="world3d.js?v=202611231359"></script>
+<script src="orbit3d.js?v=202611231359"></script>
+<script src="raid3d.js?v=202611231359"></script><!-- night watch (raid team): the island test as a watch at the gate -->
 <script>
 (function () {
   const W = window.WT, $ = id => document.getElementById(id);
@@ -581,6 +581,7 @@
   function gdSynth(text, tok, begin) {
     try {
       if (!W || !W.devSay || !W.devOk || !W.devOk()) return false;
+      if (W.devDead && W.devDead()) return false;   // the device voice does not start here: the page reader speaks (gdRead)
       const c = gdVoiceNow(), v = c.voice;
       if (!v) return false;   // no voice of the device's own here: the platform reader speaks instead, or the line is only shown
       begin();
@@ -731,11 +732,18 @@
   function gdPaper() {
     const on = id => gdShown(document.getElementById(id));
     const box = sel => { const n = document.querySelector(sel); if (!n || !gdShown(n)) return null; const r = n.getBoundingClientRect(); return r.width > 0 && r.height > 0 ? r : null; };
-    if (on("full")) return box("#full .journal") || box("#full .page");
+    // a journal: its brown cover reaches past the page (most on the left), so the edge he must stay clear of is the cover's
+    const book = sel => {
+      const r = box(sel); if (!r) return null;
+      const c = document.querySelector(sel + ">.cover"), k = c ? c.getBoundingClientRect() : null, ok = k && k.width > 0;
+      const l = ok ? Math.min(r.left, k.left) : r.left, t = ok ? Math.min(r.top, k.top) : r.top, rr = ok ? Math.max(r.right, k.right) : r.right, b = ok ? Math.max(r.bottom, k.bottom) : r.bottom;
+      return { left: l, top: t, right: rr, bottom: b, width: rr - l, height: b - t, book: true };
+    };
+    if (on("full")) return book("#full .journal") || box("#full .page");
     if (on("modal")) return document.getElementById("modal").classList.contains("ml-mail") ? box("#modal .ml-letter") || box("#modal .ml-mailcard") : box("#modal .modal-card");
-    if (on("panel")) return box("#panel");
-    if (on("buildpage")) return box("#buildpage");
-    if (on("questpage") && on("questJournal")) return box("#questJournal");
+    if (on("panel")) return book("#panel");
+    if (on("buildpage")) return book("#buildpage");
+    if (on("questpage") && on("questJournal")) return book("#questJournal");
     return null;
   }
   // Page and Build: the picture of the drone flies (about 300 ms) to its place; the bubble sits beside it.
@@ -779,9 +787,11 @@
       // the paper in front: the picture waits at its top-left corner, just outside it. Room on the left (a journal page):
       // beside the corner, the bubble under him in the margin. Little room (a wide page, the mailbox's letter): above the
       // corner, the bubble to his right, above the paper.
+      // A journal page (the shop's is wide) keeps him beside its corner, clear of the page, whenever he fits there.
       const p = gdPaper(), roomLeft = p ? p.left - 2 * m : 0;
-      g._gdWide = !!p && roomLeft < 170 * u && p.top - 2 * m > 70 * u;
+      g._gdWide = !!p && roomLeft < (p.book ? 150 : 170) * u && p.top - 2 * m > 70 * u;
       if (p && !g._gdWide) { fx = Math.max(m, p.left - PS - 8 * u); fy = Math.max(m, p.top - PS * 0.3); maxW = Math.max(150 * u, Math.min(330 * u, roomLeft - 4 * u)); }
+      else if (p && p.book && p.left - PS - 8 * u >= m) { fx = p.left - PS - 8 * u; fy = Math.max(m, p.top - PS * 0.3); maxW = 330 * u; }
       else if (p) { fx = Math.max(m, p.left - PS * 0.5); fy = Math.max(m, p.top - PS * 0.9); maxW = 330 * u; }
       else { fx = 20 * u; fy = H - 18 * u - PS; maxW = 360 * u; }
       g._gdPage = p || null;
@@ -951,11 +961,25 @@
   // ============ check-in: the mailbox ============
   // When he arrives and has not opened today's mail, the mailbox opens by itself and nothing else can.
   // It holds the teacher's letter and today's magic cards, one per new word. A card is gone through when he has turned it
-  // over, heard the word once AND said it on the card's own page. Then "Next card"; after the last one, "I am ready".
+  // over, heard the word once, said it on the card's own page AND finished one of its two small games (his choice; the
+  // tutor, 23 November: "user must play either ONE of the game before he can proceed to the next word"). Then "Next card";
+  // after the last one, "I am ready".
   function showModal(html, noClose, cls) { $("modalBody").innerHTML = html; $("modalClose").hidden = !!noClose; $("modal").className = "modal " + (cls || ""); $("modal").hidden = false; }
   const cardKey = w => "wt.card." + w.id + "." + today();
   const cardOpened = w => { try { return sessionStorage.getItem(cardKey(w)) === "1"; } catch (e) { return false; } };
   const markRead = w => { try { sessionStorage.setItem(cardKey(w), "1"); } catch (e) {} };
+  // One small game finished for this word (either one). Kept on the device for good: a card whose game he finished on an
+  // earlier day (a level not finished that day comes back) asks only what it asked before (turn, hear, say).
+  const mlGamesDone = new Set();
+  const gameKey = w => "ww.game." + w.id;
+  const gameDone = w => { if (mlGamesDone.has(w.id)) return true; try { return !!localStorage.getItem(gameKey(w)); } catch (e) { return false; } };
+  function markGame(w) {
+    if (gameDone(w)) return;
+    mlGamesDone.add(w.id); try { localStorage.setItem(gameKey(w), today()); } catch (e) {}
+    logEvent("card_game_done", { word: w.word });
+    if (mail && !$("modal").hidden && mail.cards.some(c => c.w.id === w.id)) mailGate();
+  }
+  const cardDone = w => cardOpened(w) && gameDone(w);
   // A letter as he sees it. The tutor's answer to one of his old sentences quotes it ('Your sentence: "..." Great sentence!'):
   // the quote is left out, so nothing he once typed comes back to him. A listed rude word still left is covered (rudeHits, 80-level.js).
   function mlLetter(t) {
@@ -1001,6 +1025,7 @@
           // the word on the card itself is the "hear it" control; this button stays out of sight (kept for older checks)
           '<button type="button" class="gbtn glass" id="mhear" hidden>' + ICON("speaker") + "Hear it</button>" +
           '<button type="button" class="gbtn glass" id="wcard" hidden>' + ICON("mic") + "Say it</button>" +
+          '<button type="button" class="gbtn glass" id="mgame" hidden>' + ICON("play") + "Play one game</button>" +
           '<button type="button" class="gbtn glass primary" id="mnext" hidden>Next card' + ICON("arrow") + "</button>" : "") +
         '<button type="button" class="gbtn glass primary" id="readyBtn"></button>' +
       "</div></div>", ritual, "mailmode ml-mail");
@@ -1010,12 +1035,13 @@
     if (fresh.length) { const now = new Date().toISOString(); fresh.forEach(m => m.read_at = now); sb.from("messages").update({ read_at: now }).in("id", fresh.map(m => m.id)).then(() => drawWorld()); }
     if (cards.length) {
       $("mprev").onclick = () => { if (mail.i > 0) { mail.i--; renderMailCard(); } };
-      $("mnext").onclick = () => { const c = mail.cards[mail.i]; if (!c || !(c.turned && c.heard && cardOpened(c.w))) return; if (mail.i < mail.cards.length - 1) { mail.i++; renderMailCard(); W.sfx("pop"); } };
+      $("mnext").onclick = () => { const c = mail.cards[mail.i]; if (!c || !(c.turned && c.heard && cardDone(c.w))) return; if (mail.i < mail.cards.length - 1) { mail.i++; renderMailCard(); W.sfx("pop"); } };
       $("mhear").onclick = () => { const c = mail.cards[mail.i]; if (!W.speak(c.w.word)) banner("No sound here. Read it out loud."); mailHeard(c); };
       $("wcard").onclick = () => openFull(mail.cards[mail.i].w);
+      $("mgame").onclick = () => openFull(mail.cards[mail.i].w);   // the card's page, with its two games asking
     }
     $("readyBtn").onclick = async () => {
-      if (!allOpened()) { mail.i = mail.cards.findIndex(c => !cardOpened(c.w)); renderMailCard(); return; }
+      if (!allOpened()) { mail.i = mail.cards.findIndex(c => !cardDone(c.w)); renderMailCard(); return; }
       if (ritual) { await saveSession({ mail_opened_at: new Date().toISOString() }); logEvent("ready", { day: d }); }
       closeModal(); W.sfx("squash"); renderStats();
       $("worldhint").textContent = openDay() ? "Your map is ready. Go to the map table." : unreadCount() ? "You have mail!" : doneToday() ? "Done for today. Come back tomorrow!" : "No level today. Come back tomorrow!";
@@ -1023,7 +1049,7 @@
     };
     renderMailCard();
   }
-  const allOpened = () => !mail || mail.cards.every(c => cardOpened(c.w));
+  const allOpened = () => !mail || mail.cards.every(c => cardDone(c.w));
   function mailHeard(c) { if (!c || c.heard) return mailGate(); c.heard = true; logEvent("card_heard", { word: c.w.word }); mailGate(); }
   function renderMailCard() {
     const n = mail.cards.length;
@@ -1043,25 +1069,27 @@
     }
     mailGate();
   }
-  // Each step of a card, in order: turn it, tap the word to hear it, Say it (its own page), then Next card or the last button.
-  // Only the control for the step he is on is shown with the ring and the hand; "Next card" and the last button open only
-  // after he has turned the card over, heard the word once AND said it.
+  // Each step of a card, in order: turn it, tap the word to hear it, Say it (its own page), one small game (on the same page),
+  // then Next card or the last button. Only the control for the step he is on is shown with the ring and the hand; "Next card"
+  // and the last button open only after he has turned the card over, heard the word once, said it AND finished one game.
   function mailGate() {
     if (!mail || !$("readyBtn")) return;
     const n = mail.cards.length, c = mail.cards[mail.i], last = !n || mail.i >= n - 1, rb = $("readyBtn");
-    const step = !c ? "done" : !c.turned ? "card" : !c.heard ? "word" : !cardOpened(c.w) ? "say" : "done";
+    const step = !c ? "done" : !c.turned ? "card" : !c.heard ? "word" : !cardOpened(c.w) ? "say" : !gameDone(c.w) ? "game" : "done";
     const need = step !== "done";
-    const LINE = { card: "Tap the card.", word: "Tap the word.", say: "Now tap Say it." };
+    const LINE = { card: "Tap the card.", word: "Tap the word.", say: "Now tap Say it.", game: "Play one game." };
     let ask = null, line = LINE[step] || "";
     if (n) {
       $("mprev").hidden = mail.i === 0;
       $("mnext").hidden = last || need; $("mnext").disabled = need;
       $("mhear").hidden = true;
       $("wcard").hidden = step !== "say";
+      $("mgame").hidden = step !== "game";
       const f = $("flip");
       if (step === "card") ask = f;
       else if (step === "word") { ask = f && f.querySelector(".card.back .ml-say"); if (f && !f.classList.contains("on")) { ask = f; line = "Tap the card."; } }
       else if (step === "say") ask = $("wcard");
+      else if (step === "game") ask = $("mgame");
       else if (!last) { ask = $("mnext"); line = "Tap Next card."; }
     }
     rb.hidden = !last;
@@ -1219,8 +1247,7 @@
     try { make(); r.start(); } catch (e) { finish("nomic"); }
   }
 
-  // What he does with one card: hear it, say it, then the small games. One control asks for a tap at a time.
-  const mlGamesDone = new Set();
+  // What he does with one card: hear it, say it, then one of the two small games. One control asks for a tap at a time.
   function openFull(w, view) {
     if (mlEndNow) { try { mlEndNow(); } catch (e) {} }   // a listening try from the page before ends here
     const voice = view === "voice", inMail = !!(mail && !$("modal").hidden);
@@ -1239,26 +1266,30 @@
         '<p class="fb" id="vfb"></p></div>' +
       '<p class="do ml-step ml-footstep" id="ml-fstep" hidden></p>' +
       '<footer class="pg-foot">' + (inMail ? '<button type="button" class="btn quiet" id="ml-backcards">Back to the cards</button>' : "") +
-        '<span class="grow"></span><button type="button" class="btn" id="more" hidden>Two small games' + ICON("arrow") + "</button></footer>";
+        '<span class="grow"></span><span class="ml-games" id="ml-games" hidden><button type="button" class="btn" id="more">Meaning game</button>' +
+        '<button type="button" class="btn" id="more2">Sentence game</button></span></footer>';
     $("full").hidden = false; if (!voice) W.sfx("pop");
     logEvent("flashcard_viewed", { word: w.word });
     wirePieces($("fullBody"), w);
     const sayWhole = () => { try { if (!W.speak(w.word)) banner("No sound here. Read it out loud."); } catch (e) {} };
     $("picBtn").onclick = sayWhole;
-    $("more").onclick = () => chooseGame(w);
+    $("more").onclick = () => playGame(w, 1); $("more2").onclick = () => playGame(w, 2);
     if ($("ml-backcards")) $("ml-backcards").onclick = () => closeFull();
     const fbody = $("fullBody"), here = () => $("fullBody") === fbody && fbody.contains($("vdo"));
     const vdo = t => { if ($("vdo")) $("vdo").innerHTML = t; };
     const note = (t, cls) => { const f = $("vfb"); if (!f) return; f.className = "fb" + (cls ? " " + cls + " nozh" : ""); f.innerHTML = cls === "good" ? ICON("check") + '<span class="zhk">' + W.esc(t) + "</span>" : W.esc(t); };
-    // after the word is said: the voice box gets small, the games (then the way back) ask for the tap
+    // after the word is said: the voice box gets small, the two games ask (he picks one), then the way back.
+    // A game that cannot be made for this word (no Chinese meaning, no sentence) is not offered; with neither, nothing waits.
     const afterSaid = () => {
       if (!here()) return;
       $("voicebox").classList.add("ml-done"); $("ml-said").hidden = false; $("rec").hidden = true; $("said").hidden = true; $("ml-wave").hidden = true; $("vdo").hidden = true;
-      $("more").hidden = false;
-      const fs = $("ml-fstep"), played = mlGamesDone.has(w.id), back = $("ml-backcards");
-      $("more").classList.toggle("quiet", played);
-      const ask = !played ? $("more") : back;
-      fs.textContent = !played ? "Tap Two small games." : back ? "Tap Back to the cards." : ""; fs.hidden = !fs.textContent; fs.classList.toggle("ml-left", played);
+      const g1 = gameCan(w, 1), g2 = gameCan(w, 2);
+      if (!g1 && !g2) markGame(w);
+      $("more").hidden = !g1; $("more2").hidden = !g2; $("ml-games").hidden = !(g1 || g2);
+      const fs = $("ml-fstep"), played = gameDone(w), back = $("ml-backcards");
+      $("more").classList.toggle("quiet", played); $("more2").classList.toggle("quiet", played);
+      const ask = !played ? $("ml-games") : back;
+      fs.textContent = !played ? "Play one game." : back ? "Tap Back to the cards." : ""; fs.hidden = !fs.textContent; fs.classList.toggle("ml-left", played);
       mlAsk(fbody, ask);
     };
     const finishOk = (how, extra) => {
@@ -1389,7 +1420,8 @@
     "Hear it. Say it.": "听一听，说一说。", "Said": "说过了", "Two small games": "两个小游戏", "Back to the cards": "回到卡片",
     "Wait…": "等一下…", "Tap Allow.": "点“允许”。", "Say it now.": "现在说。", "Say it again, a little louder.": "再说一遍，大声一点。", "Say it again, slowly.": "再说一遍，慢一点。", "I hear you.": "我听到你了。", "Good. You said it.": "很好。你说了。",
     "Say it 3 times. Tap each time.": "说3遍。每说一遍点一下。", "I said it": "我说了", "Done. You said it 3 times.": "完成了。你说了3遍。",
-    "Tap Two small games.": "点“两个小游戏”。", "Tap Back to the cards.": "点“回到卡片”。",
+    "Tap Two small games.": "点“两个小游戏”。", "Play one game.": "玩一个游戏。", "Play one game": "玩一个游戏",
+    "Meaning game": "意思游戏", "Sentence game": "句子游戏", "Tap Back to the cards.": "点“回到卡片”。",
     "No sound here. Read it out loud.": "这里没有声音。大声读出来。", "Read it": "看信", "Next letter": "下一封信", "The quest marker is jumping. Go to the map table!": "任务标记在跳。去地图桌！"
   }, [
     [/^card (\d+) of (\d+)$/, "第 $1 张，共 $2 张"],
@@ -1534,14 +1566,42 @@
   // The place to go next: the same rule as the "Next" plate under the world (hdPlan in 90-boot.js): the mailbox while today's mail
   // is not opened or a letter is unread, then the map table while old words or new words wait, then the watchtower for school words.
   function hdNext() { const n = hdPlan().next; return n ? n.go : ""; }
-  // The dock: the button of the next place glows and breathes with the same soft ring as the plate.
+  // One rule for where he may go (the tutor, 23 November: "I do not want the user to waste time playing games where he should
+  // be learning spelling only"): until today's task is done, only the place of the next part opens. Every other place (shop and
+  // building, the hut, the school when it is not next, the mailbox when it is not next) stays shut, whichever way he tries:
+  // the dock, the plate, a place tag in 3D, Enter beside a place, the "Open" button. The menu is not a place: it always works.
+  function hdShut(go) {
+    if (!student || !todaySession || !ritualDone() || hdTaskDone()) return false;   // before the mail, the mailbox opens by itself
+    const n = hdPlan().next; return !n || n.go !== go;
+  }
+  // A tap on a shut place: the plate pulses and Orbit says what comes first (at most once in 2 seconds; the pulse every time).
+  const HD_FIRST = {
+    mail: ["First: your mail.", "先看信。"], old: ["First: the map.", "先去地图。"], new: ["First: the map.", "先去地图。"],
+    school: ["First: your school words.", "先做学校单词。"], story: ["First: today's story.", "先读今天的故事。"], "": ["First: today's task.", "先完成今天的任务。"]
+  };
+  let hdShutAt = 0, hdPulseT = 0;
+  function hdShutTap() {
+    const n = hdPlan().next, line = HD_FIRST[n ? n.key : ""] || HD_FIRST[""];
+    const t = $("todayline");
+    if (t) { t.classList.remove("hd-pulse"); void t.offsetWidth; t.classList.add("hd-pulse"); clearTimeout(hdPulseT); hdPulseT = setTimeout(() => t.classList.remove("hd-pulse"), 1400); }
+    W.sfx("squash");
+    const now = Date.now(); if (now - hdShutAt < 2000) return; hdShutAt = now;
+    Guide.text(line[0], line[1]);
+  }
+  // The dock: the button of the next place glows and breathes with the same soft ring as the plate; a shut place looks shut
+  // (dimmed, a small lock), and so do the place tags over the 3D world.
   function hdDock() {
     const next = hdNext();
     document.querySelectorAll("#dpad button").forEach(b => {
-      const on = b.dataset.go === next, dot = b.querySelector(".dot");
+      const on = b.dataset.go === next, dot = b.querySelector(".dot"), shut = hdShut(b.dataset.go);
       b.classList.toggle("on", on);
       if (dot) dot.remove();   // the ring replaces the old dot
+      if (b.classList.contains("hd-shut") !== shut) { b.classList.toggle("hd-shut", shut); b.setAttribute("aria-disabled", String(shut)); }
+      if (!b.querySelector(".hd-lock")) b.insertAdjacentHTML("beforeend", '<span class="hd-lock" aria-hidden="true">' + ICON("lock") + "</span>");
     });
+    document.querySelectorAll("#w3labels [data-spot]").forEach(b => b.classList.toggle("hd-shut", hdShut(b.dataset.spot)));
+    const open = document.body.classList.contains("hd-locked") ? hdNext() || "none" : "";   // the 3D "Open" button (CSS 30-hud.css)
+    if (document.body.dataset.hdOpen !== open) document.body.dataset.hdOpen = open;
   }
   function sizeCanvas() { const w = W3(); if (w) w.resize(); }
   // The world's place tags follow the same rule as the dock: mail (or locked) lights the mailbox; else chest lights the map table.
@@ -1554,13 +1614,15 @@
   // Hints. #worldhint stays in the page (hidden from the eye; the tests read it); Orbit says each hint aloud.
   // Any part may write an older wording into #worldhint: it is brought to today's wording here, then sent to Orbit once.
   const HD_SCHOOL = "Now do your school words. Tap School.", HD_SCHOOL_ZH = "现在做学校单词。点“学校单词”。";
+  const HD_STORY = "Now read today's story. Tap Hut.", HD_STORY_ZH = "现在读今天的故事。点“小屋”。";
   const HD_HINTS = [
     [/^Open your mailbox first/i, "Open your mailbox first", "mail_first"],
     [/^You have mail/i, "You have mail!", "mail_new"],
     [/quest marker is jumping|^Your map is ready/i, "Your map is ready. Go to the map table.", "map_ready"],
     [/^Done for today/i, "Done for today. Come back tomorrow!", "day_done"],
     [/^No (quest|level) today/i, "No level today. Come back tomorrow!", "no_level"],
-    [/^Now do your school words/i, HD_SCHOOL, ""]   // not in Orbit's catalogue: said with Guide.text
+    [/^Now do your school words/i, HD_SCHOOL, "", HD_SCHOOL_ZH],   // not in Orbit's catalogue: said with Guide.text
+    [/^Now read today's story/i, HD_STORY, "", HD_STORY_ZH]
   ];
   let hdSaid = "", hdSaidAt = 0;
   function hdOnHint() {
@@ -1573,7 +1635,7 @@
     if (h[2] === "mail_first" && !$("modal").hidden) return;   // the mailbox is already open in front of him
     if ($("worldwrap").hidden) return;                          // hints belong to the walking view
     const now = Date.now(); if ((h[2] || h[1]) === hdSaid && now - hdSaidAt < 8000) return;
-    hdSaid = h[2] || h[1]; hdSaidAt = now; if (h[2]) Guide.say(h[2]); else Guide.text(h[1], HD_SCHOOL_ZH);
+    hdSaid = h[2] || h[1]; hdSaidAt = now; if (h[2]) Guide.say(h[2]); else Guide.text(h[1], h[3] || "");
   }
   function hdHint(text) { $("worldhint").textContent = text; }
   if (window.MutationObserver) new MutationObserver(hdOnHint).observe($("worldhint"), { childList: true, characterData: true, subtree: true });
@@ -1587,6 +1649,7 @@
     const pl = hdPlan(), n = pl.next;
     if (n && n.go === "chest") return "Your map is ready. Go to the map table.";
     if (n && n.go === "tower") return HD_SCHOOL;
+    if (n && n.key === "story") return HD_STORY;
     if (pl.wait) { hdHintLate = true; return ""; }
     return openDay() ? "" : doneToday() ? "Done for today. Come back tomorrow!" : "No level today. Come back tomorrow!";
   }
@@ -1600,6 +1663,8 @@
   }
   function walkTo(name) {
     const w = W3();
+    if (hdShut(name)) return hdShutTap();   // shut until today's task is done: he does not walk there
+
     if (name === "build" && ritualDone() && typeof sleepGate === "function" && sleepGate("build")) return;   // shut: say so before walking there
     if (!w || !w.walkTo || !ritualDone()) return openSpot(name);
     hdHint("Walking to " + SPOT_LABEL[name] + "…");
@@ -1624,9 +1689,11 @@
     "Open your mailbox first": "先打开你的信箱", "You have mail!": "你有信！",
     "Your map is ready. Go to the map table.": "你的地图准备好了。去地图桌。",
     "No level today. Come back tomorrow!": "今天没有关卡。明天再来！", "Done for today. Come back tomorrow!": "今天完成了。明天再来！",
-    "Tap a place to walk there": "点一个地方，走过去", [HD_SCHOOL]: HD_SCHOOL_ZH,
+    "Tap a place to walk there": "点一个地方，走过去", [HD_SCHOOL]: HD_SCHOOL_ZH, [HD_STORY]: HD_STORY_ZH,
     "Open the mailbox": "打开信箱", "Open the map": "打开地图", "Go into the hut": "进小屋", "Build and shop": "建造和商店",
-    "Loading the world…": "正在加载世界…"
+    "Loading the world…": "正在加载世界…",
+    "First: your mail.": "先看信。", "First: the map.": "先去地图。", "First: your school words.": "先做学校单词。",
+    "First: today's story.": "先读今天的故事。", "First: today's task.": "先完成今天的任务。"
   }, [
     [/^Day (\d+) at the outpost$/, "在营地的第 $1 天"],
     [/^Walking to (the map table|my place|my hut|the mailbox)…$/, m => "正在走向" + ({ "the map table": "地图桌", "my place": "我的地方", "my hut": "我的小屋", "the mailbox": "信箱" })[m[1]] + "…"]
@@ -1640,8 +1707,12 @@
   function openSpot(name) {
     if (!ritualDone()) { $("worldhint").textContent = "Open your mailbox first"; return showMailPopup(); }
     // Hooks for later parts: the outpost asleep (36-sleep), school words at the watchtower (82-school).
+    // Until today's task is done only the place of the next part opens (hdShut, 30-world.js); every way in comes through here.
+    if (typeof hdShut === "function" && hdShut(name)) return hdShutTap();
     if (typeof sleepGate === "function" && sleepGate(name)) return;
     if (name === "tower") { if (typeof openSchool === "function") openSchool(); return; }
+    // the story is the last part of today's task and lives in the hut: while it is next, the hut opens today's page
+    if (name === "hut") { const n = hdPlan().next; if (n && n.key === "story" && typeof storyOpenNext === "function" && storyOpenNext()) return; }
     if (name === "chest") showPage("quest"); else if (name === "hut") openHut(); else if (name === "mail") showMailPopup(); else showPage("build");
   }
   function showPage(which) {
@@ -1659,7 +1730,8 @@
   // ============ the outpost asleep: free play after the level, then night until tomorrow ============
   // Owner: sleep team. About 10 minutes of free play (the walking view, the shop, building) once a level is finished
   // today, or when no level waits today. Then Orbit says good night, a dusk veil and stars come over the world, and the
-  // shop and building rest until tomorrow. Learning never closes: the hut, the mailbox, the map, levels and school words stay open.
+  // shop and building rest until tomorrow. Learning never closes: the hut, the mailbox, the map, levels and school words stay open
+  // at night. (Before today's task is done, only the place of the next part opens: hdShut in 30-world.js.)
   // Nothing he built or bought is touched. The clock shows whole minutes only, never seconds.
   const SL_SAVE_EVERY = 15;                      // seconds between saves of the clock to today's session row
   const SL_WARN_AT = 120;                        // Orbit says "two more minutes" here
@@ -1817,7 +1889,7 @@
     "Island test: ten words from this island.": "小岛测验：这个岛上的十个单词。", "Practise again": "再练一次",
     "Opens tomorrow. Two levels a day!": "明天开启。每天最多两关！", "No words here yet. Ask your teacher.": "这里还没有单词。问问你的老师。",
     "Opens on your start day.": "到你开始的那天就开启。", "All 50 levels done!": "50 关全部完成！", "Open today's word cards first.": "先打开今天的单词卡。",
-    "Tap Start.": "点“开始”。", "Tap Go on.": "点“继续”。"
+    "Tap Start.": "点“开始”。", "Practise again after today's task.": "完成今天的任务后再练习。", "Tap Go on.": "点“继续”。"
   }, [
     [/^Level (\d+) · Today$/, "第 $1 关 · 今天"], [/^Level (\d+) · Done$/, "第 $1 关 · 完成"], [/^Level (\d+) · Island test$/, "第 $1 关 · 小岛测验"],
     [/^(\d+) new words? · (\d+) old words? to check$/, "$1 个新单词 · $2 个旧单词要检查"], [/^(\d+) new words?$/, "$1 个新单词"], [/^(\d+) old words? to check$/, "$1 个旧单词要检查"],
@@ -1867,13 +1939,15 @@
       if (!parts.length && !test) lines[0] = row && !row.completed ? "Tap Go on." : "Tap Start.";   // the line names the button he sees
       return { eyebrow: "Level " + n + " · Today", lines, btn: (row && !row.completed ? "Go on with level " : "Start level ") + n, primary: true, go: () => {
         // a second level on the same day: its new word cards come first, as on the first level
-        if (doneToday() > 0 && dayWords(n).some(w => w.level === 0 && !cardOpened(w))) { cmNote("Open today's word cards first."); showMailPopup(); return; }
+        if (doneToday() > 0 && dayWords(n).some(w => w.level === 0 && !cardDone(w))) { cmNote("Open today's word cards first."); showMailPopup(); return; }
         startQuest(n);
       } };
     }
     if (st === "done") {
       const lines = [dayWords(n).map(w => w.word).join(" · ")];
       if (!openDay() && n === cmLastDone()) lines.push(cmNextNote());
+      // practice is free play with words: it waits until today's task is done (the tutor: "continue finish the daily mission")
+      if (typeof hdTaskDone === "function" && !hdTaskDone()) { lines.push("Practise again after today's task."); return { eyebrow: "Level " + n + " · Done", lines }; }
       return { eyebrow: "Level " + n + " · Done", lines, btn: "Practise again", id: "practice", go: () => startQuest(n, true) };
     }
     if (st === "empty") return { eyebrow: "Level " + n + (test ? " · Island test" : ""), lines: ["No words here yet. Ask your teacher."] };
@@ -2163,7 +2237,8 @@
       (p.q ? '<div class="clue ht-q"><p class="kind">' + ICON("question") + 'A question</p><p class="ht-qtext nozh">' + W.esc(p.q) + zl(p.qzh) + "</p>" +
         (opts.length ? '<div class="ht-opts" id="htOpts">' + opts.map((o, i) => '<button type="button" class="btn ht-opt nozh" data-k="' + i + '"><span>' + W.esc(o.t) + "</span>" + zl(o.z) + "</button>").join("") + '<p class="ht-fb nozh" id="htFb" aria-live="polite"></p></div>'
         : (p.a ? '<button type="button" class="btn quiet" id="htShow">Show the answer</button><p class="ht-a" id="htA" hidden>' + W.esc(p.a) + "</p>" : "")) + "</div>" : "") +
-      '<footer class="pg-foot"><span class="grow"></span><button type="button" class="btn primary" id="storyClose">Close the story</button></footer></div>';
+      // the way out is quiet until the question is answered; then it is the main button (the story is a part of his day)
+      '<footer class="pg-foot"><span class="grow"></span><button type="button" class="btn' + (opts.length ? "" : " primary") + '" id="storyClose">Close the story</button></footer></div>';
     $("full").classList.add("ht-storyfull"); $("full").hidden = false; W.sfx("page");
     storyVoiceCheck();
     const spans = [...$("fullBody").querySelectorAll(".ht-s")];
@@ -2180,6 +2255,8 @@
         if (o.ok) {
           b.classList.add("ht-right"); $("htOpts").querySelectorAll(".ht-opt").forEach(x => { x.disabled = true; });
           $("htFb").innerHTML = "Yes! You found it." + zl("对了！你找到了。"); W.sfx("pop");
+          storyFinish(level, tries);   // read, and its question answered: the story part of today is done
+          $("storyClose").classList.add("primary"); $("storyClose").focus();
         } else {
           b.classList.add("ht-miss"); b.disabled = true;
           $("htFb").innerHTML = "Not yet. Look again." + zl("还没找到。再看一看。");
@@ -2188,11 +2265,55 @@
       });
     }
     if ($("htShow")) $("htShow").onclick = () => { $("htA").hidden = false; $("htShow").hidden = true; };
-    const done = () => closeStory(onClose);
+    // a page with no question to tap (none today; kept for older pages) counts as read when he closes it
+    const done = () => { if (!opts.length) storyFinish(level, 0); closeStory(onClose); };
     $("storyClose").onclick = done; $("fullClose").onclick = done;
     $("full").onclick = e => { if (e.target === $("full")) done(); };
     logEvent("story_opened", { level });
     return true;
+  }
+  // ---- the story as the last part of today's task (the tutor: "once user finishes the daily task, he MUST read the story") ----
+  // The page of each level finished today waits until he has read it and tapped the right answer to its question. That is
+  // saved as the event "story_done" { level } (table events: his device adds and reads its own rows, so the real database
+  // needs no new column). The pages he finished are read once when he comes in (storyLoad, called by unlock in 90-boot.js).
+  let storyDone = null;   // the levels whose page he has finished; null until loaded
+  async function storyLoad() {
+    if (!student) return;
+    const id = student.id;
+    let got = [];
+    try { const r = await sb.from("events").select("*").eq("student_id", id).eq("type", "story_done"); got = (r && r.data) || []; } catch (e) { got = []; }
+    if (!student || student.id !== id) return;
+    const set = new Set(got.map(e => +(e.detail && e.detail.level)).filter(n => n > 0));
+    if (storyDone) storyDone.forEach(n => set.add(n));
+    storyDone = set;
+    if (todaySession) renderStats();
+  }
+  // The levels finished today that have a story page, in order.
+  function storyLevels() {
+    const S = window.WW_STORY || {}, t = today();
+    return quests.filter(x => x.completed && x.quest_day && x.finished_at && W.dkey(new Date(x.finished_at)) === t && S[x.quest_day])
+      .map(x => x.quest_day).sort((a, b) => a - b);
+  }
+  // The story part of today's task (hdPlan in 90-boot.js): null when no level with a page was finished today.
+  function storyPart() {
+    const ls = storyLevels(); if (!ls.length) return null;
+    const left = ls.filter(n => !(storyDone && storyDone.has(n)));
+    return { done: !left.length, n: "", label: "Story", level: left.length ? left[0] : ls[ls.length - 1] };
+  }
+  function storyFinish(level, tries) {
+    if (!storyDone) storyDone = new Set();
+    if (storyDone.has(level)) return;
+    storyDone.add(level);
+    logEvent("story_done", { level, tries: tries || 0 });
+    if (student && todaySession) renderStats();
+  }
+  // Today's page as the next part (the plate, Hut in the dock, the level's end page). Closing it lands in the walking view.
+  function storyOpenNext() {
+    const sp = storyPart(); if (!sp) return false;
+    if (!$("panel").hidden) closePanel();                                  // nothing half-open under the page
+    if (!$("questpage").hidden || !$("buildpage").hidden) { q = null; showPage("world"); }
+    Guide.quiet();   // a line about the world ("First: today's story.") does not hang over the page
+    return showStory(sp.level, () => { renderStats(); if (!$("worldwrap").hidden) hdHint(hdStartHint()); });
   }
   if (ZH) ZH.add({
     "Close the story": "合上故事", "Show the answer": "看答案", "A question": "一个问题", "Stop reading": "停止朗读"
@@ -2200,16 +2321,21 @@
   // For checks from outside the script (tools/play.js g.eval): the hut's calls, read-only.
   window.WW_HUT = Object.freeze({ showStory, openHut, openCard: w => openCard(typeof w === "string" ? byId(w) : w), spellCounts });
   // ============ "Understand more": two small games on one card's page ============
-  // Game 1: which Chinese meaning is this word? Game 2: which sentence uses the word the right way? A pick that is not it is
-  // greyed out and he picks again; the right pick shows the Chinese. One way back, always in the same place: the page foot,
-  // on the left. From the mailbox it goes straight back to the cards; elsewhere back to the card.
+  // Game 1 ("Meaning game"): which Chinese meaning is this word? Game 2 ("Sentence game"): which sentence uses the word the
+  // right way? He picks one; finishing either one opens the next card in the mailbox (markGame, 10-mail.js). The other game
+  // stays there for him to play too, never asked. A pick that is not it is greyed out and he picks again; the right pick shows
+  // the Chinese. One way back, always in the same place: the page foot, on the left. From the mailbox it goes straight back
+  // to the cards; elsewhere back to the card.
   const fb = () => $("fullBody");
-  const gameHead = (n, w) => '<header class="pg-head ml-head"><span class="eyebrow">Two small games · ' + W.esc(w.word) + "</span>" +
-    (n ? '<ol class="trail" aria-hidden="true"><li class="' + (n === 1 ? "now" : "done") + '"></li><li class="' + (n === 2 ? "now" : "") + '"></li></ol>' : "") + "</header>";
+  const gameHead = (n, w) => '<header class="pg-head ml-head"><span class="eyebrow">Small game · ' + W.esc(w.word) + "</span></header>";
   const fromMail = () => !!(mail && !$("modal").hidden);
   const gameBack = w => fromMail() ? closeFull() : openFull(w, "voice");
-  // "Two small games" starts game 1; game 2 follows. (The name is kept: the card's page calls it.)
-  function chooseGame(w) { game1(w); }
+  // Which games can be made for a word (the card's page offers only those).
+  const g1Others = w => words.filter(x => x.id !== w.id && x.meaning_zh && x.meaning_zh !== w.meaning_zh);
+  const g2Pool = w => words.filter(x => x.id !== w.id && x.sentence_en && W.hasWord(x.sentence_en, x.word));
+  function gameCan(w, n) { return n === 1 ? !!w.meaning_zh && g1Others(w).length >= 1 : !!w.sentence_en && g2Pool(w).length >= 1; }
+  function playGame(w, n) { if (n === 2) game2(w, true); else game1(w); }
+  function chooseGame(w) { game1(w); }   // older callers: the meaning game
   // Shared: draw the options, handle picks. o: { log, title, top, ask (html), opts [{ t, ok }], right (html after a right pick), last }
   function cardGame(w, n, o, next) {
     const backLabel = fromMail() ? "Back to the cards" : "Back to the card";
@@ -2229,40 +2355,38 @@
       g.className = "fb good nozh"; g.innerHTML = ICON("check") + '<span class="nozh">' + o.right + "</span>";
       logEvent(o.log, { word: w.word, correct: true });
       const st = $("gstep");
-      if (o.last) {
-        mlGamesDone.add(w.id);
-        st.textContent = "Tap " + backLabel + "."; st.hidden = false; st.classList.add("ml-left");
-        $("backCard").classList.remove("quiet"); $("backCard").classList.add("primary");
-        mlAsk(fb(), $("backCard")); $("backCard").focus();
-      } else {
-        st.textContent = "Tap Next game."; st.hidden = false;
-        $("nx").hidden = false; $("nx").onclick = next; mlAsk(fb(), $("nx")); $("nx").focus();
-      }
+      markGame(w);   // one game finished: the next card opens (the other game stays there, not asked)
+      st.textContent = "Tap " + backLabel + "."; st.hidden = false; st.classList.add("ml-left");
+      $("backCard").classList.remove("quiet"); $("backCard").classList.add("primary");
+      mlAsk(fb(), $("backCard")); $("backCard").focus();
+      if (!o.last && next) { $("nx").hidden = false; $("nx").classList.remove("primary"); $("nx").onclick = next; }
     });
   }
   function game1(w) {
-    const k = w.word, others = W.shuffle(words.filter(x => x.id !== w.id && x.meaning_zh && x.meaning_zh !== w.meaning_zh)).slice(0, 2);
+    const k = w.word, others = W.shuffle(g1Others(w)).slice(0, 2);
     const opts = W.shuffle([{ t: w.meaning_zh, ok: true }].concat(others.map(o => ({ t: o.meaning_zh, ok: false }))));
-    const g2 = () => game2(w);
-    if (!w.meaning_zh || opts.length < 2) return g2();
+    const g2 = gameCan(w, 2) ? () => game2(w) : null;   // the other game, there if he wants it
+    if (!w.meaning_zh || opts.length < 2) return g2 ? g2() : (markGame(w), gameBack(w));
     cardGame(w, 1, { log: "game_meaning", title: "Which meaning?", zh: true, top: beatsHtml(w, { heard: true, cls: "ml-gword" }),
       ask: "Which one means <b>" + W.esc(k) + "</b>? Tap it.", opts, right: '<span class="nozh">Yes. ' + W.esc(k) + " = " + W.esc(w.meaning_zh) + "</span>" }, g2);
   }
-  function game2(w) {
-    const k = w.word, pool = words.filter(x => x.id !== w.id && x.sentence_en && W.hasWord(x.sentence_en, x.word));
+  // first: he chose this game himself (then the meaning game is offered after it); else it follows the meaning game
+  function game2(w, first) {
+    const k = w.word, pool = g2Pool(w);
     const swap = o => o.sentence_en.replace(new RegExp("\\b[A-Za-z]*" + o.word + "[A-Za-z]*\\b", "i"), k);
     const opts = W.shuffle([{ t: w.sentence_en, ok: true }].concat(W.shuffle(pool).slice(0, 2).map(o => ({ t: swap(o), ok: false }))));
-    if (!w.sentence_en || opts.length < 2) { mlGamesDone.add(w.id); return gameBack(w); }
-    cardGame(w, 2, { log: "game_sentence", title: "Which sentence?", top: "", last: true,
+    if (!w.sentence_en || opts.length < 2) { if (first && gameCan(w, 1)) return game1(w); markGame(w); return gameBack(w); }
+    const other = first && gameCan(w, 1) ? () => game1(w) : null;
+    cardGame(w, 2, { log: "game_sentence", title: "Which sentence?", top: "", last: !other,
       ask: "Which sentence is right? Tap it.", opts,
-      right: '<span class="zhk">Yes. That is the one.</span>' + (w.sentence_zh ? '<span class="zh ml-fbzh">' + W.esc(w.sentence_zh) + "</span>" : "") });
+      right: '<span class="zhk">Yes. That is the one.</span>' + (w.sentence_zh ? '<span class="zh ml-fbzh">' + W.esc(w.sentence_zh) + "</span>" : "") }, other);
   }
   if (ZH) ZH.add({
     "Two small games": "两个小游戏", "Which meaning?": "哪个意思？", "Which sentence?": "哪个句子？", "Which sentence is right? Tap it.": "哪个句子对？点它。",
     "Back to the card": "回到卡片", "Back to the cards": "回到卡片", "Next game": "下一个游戏", "Not yet. Try again.": "还没对。再试一次。", "Yes. That is the one.": "对，就是这个。",
     "Tap Next game.": "点“下一个游戏”。", "Tap Back to the card.": "点“回到卡片”。", "Tap Back to the cards.": "点“回到卡片”。"
   }, [
-    [/^Two small games · (.+)$/, "两个小游戏 · $1"],
+    [/^Two small games · (.+)$/, "两个小游戏 · $1"], [/^Small game · (.+)$/, "小游戏 · $1"],
     [/^Which one means (.+)\? Tap it\.$/, "哪一个是 $1 的意思？点它。"]
   ]);
   // ---- the build page: shop and plot ----
@@ -2740,15 +2864,17 @@
     const test = [];
     testWords.forEach(w => test.push({ w, type: "test", step: "listen", part: "test" }, { w, type: "test", step: "reveal", part: "test" }));
     // words this level already met in a mixed round (a stop and a new start): they are not asked, or paid, twice
-    const met = new Set();
-    try { const r = await sb.from("attempts").select("*").eq("quest_id", row.id).eq("kind", "mixed"); (r.data || []).forEach(a => met.add(a.word_id)); } catch (e) {}
+    const met = new Set(), mixAtt = [];   // mixAtt: the last round's saved tries, so a new start goes on where it was (expandMix)
+    try { const r = await sb.from("attempts").select("*").eq("quest_id", row.id).eq("kind", "mixed"); (r.data || []).forEach(a => { met.add(a.word_id); mixAtt.push(a); }); } catch (e) {}
     const skip = new Set(due.map(w => w.id).concat(testWords.map(w => w.id), Array.from(met)));
     // the new-rule word: at most one a level (not again after a stop), never in an island test; student.probes === false turns it off
     let probe = !isTest(day) && student.probes !== false && probeList(zoneOf(day) + 1).length ? zoneOf(day) + 1 : 0;
     if (probe) { try { const r = await sb.from("attempts").select("*").eq("quest_id", row.id).eq("kind", "probe"); if ((r.data || []).length) probe = 0; } catch (e) {} }
     const training = typeof trainingTurns === "function" ? await trainingTurns(day, due, fresh.concat(scored), skip) : [];   // training hook
-    q = { day, row, items: reviews.concat(newTurns(fresh, scored, false, probe), test), i: 0, results: {}, tries: 0, startedAt: Date.now(), mixSkip: skip, mixPaid: met };
+    const behind = await stagesBehind(row.id);   // the trail: steps of this level already behind him before this start
+    q = { day, row, items: reviews.concat(newTurns(fresh, scored, false, probe), test), i: 0, results: {}, tries: 0, startedAt: Date.now(), mixSkip: skip, mixPaid: met, mixAtt };
     q.items.splice(reviews.length, 0, ...training);   // training hook
+    q.stages = lvStages(behind);
     if (!q.items.length) { q.step = "end"; return renderQ(); }
     logEvent("quest_start", { day, reviews: due.length, new: fresh.length, test: testWords.length });
     $("qTitle").innerHTML = "Level " + day + (isTest(day) ? " <small>island test</small>" : "");
@@ -2793,24 +2919,62 @@
     });
     return out;
   }
+  // The last round keeps its place like the rounds before it: its questions, and which he has tried or done, are kept on the
+  // device for today (mixSave). A new start of the level (a reload, "Stop here") takes that plan, fills in from the level's saved
+  // tries (q.mixAtt) and goes on at the first question not done: nothing answered is asked again or counted twice.
+  const mixKey = () => "ww.mix." + (student ? student.id : "") + "." + today();
+  function mixSave(qx) {
+    qx = qx || q; if (!qx || qx.practice || !qx.row || !qx.row.id || !qx.items) return;
+    const plan = qx.items.filter(x => x.step === "mixed").map(x => ({ id: x.w.id, kind: x.kind, older: !!x.older, tried: !!x.tried, done: !!x.done }));
+    try { if (plan.length) localStorage.setItem(mixKey(), JSON.stringify({ quest: qx.row.id, plan })); } catch (e) {}
+  }
+  function mixSaved() {
+    if (q.practice || !q.row || !q.row.id) return null;
+    try {
+      const m = JSON.parse(localStorage.getItem(mixKey()) || "null");
+      if (!m || m.quest !== q.row.id || !Array.isArray(m.plan) || !m.plan.length) return null;
+      const out = m.plan.map(x => { const w = words.find(v => v.id === x.id); return w ? { w, type: "mixed", step: "mixed", part: "new", round: ROUNDS.length, kind: x.kind, older: !!x.older, tried: !!x.tried, done: !!x.done } : null; });
+      return out.every(Boolean) ? out : null;
+    } catch (e) { return null; }
+  }
   function expandMix() {
-    const it = cur(), olds = q.practice ? [] : olderWords(q.day, q.mixSkip);
-    q.items.splice(q.i, 1, ...planMixed(it.news, olds));
+    const it = cur(), saved = mixSaved();
+    const plan = saved || planMixed(it.news, q.practice ? [] : olderWords(q.day, q.mixSkip));
+    // the saved tries, in order: a right one closes the first open question of that word and clue, any other marks it tried
+    (q.mixAtt || []).forEach(a => { const x = plan.find(y => !y.done && y.w.id === a.word_id && y.kind === a.step); if (x) { x.tried = true; if (a.correct) x.done = true; } });
+    q.items.splice(q.i, 1, ...plan);
+    while (q.i < q.items.length && q.items[q.i].step === "mixed" && q.items[q.i].done) q.i++;
+    mixSave();
   }
 
   // ---- the page frame ----
+  // The trail: ONE dot for each step of today's level, the same dots on every page of it: old words, Orbit's training, meet,
+  // type, build, the last round, copy the sentence, the never-taught word, the island test (those this level has). Steps behind
+  // him are filled, this one is marked. Words and questions inside a step are counted on the page itself, never by the dots.
+  const STAGES = ["review", "training", "meet", "type", "build", "mix", "sentence", "probe", "test"];
+  const stageOf = it => it.part !== "new" ? it.part : it.step === "probe" ? "probe" : ["meet", "type", "build", "mix", "sentence"][Math.min(it.round || 0, 4)];
+  function lvStages(behind) {
+    const has = new Set(q.items.map(stageOf).concat(behind || []));
+    if (["meet", "type", "build", "mix", "sentence", "probe"].some(s => has.has(s))) ["meet", "type", "build", "mix"].concat(q.practice ? [] : ["sentence"]).forEach(s => has.add(s));
+    return STAGES.filter(s => has.has(s));
+  }
+  async function stagesBehind(questId) {   // from the level's saved tries: the steps he already went through before this start
+    const of = { review: "review", game: "review", training: "training", "new": "type", mixed: "mix", sentence: "sentence", probe: "probe", test: "test" };
+    try { const r = await sb.from("attempts").select("*").eq("quest_id", questId); return (r.data || []).map(a => of[a.kind]).filter(Boolean); } catch (e) { return []; }
+  }
+  function lvTrail(it) {
+    if (!q.stages) q.stages = lvStages();
+    if (q.stages.indexOf(stageOf(it)) < 0) q.stages = lvStages(q.stages);
+    const n = q.stages.length, at = q.stages.indexOf(stageOf(it));
+    return '<ol class="trail" aria-label="Step ' + (at + 1) + " of " + n + '">' +
+      Array.from({ length: n }, (_, i) => '<li class="' + (i < at ? "done" : i === at ? "now" : "") + '"></li>').join("") + "</ol>";
+  }
   function head() {
-    const it = cur(); let n, at;
-    if (it.step === "mixed") { const ms = q.items.filter(x => x.step === "mixed"); n = ms.length; at = ms.indexOf(it); }
-    else if (it.part === "new") {   // the rounds, the last round, the sentences, the never-taught word (when this level has one)
-      n = ROUNDS.length + 1 + (q.practice ? 0 : 1) + (q.items.some(x => x.step === "probe") ? 1 : 0); at = Math.min(it.round, n - 1);
-    }
-    else { const ids = []; q.items.forEach(x => { if (x.part === it.part && !x.extra && ids.indexOf(x.w.id) < 0) ids.push(x.w.id); }); n = ids.length; at = ids.indexOf(it.w.id); }
+    const it = cur();
     const what = it.step === "mixed" ? "Last round" : it.step === "probe" ? "Work it out" : it.part === "new" ? "New word" : it.part === "test" ? "Island test" : "Old word";
     const brow = q.practice ? "Practice · Level " + q.day : "Level " + q.day + " · " + what;
-    return '<header class="pg-head"><span class="eyebrow">' + brow + '</span><ol class="trail" aria-label="' + (at + 1) + " of " + n + '">' +
-      Array.from({ length: n }, (_, i) => '<li class="' + (i < at ? "done" : i === at ? "now" : "") + '"></li>').join("") +
-      '</ol><button type="button" class="btn quiet" id="pauseBtn">Stop here</button></header>';
+    return '<header class="pg-head"><span class="eyebrow">' + brow + "</span>" + lvTrail(it) +
+      '<button type="button" class="btn quiet" id="pauseBtn">Stop here</button></header>';
   }
   const title = (t, doHtml) => '<h3 class="pg-title">' + t + '</h3><p class="do">' + doHtml + "</p>";
   const soundBtn = (id, label) => '<button type="button" class="sound" id="' + (id || "hear") + '" aria-label="' + (label || "Hear the word") + '">' + ICON("speaker") + "</button>";
@@ -3433,8 +3597,9 @@
     const it = cur(), w = it.w, k = w.word, a = norm(val);
     if (!a || q.busy) return;
     const right = a === W.key(k), first = !it.tried, qq = q, hn = lvHints(); let paid = false;
-    it.tried = true; q.busy = true;
+    it.tried = true; q.busy = true; mixSave(qq);
     await lvAttempt(w, "mixed", it.kind, a, right, w.level, w.level, hn);
+    if (right) { it.done = true; mixSave(qq); }   // kept: after a reload this question is behind him
     if (first && it.older && !practising()) {
       if (!right) { const tm = W.addDays(today(), 1), patch = { wrong_streak: (w.wrong_streak || 0) + 1 }; if (!w.due || w.due > tm) patch.due = tm; await saveWord(w, patch); }
       else if (!q.mixPaid.has(w.id)) { q.mixPaid.add(w.id); paid = true; await saveQuest(q.row, { diamonds_earned: (q.row.diamonds_earned || 0) + 1 }); renderStats(); }
@@ -3516,6 +3681,13 @@
     const wk = W.weekStart(today()), rated = sessions.some(s => s.day >= wk && s.focus_score);
     const nl = nextLockedDay(), zi = zoneOf(day), zoneDone = isTest(day), nextZone = zoneDone && ZONES[(zi + 1) % ZONES.length];
     const story = !!(window.WW_STORY && window.WW_STORY[day] && typeof showStory === "function");
+    // While today's task is not done, the page offers only the next part (the story, or the school words when they come
+    // first); no shop, no map (the tutor, 23 November). Once the task is done it offers its free choices as before.
+    const nx = typeof hdTaskDone === "function" && !hdTaskDone() ? (hdPlan().next || { key: "" }) : null;
+    const NEXT_BTN = { story: ["toStory", "book", "Read today's story"], school: ["toSchool", "book", "Go to your school words"], mail: ["toMail", "mail", "Open the mailbox"] };
+    const foot = nx ? (([id, ic, label]) => '<footer class="pg-foot lv-mid"><button type="button" class="btn primary" id="' + id + '">' + ICON(ic) + label + "</button></footer>")(NEXT_BTN[nx.key] || ["toWorld", "home", "Back to the outpost"])
+      : '<footer class="pg-foot lv-mid">' + (story ? '<button type="button" class="btn primary" id="toStory">' + ICON("book") + "Read today's story</button>" : '<button type="button" class="btn primary" id="toWorld">' + ICON("home") + "Back to the outpost</button>") +
+        '</footer><footer class="pg-foot lv-mid lv-second"><button type="button" class="btn" id="toBuild">' + ICON("shop") + 'Go to the shop</button><button type="button" class="btn" id="toPath">' + ICON("map") + "Back to the map</button></footer>";
     q = { ended: true };
     qp('<header class="pg-head"><span class="eyebrow">Level ' + day + '</span></header><div class="lv-end">' +
       '<div class="stamp lv-ok"><span>level ' + day + "</span><b>done</b><span>day " + totalDays() + "</span></div>" +
@@ -3527,14 +3699,20 @@
       '<div class="lv-hints"><p class="hint">' + (ok === total ? "All correct!" : "Some words come back tomorrow.") + "</p>" +
       '<p class="hint">' + (openDay() ? "Level " + openDay() + " is open today." : nl ? "Level " + nl + " opens tomorrow." : "All levels done!") + "</p></div>" +
       (rated ? "" : '<div class="lv-rate"><p class="do">How focused were you today?</p><div class="lv-ratebtns" id="rate">' + [1, 2, 3, 4, 5].map(n => '<button type="button" class="btn" data-n="' + n + '">' + n + "</button>").join("") + '</div><p class="hint">1 = hard. 5 = very focused.</p></div>') +
-      '<footer class="pg-foot lv-mid">' + (story ? '<button type="button" class="btn primary" id="toStory">' + ICON("book") + "Read today's story</button>" : '<button type="button" class="btn primary" id="toWorld">' + ICON("home") + "Back to the outpost</button>") +
-      '</footer><footer class="pg-foot lv-mid lv-second"><button type="button" class="btn" id="toBuild">' + ICON("shop") + 'Go to the shop</button><button type="button" class="btn" id="toPath">' + ICON("map") + "Back to the map</button></footer></div>");
+      foot + "</div>");
     W.sfx("pop");
     qb.querySelectorAll("#rate button").forEach(b => b.onclick = async () => { qb.querySelectorAll("#rate button").forEach(x => x.classList.toggle("lv-sel", x === b)); await saveSession({ focus_score: +b.dataset.n }); });
-    if ($("toStory")) $("toStory").onclick = () => showStory(day, () => { q = null; showPage("world"); });
-    if ($("toWorld")) $("toWorld").onclick = () => { q = null; showPage("world"); };
-    $("toBuild").onclick = () => { q = null; btab = "shop"; showPage("build"); };
-    $("toPath").onclick = () => { q = null; renderPath(); };
+    // the story opens over the walking view, not over this page: after it he is in the world, with nothing half-open under it
+    const toWorld = () => { q = null; showPage("world"); };
+    if ($("toStory")) $("toStory").onclick = () => {
+      if (nx && typeof storyOpenNext === "function" && storyOpenNext()) return;
+      toWorld(); showStory(day, () => { renderStats(); hdHint(hdStartHint()); });
+    };
+    if ($("toWorld")) $("toWorld").onclick = toWorld;
+    if ($("toSchool")) $("toSchool").onclick = () => { toWorld(); openSpot("tower"); };
+    if ($("toMail")) $("toMail").onclick = () => { toWorld(); openSpot("mail"); };
+    if ($("toBuild")) $("toBuild").onclick = () => { q = null; btab = "shop"; showPage("build"); };
+    if ($("toPath")) $("toPath").onclick = () => { q = null; renderPath(); };
     renderStats(); Guide.levelEnd(day);
   }
 
@@ -3563,7 +3741,7 @@
     "Stop now or later. Diamonds stay safe.": "现在停或以后停都可以。钻石不会丢。",
     "All correct!": "全部正确！", "Some words come back tomorrow.": "有些词明天会再来。", "All levels done!": "所有关卡都完成了！",
     "How focused were you today?": "你今天有多专心？", "1 = hard. 5 = very focused.": "1 = 很难专心。5 = 非常专心。",
-    "Read today's story": "读今天的故事", "Back to the outpost": "回到营地", "Go to the shop": "去商店", "Back to the map": "回到地图",
+    "Read today's story": "读今天的故事", "Go to your school words": "去做学校单词", "Open the mailbox": "打开信箱", "Back to the outpost": "回到营地", "Go to the shop": "去商店", "Back to the map": "回到地图",
     "Practice done": "练习完成", "No diamonds. Tomorrow gets easier.": "没有钻石。明天会更容易。"
   }, [
     [/^Level (\d+) · New word$/, "第 $1 关 · 新单词"], [/^Level (\d+) · Old word$/, "第 $1 关 · 旧单词"], [/^Level (\d+) · Last round$/, "第 $1 关 · 最后一轮"],
@@ -3779,7 +3957,7 @@
     const s = $("sc-stop"); if (s) s.onclick = scStop;
   }
   function scStop() { if (scRun) logEvent("school_pause", { kind: scRun.kind, at: scRun.i + 1 }); scRun = null; scQuiet(); Guide.quiet(); closePanel(); }
-  const scHome = () => { scRun = null; scQuiet(); closePanel(); };
+  const scHome = () => { scRun = null; scQuiet(); closePanel(); if (!$("worldwrap").hidden && typeof hdStartHint === "function") { const h = hdStartHint(); if (h) hdHint(h); } };   // Orbit says what is next (the story)
   const scWordList = (rows, marks) => '<ul class="sc-list nozh">' + rows.map(r => '<li class="' + (marks[r.id] ? "sc-yes" : "sc-no") + '">' + (marks[r.id] ? ICON("check") : '<i class="sc-dot"></i>') + "<span>" + W.esc(r.word) + "</span></li>").join("") + "</ul>";
   // The end line: never a number that can be 0.
   const scReadyLine = n => n > 0 ? n + (n === 1 ? " word" : " words") + " ready for school." : "Good practice. More tomorrow.";
@@ -3789,6 +3967,8 @@
   const scSlowBtn = () => '<button type="button" class="btn sc-slow" id="sc-slow">' + SC_SLOW_IC + "Slowly</button>";
 
   // ============ the page at the watchtower ============
+  // For checks from outside the script (tests that look at the drill itself, whatever the day's next part is).
+  try { window.WW_SCHOOL = Object.freeze({ open: () => openSchool() }); } catch (e) {}
   function openSchool() {
     scRun = null; W.sfx("pop");
     if (scRows === null) { scOpen('<header class="pg-head"><span class="eyebrow">School words</span></header><p class="do sc-wait">Loading…</p>'); scLoad().then(() => { if (!$("panel").hidden && $("panelBody").querySelector(".sc-wait")) openSchool(); }); return; }
@@ -4174,10 +4354,9 @@
     return ex ? W.esc(ex).replace(/-/g, "|").replace(/\[([^\]]+)\]/g, '<em class="tr-mark">$1</em>').replace(/\|/g, '<span class="tr-cut" aria-hidden="true"></span>') : "";
   }
   function trHead(it) {
-    const items = q.items.filter(x => x.part === "training"), n = items.length, at = items.indexOf(it);
-    return '<header class="pg-head"><span class="eyebrow">Level ' + q.day + " · Orbit's training</span><ol class=\"trail\" aria-label=\"" + (at + 1) + " of " + n + '">' +
-      Array.from({ length: n }, (_, i) => '<li class="' + (i < at ? "done" : i === at ? "now" : "") + '"></li>').join("") +
-      '</ol><button type="button" class="btn quiet" id="pauseBtn">Stop here</button></header>';
+    // the level's own trail (80-level.js): one dot for each step of today's level
+    return '<header class="pg-head"><span class="eyebrow">Level ' + q.day + " · Orbit's training</span>" + lvTrail(it) +
+      '<button type="button" class="btn quiet" id="pauseBtn">Stop here</button></header>';
   }
   function renderTraining(it) {
     const P = trApi(), t = P ? P.tip(it.code) : { en: "", zh: "" };
@@ -4608,8 +4787,8 @@
       T().words.filter(w => w.quest_day === target).forEach(w => { if (!(w.level > 0)) { w.level = 1; w.introduced_on = dayKey(0); w.last_seen = dayKey(0); w.due = W.addDays(dayKey(0), 1); } });
       mailRead(); go("test");
     }
-    // Today's task (the tutor, 21 November): the mail, today's level and one go of school words when there is a school list,
-    // so that free play really opens after the reload.
+    // Today's task (the tutor, 21 and 23 November): the mail, today's level, one go of school words when there is a school
+    // list, and today's story page, so that free play really opens after the reload.
     function finishTask() {
       let cur = 1; while (done(cur)) cur++;
       const s = me();
@@ -4636,6 +4815,12 @@
           T().quests.push({ id: "ts-sc-" + Date.now(), student_id: s.id, quest_day: null, kind: "school", started_at: iso(0), diamonds_earned: 2 });
         }
       }
+      // The story page of every level finished today counts as read (the story is the last part of the task, 55-story).
+      const t0 = dayKey(0);
+      T().quests.filter(x => x.student_id === s.id && x.completed && x.quest_day && x.finished_at && W.dkey(new Date(x.finished_at)) === t0).forEach(x => {
+        if ((window.WW_STORY || {})[x.quest_day] && !T().events.some(e => e.student_id === s.id && e.type === "story_done" && e.detail && e.detail.level === x.quest_day))
+          T().events.push({ id: "ts-st" + x.quest_day + "-" + Date.now(), student_id: s.id, session_id: null, type: "story_done", created_at: iso(0), detail: { level: x.quest_day, tester: true } });
+      });
       mailRead(); go("");
     }
     function diamonds50() {
@@ -4703,6 +4888,8 @@
   //  - New words: done once a level was finished today (a second level is his choice), or when no level is open today.
   //    A level stopped half-way stays "not done" until it is finished, so the plate keeps leading to the map table.
   //  - School words: a fourth part while there is a school list this week (82-school supplies { done, n, label }).
+  //  - Story: the last part, once a level with a story page was finished today; done when he has read the page and tapped the
+  //    right answer (55-story storyPart). It leads to the Hut, where the story pages live.
   // next: the first part not done; null when everything is done. wait: the school rows are still loading, so "Done for today"
   // must not be shown yet.
   function hdPlan() {
@@ -4715,19 +4902,22 @@
     ].filter(p => !p.skip);
     const school = typeof schoolPart === "function" ? schoolPart() : null;
     if (school) parts.push(Object.assign({ key: "school", go: "tower" }, school));
+    const story = typeof storyPart === "function" ? storyPart() : null;
+    if (story) parts.push(Object.assign({ key: "story", go: "hut" }, story));
     let wait = false; try { wait = typeof scToday === "function" && scRows === null; } catch (e) { wait = false; }
     const next = ritualDone() && unreadCount() > 0 ? parts[0] : parts.find(p => !p.done) || null;
     return { parts, next, wait: wait && !next };
   }
-  // Today's task (the tutor, 21 November): today's mail, today's level (old words and new words), and one go of school words
-  // when there is a school list this week. Until it is done there is no free play: no free walking, no building (hdLock).
+  // Today's task (the tutor, 21 November): today's mail, today's level (old words and new words), one go of school words
+  // when there is a school list this week, and then today's story page (the tutor, 23 November). Until it is done there is
+  // no free play: no free walking, no building (hdLock), and only the place of the next part opens (hdShut in 30-world.js).
   // Nothing on today's list (no level, no school list): the task is the mail only. While the school rows load it is not done yet.
   function hdTaskDone() {
     if (!student || !todaySession) return false;
     const pl = hdPlan();
     if (!ritualDone() || pl.wait) return false;
     if (doneToday() === 0 && openDay()) return false;
-    return pl.parts.every(p => p.key !== "school" || p.done);
+    return pl.parts.every(p => (p.key !== "school" && p.key !== "story") || p.done);
   }
   // The lock follows the task: the 3D world stops taps on the ground and the arrow keys (WW3D.walkLock); the plate, the dock,
   // the place tags and Enter by a place still walk him to each part. Building is shut by sleepGate (36-sleep slOpen).
@@ -4737,7 +4927,7 @@
     if (on !== hdLocked) { hdLocked = on; document.body.classList.toggle("hd-locked", on); }
     const w = window.WW3D; if (w && w.walkLock) w.walkLock(on);
   }
-  const HD_NEXT = { mail: ["mail", "Next: Mail"], old: ["map", "Next: Old words"], new: ["map", "Next: New words"], school: ["book", "Next: School words"] };
+  const HD_NEXT = { mail: ["mail", "Next: Mail"], old: ["map", "Next: Old words"], new: ["map", "Next: New words"], school: ["book", "Next: School words"], story: ["book", "Next: Today's story"] };
   // Where today's parts were (sample A), one plate: what is next, with the place's icon and an arrow; a tap does what the dock
   // button of that place does. Under the words, one small dot per part of today, filled when done. All done: "Done for today".
   // The old row of parts stays in the page, hidden (the rule tests read it).
@@ -4818,6 +5008,8 @@
     // The school rows decide whether today's task is done (hdTaskDone): load them now, not on 82-school's poll a moment later,
     // so the plate, the lock and free play are right from the first frame. A slow answer does not hold the world for long.
     if (typeof scLoad === "function" && scLoadedFor !== student.id) await Promise.race([scLoad(), new Promise(r => setTimeout(r, 1500))]);
+    // the story pages he has finished: the story part of today's task (55-story) must be right from the first frame too
+    if (typeof storyLoad === "function") await Promise.race([storyLoad(), new Promise(r => setTimeout(r, 1500))]);
     $("title").textContent = student.name;
     $("gate").hidden = true; $("menu").hidden = false; $("stats").hidden = false; $("worldwrap").hidden = false; $("guide").hidden = false;
     sizeCanvas(); drawWorld(); renderStats();
@@ -4848,7 +5040,7 @@
     "Can't connect": "连不上", "Check the internet, then tap Try again.": "检查一下网络，然后点“再试一次”。",
     "Can't load": "加载不了", "Tap Try again. If it still does not work, ask your teacher.": "点“再试一次”。如果还是不行，问老师。",
     "Try again": "再试一次", "Word World": "单词世界", "Loading…": "正在加载…",
-    "Next: Mail": "下一步：信箱", "Next: Old words": "下一步：旧单词", "Next: New words": "下一步：新单词", "Next: School words": "下一步：学校单词",
+    "Next: Mail": "下一步：信箱", "Next: Old words": "下一步：旧单词", "Next: New words": "下一步：新单词", "Next: School words": "下一步：学校单词", "Next: Today's story": "下一步：今天的故事", "Story": "故事",
     "Done for today": "今天完成了", "Days you played this week.": "你这周玩了几天。", "Diamonds: for building.": "钻石：用来建造。", "Star words: you kept them.": "星星单词：你记住了。",
     "For the teacher: config.js is missing or still has the example values. See deploy/README.md.": "给老师：config.js 缺失或还是示例值。请看 deploy/README.md。",
     "For the teacher: anonymous sign-in is off in Supabase, or there is no internet. See deploy/README.md step M2.": "给老师：Supabase 没有打开匿名登录，或者没有网络。请看 deploy/README.md 的 M2 步。"

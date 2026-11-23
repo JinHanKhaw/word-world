@@ -88,7 +88,7 @@ button.glass:focus-visible,.btn:focus-visible,.beat:focus-visible,.chip:focus-vi
 
 .today{position:absolute;left:50%;bottom:calc(var(--u)*22);transform:translateX(-50%);display:flex;align-items:center;padding:calc(var(--u)*5) calc(var(--u)*7);gap:calc(var(--u)*2)}
 .part{display:flex;align-items:center;gap:calc(var(--u)*7);height:calc(var(--u)*30);padding:0 calc(var(--u)*13) 0 calc(var(--u)*6);border-radius:calc(var(--u)*999);font-size:calc(var(--u)*13.5);font-weight:600;white-space:nowrap}
-.part b{display:grid;place-items:center;width:calc(var(--u)*20);height:calc(var(--u)*20);border-radius:50%;border:calc(var(--u)*1.5) solid rgba(255,243,226,.6);font-size:calc(var(--u)*11.5);font-weight:700}
+.part b{display:grid;place-items:center;width:calc(var(--u)*20);height:calc(var(--u)*20);border-radius:50%;border:calc(var(--u)*1.5) solid rgba(255,243,226,.6);font-size:calc(var(--u)*12.5);font-weight:700}
 .part.done{color:var(--glass-dim)}
 .part.done b{background:#7cc46c;border-color:#7cc46c;color:#17300f}
 .part.done b .ic{font-size:calc(var(--u)*12);stroke-width:3.2}
@@ -184,11 +184,11 @@ button.glass:focus-visible,.btn:focus-visible,.beat:focus-visible,.chip:focus-vi
 .fb.good{color:var(--leaf)}
 .fb.bad{color:var(--rust)}
 .fb b{letter-spacing:.04em}
-.stamp{display:grid;place-items:center;align-content:center;width:calc(var(--u)*86);height:calc(var(--u)*86);border-radius:50%;border:calc(var(--u)*2.4) solid var(--ember-lo);color:var(--ember-lo);font-family:var(--f-display);font-size:calc(var(--u)*11);letter-spacing:.14em;text-transform:uppercase;text-align:center;line-height:1.15;transform:rotate(-10deg);position:relative;mix-blend-mode:multiply;opacity:.92}
+.stamp{display:grid;place-items:center;align-content:center;width:calc(var(--u)*98);height:calc(var(--u)*98);border-radius:50%;border:calc(var(--u)*2.4) solid var(--ember-lo);color:var(--ember-lo);font-family:var(--f-display);font-size:calc(var(--u)*12.5);letter-spacing:.1em;text-transform:uppercase;text-align:center;line-height:1.15;transform:rotate(-10deg);position:relative;mix-blend-mode:multiply;opacity:.92}
 .stamp::after{content:"";position:absolute;inset:calc(var(--u)*4);border-radius:50%;border:calc(var(--u)*1) dashed currentColor}
 .stamp b{display:flex;align-items:center;gap:calc(var(--u)*3);font-size:calc(var(--u)*25);font-weight:400;letter-spacing:0;line-height:1}
 .stamp b .ic{font-size:calc(var(--u)*19)}
-.page>.stamp{position:absolute;right:calc(var(--u)*26);top:calc(var(--u)*122)}
+.page>.stamp{position:absolute;right:calc(var(--u)*20);top:calc(var(--u)*120)}
 .sound{position:relative;width:calc(var(--u)*74);height:calc(var(--u)*74);border-radius:50%;border:calc(var(--u)*1.8) solid var(--ink);background:var(--paper-hi);display:grid;place-items:center;padding:0;cursor:pointer;box-shadow:0 calc(var(--u)*3) 0 rgba(44,31,23,.85);color:var(--ink)}
 .sound::after{content:"";position:absolute;inset:calc(var(--u)*4);border-radius:50%;border:calc(var(--u)*1) solid var(--ink);opacity:.35}
 .sound .ic{font-size:calc(var(--u)*32)}
@@ -454,6 +454,13 @@ html.zh-on .ml-btns .gbtn .zhx{display:inline;margin:0;font-size:calc(var(--u)*1
 .ml-voice .fb:empty{display:none}
 /* the small games: the ring shows the group; no hand, because a hand at the group's corner pointed at one answer (the last) */
 .ml-opts>.ml-fx .ml-hand{display:none}
+/* the two games on the card's page, side by side: he picks one (the ring shows the pair; no hand, it would point at one) */
+.ml-games{position:relative;display:flex;gap:calc(var(--u)*10);border-radius:calc(var(--u)*14)}
+.ml-games>.ml-fx .ml-ring{inset:calc(var(--u)*-7)}
+.ml-games>.ml-fx .ml-hand{display:none}
+/* with 中文 on a small window the pair does not fit beside "Back to the cards": it goes to its own row, on the right */
+.pg-foot:has(>.ml-games:not([hidden])){flex-wrap:wrap;row-gap:calc(var(--u)*10)}
+.ml-games{margin-left:auto;flex-wrap:wrap;justify-content:flex-end}
 
 /* ---- 30-hud.css ---- */
 /* HUD (owner: hud team): the plate, the counters, the menu, today's parts, the dock, the door.
@@ -503,8 +510,21 @@ button.hd-next:focus-visible{outline:calc(var(--u)*2) solid var(--glow);outline-
 @keyframes hd-breathe{0%,100%{opacity:.25}50%{opacity:1}}
 /* the plate belongs to the walking view: while a page or a card is open over the world it steps back (as it does for the mailbox) */
 .ui:has(>#panel:not([hidden]),>#modal:not([hidden]),>#full:not([hidden])) #todayline{visibility:hidden}
-/* today's task first (90-boot hdLock): Build rests until the task is done; it still answers a tap ("First: your words.") */
-body.hd-locked #dpad button[data-go="build"]{opacity:.5}
+/* today's task first (30-world hdShut): every place but the next one looks shut until the task is done: dimmed, a small lock
+   in its corner, the same size (still a 44 px target); a tap still answers ("First: the map.") */
+.dock .hd-lock{display:none}
+.dock button.hd-shut{opacity:.6;filter:saturate(.35)}
+.dock button.hd-shut .hd-lock{display:grid;place-items:center;position:absolute;top:calc(var(--u)*-8);right:calc(var(--u)*-8);width:calc(var(--u)*24);height:calc(var(--u)*24);border-radius:50%;
+  background:rgba(44,31,23,.94);color:#fbf1d8;border:calc(var(--u)*1.5) solid rgba(255,243,226,.8)}
+.dock button.hd-shut .hd-lock .ic{font-size:calc(var(--u)*13);stroke-width:2.4}
+.w3labels .tag.hd-shut{opacity:.5;filter:saturate(.35);animation:none}
+body[data-hd-open="none"] #w3open,
+body[data-hd-open="chest"] #w3open:not([data-spot="chest"]),body[data-hd-open="mail"] #w3open:not([data-spot="mail"]),
+body[data-hd-open="tower"] #w3open:not([data-spot="tower"]),body[data-hd-open="hut"] #w3open:not([data-spot="hut"]),
+body[data-hd-open="build"] #w3open:not([data-spot="build"]){opacity:.6;filter:saturate(.35)}
+/* a tap on a shut place: the plate pulses once, to show where to go */
+.today.hd-pulse{animation:hd-pulse 1.3s ease-out}
+@keyframes hd-pulse{0%,55%,100%{scale:1}18%{scale:1.09}36%{scale:.98}}
 /* no room beside Orbit and the dock: one row up (90-boot hdFitToday) */
 .today.hd-up{bottom:calc(var(--u)*98)}
 
@@ -551,7 +571,7 @@ body.hd-locked #dpad button[data-go="build"]{opacity:.5}
 .sl-pill{position:absolute;right:calc(var(--u)*16);top:calc(var(--u)*60);z-index:2;display:flex;align-items:center;gap:calc(var(--u)*8);height:calc(var(--u)*34);padding:0 calc(var(--u)*16) 0 calc(var(--u)*12);font-family:var(--f-body);font-size:calc(var(--u)*14);letter-spacing:.02em;white-space:nowrap;pointer-events:none;transition:opacity .6s ease}
 .sl-pill[hidden]{display:none}
 .sl-pill .ic{width:calc(var(--u)*20);height:calc(var(--u)*20);fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;color:var(--glow)}
-.sl-pill .zhx{display:inline;margin:0 0 0 calc(var(--u)*6);font-size:calc(var(--u)*12)}
+.sl-pill .zhx{display:inline;margin:0 0 0 calc(var(--u)*6);font-size:calc(var(--u)*12.5)}
 /* with 中文 on, the pill shows the Chinese line only, so it stays small */
 html.zh-on .sl-pill .zhk{font-size:0}
 html.zh-on .sl-pill .zhk .zhx{font-size:calc(var(--u)*13.5);margin:0}
@@ -879,10 +899,10 @@ html.zh-on .sl-pill .zhk .zhx{font-size:calc(var(--u)*13.5);margin:0}
 .bd-wall .bd-paint{width:calc(var(--u)*14);height:calc(var(--u)*14)}
 .bd-what{display:flex;flex-direction:column;align-items:center;min-height:calc(var(--u)*30)}
 .bd-name{font-family:var(--f-display);font-weight:400;font-size:calc(var(--u)*16);line-height:1.1;letter-spacing:.01em;color:var(--ink)}
-.bd-note{font-size:calc(var(--u)*12);color:var(--ink-3);font-weight:600;line-height:1.1}
+.bd-note{font-size:calc(var(--u)*12.5);color:var(--ink-3);font-weight:600;line-height:1.1}
 .bd-good.bd-pack{flex-grow:1.8}
 .bd-note{white-space:nowrap}
-.bd-note .zhx{display:inline;margin:0 0 0 calc(var(--u)*4);font-size:calc(var(--u)*12)}
+.bd-note .zhx{display:inline;margin:0 0 0 calc(var(--u)*4);font-size:calc(var(--u)*12.5)}
 .bd-price{display:inline-flex;align-items:center;gap:calc(var(--u)*3);font-size:calc(var(--u)*16);font-weight:700;color:var(--ink)}
 .bd-price .ic{font-size:calc(var(--u)*15)}
 .bd-own{margin:0 0 calc(var(--u)*4);font-size:calc(var(--u)*12.5);font-weight:600;color:var(--ink-2)}
@@ -893,7 +913,7 @@ html.zh-on .sl-pill .zhk .zhx{font-size:calc(var(--u)*13.5);margin:0}
 .bd-pack .bd-own .zhx{display:inline;margin:0 0 0 calc(var(--u)*4)}
 .bd-tag .buy[hidden]+.bd-need{margin-top:auto;min-height:0}
 .bd-tag .buy .zhx{display:inline;margin:0 0 0 calc(var(--u)*4)}
-.bd-need{min-height:calc(var(--u)*28);margin:calc(var(--u)*4) 0 0;font-size:calc(var(--u)*11);font-weight:700;color:var(--rust);line-height:1.25}
+.bd-need{min-height:calc(var(--u)*28);margin:calc(var(--u)*4) 0 0;font-size:calc(var(--u)*12.5);font-weight:700;color:var(--rust);line-height:1.25}
 /* not open yet: the tag is only an outline in ink, with the line that says how many more words open it */
 .bd-locked{filter:none}
 .bd-locked::before{opacity:.55}
@@ -905,7 +925,7 @@ html.zh-on .sl-pill .zhk .zhx{font-size:calc(var(--u)*13.5);margin:0}
 .bd-ghost{opacity:.55}
 .bd-locked .bd-name,.bd-locked .bd-price{color:var(--ink-3)}
 .bd-locked .bd-price .ic{color:var(--ink-3);fill:none}
-.bd-lock{display:block;margin:auto 0 0;font-size:calc(var(--u)*12);font-weight:700;line-height:1.22;color:var(--ink-2)}
+.bd-lock{display:block;margin:auto 0 0;font-size:calc(var(--u)*12.5);font-weight:700;line-height:1.22;color:var(--ink-2)}
 .bd-lock .ic{font-size:calc(var(--u)*13);margin-right:calc(var(--u)*2);vertical-align:calc(var(--u)*-2);color:var(--ink-3)}
 .bd-cant .bd-art{opacity:.6}
 /* the four materials under the tags: open ones painted, the others as outlines with the words still to spell */
@@ -1081,6 +1101,8 @@ mark.lv-cmark.lv-cspace{display:inline-block;min-width:calc(var(--u)*11)}
 
 /* the end page can be long with Chinese on: its main button stays in view (core) */
 .lv-end>.pg-foot:not(.lv-second){position:sticky;bottom:calc(var(--u)*-22);padding:calc(var(--u)*10) 0 calc(var(--u)*22);margin-bottom:calc(var(--u)*-22);background:linear-gradient(rgba(246,235,211,0),var(--paper) 34%);z-index:1}
+/* the whole width of the page, so its paper fades into the page (alone, with no second row, it showed as a pale box) */
+.lv-end>.pg-foot:not(.lv-second){align-self:stretch}
 
 /* hints after a miss (hints team): "Not yet. Try again." with the Hint button; the lines for the letters, grouped in beats */
 .lv-hintrow{display:flex;align-items:center;gap:calc(var(--u)*14);min-height:calc(var(--u)*38);margin:calc(var(--u)*8) 0 0}
@@ -1129,7 +1151,7 @@ mark.lv-cmark.lv-cspace{display:inline-block;min-width:calc(var(--u)*11)}
 .btn.lv-slow .ic{font-size:calc(var(--u)*18)}
 .lv-pbzh{margin:0;font-family:var(--f-zh);font-size:calc(var(--u)*30);line-height:1.2;color:var(--ink)}
 /* the stamp between parts: a long part name ("old words", "orbit's training") stays inside the circle (it ran over the ring) */
-.lv-center .stamp.lv-ok>span:first-child{max-width:calc(var(--u)*62);letter-spacing:.06em;line-height:1.05}
+.lv-center .stamp.lv-ok>span:first-child{max-width:calc(var(--u)*72);letter-spacing:.06em;line-height:1.05}
 
 /* ---- 82-school.css ---- */
 /* ============ school words at the watchtower (owner: school team; prefix sc-) ============ */
@@ -1248,7 +1270,7 @@ mark.lv-cmark.lv-cspace{display:inline-block;min-width:calc(var(--u)*11)}
 .note.tr-tip .zh{font-size:calc(var(--u)*17);margin-top:calc(var(--u)*4)}
 /* one example word: the letters to look at in ember, underlined; a faint bar between beats */
 .tr-look{display:flex;align-items:baseline;justify-content:center;gap:calc(var(--u)*18);margin:calc(var(--u)*22) 0 calc(var(--u)*6)}
-.tr-look .cap{font-family:var(--f-display);font-size:calc(var(--u)*11.5);letter-spacing:.16em;text-transform:uppercase;color:var(--ember-lo)}
+.tr-look .cap{font-family:var(--f-display);font-size:calc(var(--u)*12.5);letter-spacing:.16em;text-transform:uppercase;color:var(--ember-lo)}
 .tr-ex{margin:0;font-family:var(--f-body);font-size:calc(var(--u)*52);font-weight:600;letter-spacing:.02em;line-height:1.1;color:var(--ink)}
 .tr-ex .tr-mark{font-style:normal;color:var(--ember);border-bottom:calc(var(--u)*3) solid var(--ember);padding:0 calc(var(--u)*1)}
 .tr-ex .tr-cut{display:inline-block;width:calc(var(--u)*3);height:.7em;margin:0 calc(var(--u)*9);border-radius:calc(var(--u)*2);background:var(--ink-3);opacity:.45;vertical-align:-.02em}

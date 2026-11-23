@@ -141,8 +141,9 @@
     }
     const band = clamp(Math.floor(o.band || START), MIN, MAX);
     const want = new Set([].concat(...(o.slips || []).map(c => FEATURES_OF[c] || [])));
+    const top = new Set(FEATURES_OF[(o.slips || [])[0]] || []);   // his most frequent slip: a word that trains it comes before one that trains another slip
     const rnd = seeded((o.student || "") + "|" + o.level);
-    const cands = pool.filter(free).map(w => ({ w, dist: Math.abs((w.band || START) - band), lower: (w.band || START) < band ? 0 : 1, match: w.feat.some(f => want.has(f)) ? 1 : 0, pic: picOf(w) ? 1 : 0, r: rnd() }));
+    const cands = pool.filter(free).map(w => ({ w, dist: Math.abs((w.band || START) - band), lower: (w.band || START) < band ? 0 : 1, match: w.feat.some(f => top.has(f)) ? 2 : w.feat.some(f => want.has(f)) ? 1 : 0, pic: picOf(w) ? 1 : 0, r: rnd() }));
     // the band itself first; when it has too few words left, the nearest bands (the easier one first on a tie)
     let reach = 0; while (reach < 8 && cands.filter(c => c.dist <= reach).length < need) reach++;
     const near = cands.filter(c => c.dist <= reach);
@@ -259,7 +260,8 @@
       const p6 = plan({ student: "s1", level: 4, quests: [], pool: POOL, bank: BANK, mine, have: ["police"], need: 1, pics: PICS });
       ok("the tutor's word counts: only what is missing", p6.words.length === 1 && pre3(p6.words[0].word) !== "pol", p6.words.map(w => w.word));
       const off = plan({ student: "s1", level: 4, quests: [], pool: POOL, bank: BANK, mine, on: false });
-      ok("picker off: the next two bank words", off.words.map(w => w.word).join() === BANK.filter(r => r[9] === 4).map(r => r[0]).join(), off.words.map(w => w.word));
+      const inPool = new Set(POOL.map(r => r[0]));   // the fixed course keeps the bank's order but only gives words that are in the pool (Cambridge and the tutor's notes)
+      ok("picker off: the next two bank words that are in the pool", off.words.map(w => w.word).join() === BANK.filter(r => r[9] >= 4 && inPool.has(r[0])).slice(0, 2).map(r => r[0]).join(), off.words.map(w => w.word));
       const nopool = plan({ student: "s1", level: 5, quests: [], pool: [], bank: BANK, mine: mine.concat(["police", "tulips"]) });
       ok("no pool: like picker off", nopool.off && nopool.words.map(w => w.word).join() === BANK.filter(r => r[9] === 5).map(r => r[0]).join(), nopool.words.map(w => w.word));
       if (PAT && PAT.classify) {

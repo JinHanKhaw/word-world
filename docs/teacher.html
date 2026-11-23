@@ -4,31 +4,32 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Word World · Teacher</title>
-<link rel="stylesheet" href="fonts.css?v=202611231315">
-<link rel="stylesheet" href="teacher.css?v=202611231315">
-<script src="vendor/supabase.js?v=202611231315"></script>
-<script src="config.js?v=202611231315"></script>
+<link rel="stylesheet" href="fonts.css?v=202611231359">
+<link rel="stylesheet" href="teacher.css?v=202611231359">
+<script src="vendor/supabase.js?v=202611231359"></script>
+<script src="config.js?v=202611231359"></script>
 <script>/* No config.js (the page on claude.ai): use the stand-in database in this browser, the same one the game uses. */
-if (!window.WORD_TOWER_CONFIG) document.write('<script src="bank.js?v=202611231315"><\/script><script src="demo-backend.js?v=202611231315"><\/script>');</script>
-<script src="common.js?v=202611231315"></script>
-<script src="patterns.js?v=202611231315"></script>
-<script src="ai-prompt.js?v=202611231315"></script>
-<script src="pool.js?v=202611231315"></script>
-<script src="picker.js?v=202611231315"></script>
-<script src="img/words/pics.js?v=202611231315"></script>
-<script src="img/school/pics.js?v=202611231315"></script>
+if (!window.WORD_TOWER_CONFIG) document.write('<script src="bank.js?v=202611231359"><\/script><script src="demo-backend.js?v=202611231359"><\/script>');</script>
+<script src="common.js?v=202611231359"></script>
+<script src="patterns.js?v=202611231359"></script>
+<script src="ai-prompt.js?v=202611231359"></script>
+<script src="pool.js?v=202611231359"></script>
+<script src="picker.js?v=202611231359"></script>
+<script src="img/words/pics.js?v=202611231359"></script>
+<script src="img/school/pics.js?v=202611231359"></script>
 </head>
 <body>
 <header class="t-top">
-  <div class="t-brand"><span class="t-ring" aria-hidden="true"></span><h1>Word World <span>Teacher</span></h1><p class="t-who" id="who"></p></div>
-  <nav class="row" id="topbar" hidden>
-    <div class="tabs"><button type="button" data-tab="today" class="on">Today</button><button type="button" data-tab="progress">Progress</button><button type="button" data-tab="school">School list</button><button type="button" data-tab="chat">Letters</button><button type="button" data-tab="mother">For his mother</button><button type="button" data-tab="words">Words</button><button type="button" data-tab="log">Log</button><button type="button" data-tab="student">Student</button></div>
-    <button type="button" class="ghost" id="toGame">Back to the game</button>
-    <button type="button" class="ghost" id="logout">Log out</button>
+  <div class="t-row">
+    <div class="t-brand"><span class="t-ring" aria-hidden="true"></span><h1>Word World <span>Teacher</span></h1></div>
+    <div class="t-acts" id="topacts" hidden><p class="t-who" id="who"></p><button type="button" class="ghost" id="toGame">Open the game</button><button type="button" class="ghost" id="logout">Log out</button></div>
+  </div>
+  <nav class="t-nav" id="topbar" hidden aria-label="Pages">
+    <div class="tabs"><button type="button" data-tab="today" class="on">Today</button><button type="button" data-tab="week">This week</button><button type="button" data-tab="words">Words</button><button type="button" data-tab="school">School spelling list</button><button type="button" data-tab="chat">Letters</button><button type="button" data-tab="mother">For his mother</button><button type="button" data-tab="settings">Settings</button></div>
   </nav>
 </header>
 <div id="banner" class="banner" hidden></div>
-<main class="wrap" id="view"><section class="box"><p class="hint">Loading…</p></section></main>
-<script src="teacher.js?v=202611231315"></script>
+<main class="wrap" id="view"><section class="box"><p class="lead">Loading…</p></section></main>
+<script src="teacher.js?v=202611231359"></script>
 </body>
 </html>

@@ -73,7 +73,12 @@
   // On claude.ai the browser's own voice can be missing inside the page frame; then the platform's reader speaks instead.
   let reader = null;
   try { if (window.claude && window.claude.use) window.claude.use("tts").then(t => { reader = t || null; }).catch(() => {}); } catch (e) {}
-  const noVoice = () => { try { return !("speechSynthesis" in window) || speechSynthesis.getVoices().length === 0; } catch (e) { return true; } };
+  // devDead: the device has voices but they did not start, twice in a row, while the page reader is there (claude.ai): from
+  // then on the reader speaks, as if the device had no voice. (The real website has no reader: there the device voice is
+  // tried again every time.)
+  let devDead = false;
+  const noVoice = () => { try { return devDead || !("speechSynthesis" in window) || speechSynthesis.getVoices().length === 0; } catch (e) { return true; } };
+  W.devDead = () => devDead;
   // The device voice the tutor chose (students.voice_name, students.voice_rate); the game sets W.voicePrefs after sign-in.
   // W.voice() -> { voice, rate }: the chosen voice when this device has it, else a British voice, else any English one (or
   // null); rate is a factor on the rates used today (0.85 for "slower"). W.utter(text, rate) makes an utterance with both.
@@ -115,8 +120,8 @@
   //  - end events that never come: the utterances are kept until they end, and a timer ends the turn by itself.
   // What happened is told to W.onSpeech (the game logs it as a "speech" event): the first start with each voice in a
   // session, and every failure, so "the browser spoke" and "the browser never started" can be told apart afterwards.
-  const DEV_START = 2500;
-  let devSeq = 0, devCur = null, devKeep = [], devFailNotes = 0;
+  const DEV_START = 2500, DEV_QUIET = 1000;
+  let devSeq = 0, devCur = null, devKeep = [], devFailNotes = 0, devSilent = 0;
   const devOkSeen = {};
   W.devOk = () => { try { return "speechSynthesis" in window && typeof SpeechSynthesisUtterance !== "undefined"; } catch (e) { return false; } };
   W.onSpeech = null;
@@ -127,20 +132,34 @@
     else if (++devFailNotes > 8) return;
     try { if (typeof W.onSpeech === "function") W.onSpeech(d); } catch (e) {}
   }
+  // One more try that stayed silent. Two in a row, with the page reader at hand (claude.ai): the device voice counts as
+  // silent from now on and the reader speaks (noVoice() above). Any start event sets the count back to none.
+  function devSilentUp() { if (++devSilent >= 2 && reader && reader.speak) devDead = true; }
   W.devStop = function () {
     devSeq++; const c = devCur; devCur = null;
     try { if ("speechSynthesis" in window) speechSynthesis.cancel(); } catch (e) {}
-    if (c) c.end(false);
+    if (c) { if (c.byReader) { try { W.readStop(); } catch (e) {} } c.end(false); }
   };
   W.devSay = function (parts, o) {
     o = o || {};
     const list = (Array.isArray(parts) ? parts : [parts]).map(p => (typeof p === "string" ? { text: p } : p)).filter(p => p && String(p.text || "").trim());
     let done = false, tStart = 0, tEnd = 0, cur = -1;   // cur: the try whose events count (-1 between two tries)
     const end = ok => { if (done) return; done = true; clearTimeout(tStart); clearTimeout(tEnd); if (devCur === me) { devCur = null; devKeep = []; } try { if (o.onend) o.onend(!!ok); } catch (e) {} };
-    const me = { end };
-    if (devCur) { const c = devCur; devCur = null; c.end(false); }   // whoever was speaking is told that it is over
+    const me = { end, quiet: null, byReader: false };
+    // whoever was speaking is told that it is over; a try that was cut after a second without any start counts as silent
+    if (devCur) { const c = devCur; devCur = null; if (c.quiet && c.quiet()) devSilentUp(); c.end(false); }
     const mine = ++devSeq;
-    if (!list.length || !W.devOk()) { end(false); return () => {}; }
+    if (!list.length) { end(false); return () => {}; }
+    const stop = () => { if (mine === devSeq && !done) W.devStop(); };
+    const f = W.voice().rate;
+    // the page reader says it (claude.ai, once the device voice has stayed silent)
+    const readIt = () => {
+      devCur = me; me.byReader = true; me.quiet = null;
+      try { if (o.onstart) o.onstart(); } catch (e) {}
+      W.read(list.map(p => String(p.text)).join(list.length > 1 ? ". " : ""), { rate: (list[0].rate || o.rate || 1) * f }).then(ok => { if (mine === devSeq) end(!!ok); });
+    };
+    if (devDead && reader && reader.speak) { try { if ("speechSynthesis" in window) speechSynthesis.cancel(); } catch (e) {} readIt(); return stop; }
+    if (!W.devOk()) { end(false); return () => {}; }
     const s = speechSynthesis; devCur = me;
     let busy = false; try { busy = !!(s.speaking || s.pending); s.cancel(); } catch (e) {}
     const state = () => { const st = {}; try { st.speaking = !!s.speaking; st.pending = !!s.pending; st.paused = !!s.paused; st.voices = s.getVoices().length; } catch (e) {} return st; };
@@ -150,12 +169,16 @@
       const c = W.voice(n), name = (c.voice && c.voice.name) || "", t0 = Date.now();
       let started = false, total = 0;
       cur = n;
+      me.quiet = () => !started && cur === n && Date.now() - t0 >= DEV_QUIET;
       const fail = why => {
         if (mine !== devSeq || done || cur !== n) return;
-        cur = -1; clearTimeout(tStart); clearTimeout(tEnd);
+        cur = -1; me.quiet = null; clearTimeout(tStart); clearTimeout(tEnd);
         try { s.cancel(); } catch (e) {}
-        const next = n === 0 && why !== "not-allowed" ? W.voice(1).voice : null;
-        devNote(Object.assign({ ok: false, why, voice: name, local: c.local, tried: n + 1, again: !!next, ms: Date.now() - t0 }, state()));
+        if (why !== "not-allowed") devSilentUp();
+        const toReader = devDead && why !== "not-allowed" && !!(reader && reader.speak);
+        const next = !toReader && n === 0 && why !== "not-allowed" ? W.voice(1).voice : null;
+        devNote(Object.assign({ ok: false, why, voice: name, local: c.local, tried: n + 1, again: !!next, ms: Date.now() - t0 }, toReader ? { reader: true } : {}, state()));
+        if (toReader) return readIt();
         if (next) setTimeout(() => run(1), 150); else end(false);
       };
       const us = list.map((p, i) => {
@@ -164,7 +187,7 @@
         total += (500 + 95 * String(p.text).length) / Math.max(0.3, rate);
         if (i === 0) u.onstart = () => {
           if (mine !== devSeq || done || started || cur !== n) return;
-          started = true; clearTimeout(tStart);
+          started = true; devSilent = 0; clearTimeout(tStart);
           devNote({ ok: true, voice: name, local: c.local, tried: n + 1, ms: Date.now() - t0 });
           tEnd = setTimeout(() => end(true), total * 1.5 + 2500);   // no end event ever: the turn still ends
           try { if (o.onstart) o.onstart(); } catch (e) {}
@@ -182,7 +205,7 @@
       tStart = setTimeout(() => { if (!started) fail("nostart"); }, DEV_START);
     };
     if (busy) setTimeout(() => run(0), 90); else run(0);
-    return () => { if (mine === devSeq && !done) W.devStop(); };
+    return stop;
   };
   // ---- one voice, the word first ----------------------------------------------------------------------------------
   // Everything spoken shares one voice: a word he must hear (W.speak, W.speakChunks, the school words) and Orbit's line.

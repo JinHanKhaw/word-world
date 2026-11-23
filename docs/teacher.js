@@ -1,11 +1,14 @@
 /* Word World: the tutor's page. Owner: dash team.
    Goes through the same client calls as the game (W.client(): Supabase, or the stand-in database in this browser).
-   Never a word about the child: the page says what happened ("not yet right", "double letters written once"). */
+   Never a word about the child: the page says what happened ("not yet right", "double letters written once").
+   Plain words for a tutor who is not technical: Today (did he play, his new words, the words to practise), This week, Words,
+   School spelling list, Letters, For his mother, and Settings (the technical parts, each with one plain sentence). */
 (function () {
   const W = window.WT, $ = id => document.getElementById(id), view = $("view");
   const sb = W.client();
   const DEMO = !!window.WW_DEMO;
   let me = null, student = null, words = [], sessions = [], quests = [], messages = [], school = [], tests = [], tab = "today";
+  const openFolds = {};   // the folded parts she opened stay open when the tab is drawn again
 
   // ---------- small helpers ----------
   const esc = W.esc;
@@ -20,6 +23,7 @@
   const ICON = n => '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">' + (IC[n] || "") + "</svg>";
   const ld = iso => !iso ? "" : String(iso).length <= 10 ? String(iso) : W.dkey(new Date(iso));   // a plain day stays as it is
   const many = (n, one, more) => n + " " + (n === 1 ? one : (more || one + "s"));
+  const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
   const day3 = k => W.niceDate(k);
   const rel = k => k === W.today() ? "today" : k === W.addDays(W.today(), -1) ? "yesterday" : W.niceDate(k);
   const banner = m => { $("banner").hidden = !m; $("banner").textContent = m || ""; };
@@ -58,13 +62,14 @@
   const islandPic = () => { const p = student && student.build_picture; return typeof p === "string" && p.indexOf("data:image/jpeg") === 0 ? { src: p, at: student.build_picture_at || null } : null; };
   // The memory ladder (common.js): back after 1, 4 and 14 days, then star word. Levels 4 and 5 are only in a save from the
   // old five-step ladder that the game has not opened since; loadAll shows them as the game will move them (W.fromOldLadder).
-  const ladder = { 0: "not started", 1: "back after 1 day", 2: "back after 4 days", 3: "back after 14 days", 6: "star word" };
-  const canSpell = () => words.filter(w => w.level >= 2);
+  const ladder = { 0: "not met yet", 1: "comes back after 1 day", 2: "comes back after 4 days", 3: "comes back after 14 days", 6: "knows it well" };
+  const canSpell = () => words.filter(w => w.level >= 2);   // right again on a later day: "words he can spell from memory"
+  const knowsWell = () => words.filter(w => w.level >= W.DIAMOND);   // right after 1, 4 and 14 days: "words he knows well"
 
   // ---------- auth ----------
   function renderLogin(msg) {
-    $("topbar").hidden = true;
-    view.innerHTML = '<section class="box narrow"><h2>Teacher login</h2><form id="lf" class="stack">' +
+    $("topbar").hidden = true; $("topacts").hidden = true;
+    view.innerHTML = '<section class="box narrow"><h2>Log in</h2><form id="lf" class="stack">' +
       '<label class="f">Email<input type="email" id="em" autocomplete="username"></label>' +
       '<label class="f">Password<input type="password" id="pw" autocomplete="current-password"></label>' +
       '<div class="row"><button type="submit">Log in</button></div><p class="err" id="lerr">' + esc(msg || "") + "</p></form></section>";
@@ -76,7 +81,7 @@
     };
   }
   async function boot() {
-    if (!sb) { view.innerHTML = '<section class="box"><h2>Not set up yet</h2><p class="hint">config.js is missing or still has the example values. See deploy/README.md.</p></section>'; return; }
+    if (!sb) { view.innerHTML = '<section class="box"><h2>Not ready yet</h2><p class="lead">This page is not set up yet. Ask the person who made the website to finish it (they will find the steps in deploy/README.md).</p></section>'; return; }
     if (DEMO) {
       // The stand-in database keeps everything in this browser; there is no login to check.
       me = { id: "teacher-demo", email: "" }; $("who").textContent = "Saved in this browser only"; $("logout").hidden = true;
@@ -87,13 +92,13 @@
       $("who").textContent = me.email;
       const { data: prof } = await sb.from("profiles").select("*").eq("id", me.id).maybeSingle();
       if (!prof) {
-        view.innerHTML = '<section class="box narrow"><h2>One more step</h2><p class="hint">This login is not a teacher yet. Press the button once. Only the first login can do this.</p><div class="row"><button type="button" id="mk">Make me the teacher</button><button type="button" class="ghost" id="lo">Log out</button></div><p class="err" id="merr"></p></section>';
+        view.innerHTML = '<section class="box narrow"><h2>One more thing</h2><p class="lead">This account is not set up as the teacher yet. Press the button once. Only the first person to log in can do this.</p><div class="row"><button type="button" id="mk">Make me the teacher</button><button type="button" class="ghost" id="lo">Log out</button></div><p class="err" id="merr"></p></section>';
         $("mk").onclick = async () => { const { error } = await sb.rpc("become_teacher"); if (error) $("merr").textContent = error.message; else boot(); };
         $("lo").onclick = async () => { await sb.auth.signOut(); renderLogin(); };
         return;
       }
     }
-    $("topbar").hidden = false;
+    $("topbar").hidden = false; $("topacts").hidden = false;
     await loadAll();
     render();
   }
@@ -134,20 +139,20 @@
   }
   function render() {
     if (!student) return renderNewStudent();
-    ({ today: renderToday, progress: renderProgress, school: renderSchool, chat: renderChat, mother: renderMother, words: renderWords, log: renderLog, student: renderStudent })[tab]();
+    ({ today: renderToday, week: renderWeek, school: renderSchool, chat: renderChat, mother: renderMother, words: renderWords, settings: renderSettings })[tab]();
   }
 
   // ---------- no student yet ----------
   function renderNewStudent() {
     view.innerHTML = '<section class="box narrow"><h2>Add your student</h2><form id="sf" class="stack">' +
       '<label class="f">Name<input type="text" id="sn" value="" placeholder="Sam"></label>' +
-      '<label class="f">PIN (4 digits, he types this to open the game)<input type="text" id="sp" value="1234" maxlength="4" inputmode="numeric"></label>' +
+      '<label class="f">PIN (4 numbers he types to open the game)<input type="text" id="sp" value="1234" maxlength="4" inputmode="numeric"></label>' +
       '<div class="row"><button type="submit">Create</button></div><p class="err" id="serr"></p></form></section>';
     $("sf").onsubmit = async e => {
       e.preventDefault();
       const { error } = await sb.from("students").insert({ teacher_id: me.id, name: $("sn").value.trim() || "Student", pin: $("sp").value.trim() || "1234" });
       if (error) { $("serr").textContent = error.message; return; }
-      await loadAll(); go("student");
+      await loadAll(); go("settings");
     };
   }
 
@@ -193,165 +198,110 @@
   const typedList = list => list.map(x => '<span class="slip"><b>' + esc(x.word) + '</b> <i>' + esc(x.answer) + "</i></span>").join("");
   const rightOf = list => list.filter(x => x.correct).length;
 
-  // ---------- today ----------
+  // ---------- today: did he play, for how long, his new words, and the words to practise in the lesson. Nothing else. ----------
+  // The laptop's voice: the game records a "speech" event when the voice did not start (ok: false; again: true when the
+  // game tried the next voice at once, so he still heard the word) and the first time a voice did start (ok: true).
+  function speechFacts(E, t) {
+    const sp = E.filter(x => x.type === "speech" && x.detail && ld(x.created_at) === t);
+    const fails = sp.filter(x => x.detail.ok === false && !x.detail.again);
+    const last = sp[sp.length - 1] || null;
+    return { fails: fails.length, laterOk: !!(last && last.detail.ok === true) };
+  }
+  function speechNotice(E, t) {
+    const S = speechFacts(E, t);
+    if (!S.fails) return "";
+    return '<section class="box notice" id="speechNote"><h2>Sound on his laptop</h2>' +
+      "<p>His laptop could not say the words " + (S.fails === 1 ? "once" : S.fails + " times") + " today. Check that the sound is on." + (S.laterOk ? " It worked again later today." : "") + "</p>" +
+      '<p class="lead">If it keeps happening, <button type="button" class="link" data-go="settings">choose another voice in Settings</button>.</p></section>';
+  }
+  // The words of the last 7 days that were not right the first time he wrote them, newest problems first.
+  function toPractise(A) {
+    const t = W.today(), week7 = W.addDays(t, -6), F = firstTries(A).filter(x => ld(x.created_at) >= week7);
+    const map = {};
+    F.filter(x => !x.correct).forEach(x => { const k = W.key(x.word); (map[k] = map[k] || { word: x.word, typed: [], last: "" }).typed.push(x.answer); map[k].last = ld(x.created_at); });
+    // a word that was not right several times in a row comes too, even when that was more than 7 days ago
+    words.filter(w => w.level > 0 && w.wrong_streak >= 2 && !map[W.key(w.word)]).forEach(w => { map[W.key(w.word)] = { word: w.word, typed: [], last: "" }; });
+    return Object.values(map).map(sv => {
+      const w = words.find(x => W.key(x.word) === W.key(sv.word)) || null, now = F.filter(x => W.key(x.word) === W.key(sv.word)).pop();
+      return Object.assign(sv, { w, laterRight: !!(now && now.correct && sv.typed.length) });
+    }).sort((a, b) => b.typed.length - a.typed.length || (a.last < b.last ? 1 : -1));
+  }
   async function renderToday() {
     await loadAll();
     const t = W.today(), { A, E } = await loadRecent(14);
+    if (tab !== "today") return;
     const T = dayFacts(t, A, E);
-    const lastPlayed = sessions.map(x => x.day).filter(k => k < t).sort().pop();
-    let head;
-    if (!T.played) head = '<p class="big">Not played yet today.</p><p class="sub">' + (lastPlayed ? "Last played " + day3(lastPlayed) + (W.daysBetween(lastPlayed, t) === 1 ? " (yesterday)" : "") + "." : "Not played yet.") + "</p>";
-    else head = '<p class="big">Played today' + (T.mins ? " · " + T.mins + " min in levels" : "") + "</p><p class=\"sub\">" +
-      (T.done.length ? T.done.map(x => "Level " + x.quest_day + " done" + (isTest(x.quest_day) ? " (island test " + (x.test_right || 0) + " of " + (x.test_total || 0) + ")" : "")).join(", ") : T.open.length ? "Level " + T.open[0].quest_day + " started, not finished" : T.s && T.s.mail_opened_at ? "Mailbox opened, no level started" : "Came in, mailbox not opened") +
-      (T.s && (T.s.started_at || T.s.created_at) ? " · came in " + W.fmtTime(T.s.started_at || T.s.created_at) : "") + "</p>";
+    const lastPlayed = sessions.map(x => x.day).concat(A.map(a => ld(a.created_at))).filter(k => k && k < t).sort().pop();
 
-    // the parts of today, ticked
-    const PARTS = [
-      ["Mailbox", !!(T.s && T.s.mail_opened_at)],
-      ["Old words", T.parts.indexOf("review") >= 0 || (T.old.length > 0 && T.done.length > 0)],
-      ["New words", T.parts.indexOf("new") >= 0 || (T.news.length > 0 && T.done.length > 0)],
-      ["Mixed round", T.done.length > 0 && T.mixed.length > 0],
-      ["Orbit's training", T.training.length > 0],
-      ["School words", T.schoolQ.length > 0 || T.schoolA.length > 0],
-      ["Story", T.story.length > 0]
-    ];
-    const partsHtml = '<div class="parts">' + PARTS.map(p => '<span class="pt' + (p[1] ? " on" : "") + '">' + (p[1] ? ICON("check") : '<i class="o"></i>') + p[0] + "</span>").join("") + "</div>";
-    const row = (k, v) => "<dt>" + k + "</dt><dd>" + v + "</dd>";
-    const scoreLine = (list, what) => list.length ? '<b class="good">' + rightOf(list) + " right</b>" + (notYet(list).length ? ", <b class=\"ny\">" + notYet(list).length + " not yet</b>: " + typedList(notYet(list)) : "") + (what ? " " + what : "") : '<span class="muted">none</span>';
-    const due = words.filter(w => w.level > 0 && w.level < W.DIAMOND && w.due && w.due <= t).length;
-    const todayKv = '<dl class="kv">' +
-      row("Old words", T.old.length ? scoreLine(T.old) : '<span class="muted">' + (T.played ? "none asked" : due + " waiting") + "</span>") +
-      row("New words", T.news.length ? T.news.map(x => '<span class="w">' + esc(x.word) + "</span>").join(", ") + " · " + rightOf(T.news) + " of " + T.news.length + " right first try" + (notYet(T.news).length ? ": " + typedList(notYet(T.news)) : "") : '<span class="muted">none</span>') +
-      row("Mixed round", T.mixed.length ? rightOf(T.mixed) + " of " + T.mixed.length + " first try" + (notYet(T.mixed).length ? ": " + typedList(notYet(T.mixed)) : "") : '<span class="muted">none</span>') +
-      (T.test.length ? row("Island test", scoreLine(T.test)) : "") +
-      (T.training.length ? row("Training", scoreLine(T.training)) : "") +
-      (T.schoolA.length || T.schoolQ.length ? row("School words", T.schoolA.length ? rightOf(T.schoolA) + " of " + T.schoolA.length + " first try" + (notYet(T.schoolA).length ? ": " + typedList(notYet(T.schoolA)) : "") : "drill done") : "") +
-      row("中文 · Hear it", (T.zh ? many(T.zh, "time") + " 中文" : "中文 not used") + " · " + (T.hear ? "Hear it " + many(T.hear, "time") : "Hear it not used")) +
-      row("Story", T.story.length ? "page " + T.story.join(", ") + " opened" + (T.storyHeard ? ", heard read aloud" : "") : '<span class="muted">not opened</span>') +
-      row("Free play", T.play != null ? T.play + " of " + (student.play_minutes || 10) + " min" + (T.asleep ? " · outpost asleep " + W.fmtTime(T.asleep) : "") : '<span class="muted">' + (T.played ? "none" : "-") + "</span>") +
-      "</dl>";
-
-    // the week, Monday to today
-    const wk = W.weekStart(t), wdays = [...Array(7)].map((_, i) => W.addDays(wk, i));
-    const playedSet = new Set(sessions.map(x => x.day).concat(A.map(a => ld(a.created_at))));
-    const daysPlayed = wdays.filter(k => k <= t && playedSet.has(k)).length;
-    const learned = words.filter(w => w.introduced_on && w.introduced_on >= wk && w.introduced_on <= t);
-    const lvWeek = levelQuests().filter(x => x.completed && ld(x.finished_at) >= wk).map(x => x.quest_day).sort((a, b) => a - b);
-    const cur = currentList(), drills = quests.filter(x => x.kind === "school" && ld(x.started_at || x.created_at) >= wk).length;
-    const lastTest = latestTest();
-    const weekHtml = '<div class="weekdots">' + wdays.map(k => '<span class="' + (playedSet.has(k) ? "on" : "") + (k === t ? " now" : "") + (k > t ? " later" : "") + '" title="' + day3(k) + '">' + "MTWTFSS"[W.daysBetween(wk, k)] + "</span>").join("") + '<b>' + (daysPlayed > 5 ? daysPlayed + " days (goal: 5)" : daysPlayed + " of 5 days") + "</b></div>" +
-      '<dl class="kv">' +
-      row("Levels", lvWeek.length ? (lvWeek.length > 1 ? lvWeek[0] + " to " + lvWeek[lvWeek.length - 1] : lvWeek[0]) + " done this week" : '<span class="muted">none this week</span>') +
-      row("Words learned", learned.length ? learned.length + ": " + learned.map(w => '<span class="w">' + esc(w.word) + "</span>").join(", ") : '<span class="muted">none yet</span>') +
-      row("Can spell now", "<b>" + canSpell().length + "</b> word" + (canSpell().length === 1 ? "" : "s") + " <span class=\"muted\">(memory level 2 or more)</span>") +
-      row("School drill", cur ? many(drills, "drill") + " this week · " + listDrillLine(cur.rows) : '<span class="muted">no list set</span> <button type="button" class="link" data-go="school">Paste the list</button>') +
-      row("Practice dictation", lastTest ? "<b>" + lastTest.score + " of " + lastTest.total + "</b> on " + day3(lastTest.taken_on) + ' <span class="muted">(marked by himself)</span>' : '<span class="muted">' + (cur ? "on " + day3(W.addDays(cur.date, -1)) + ", the day before the dictation" : "none yet") + "</span>") +
-      "</dl>";
-
-    // what slipped in the last 7 days, and the patterns in 14 days
-    const week7 = W.addDays(t, -6), F = firstTries(A).filter(x => ld(x.created_at) >= week7);
-    const slipMap = {};
-    F.filter(x => !x.correct).forEach(x => { const k = W.key(x.word); (slipMap[k] = slipMap[k] || { word: x.word, typed: [], last: "" }).typed.push(x.answer); slipMap[k].last = ld(x.created_at); });
-    const slips = Object.values(slipMap).sort((a, b) => b.typed.length - a.typed.length || (a.last < b.last ? 1 : -1));
-    const tomorrow = W.addDays(t, 1);
-    const slipHtml = slips.length ? '<ul class="slips">' + slips.slice(0, 6).map(sv => {
-      const w = words.find(x => W.key(x.word) === W.key(sv.word)), now = F.filter(x => W.key(x.word) === W.key(sv.word)).pop();
-      return "<li><b>" + esc(sv.word) + "</b><span>" + [...new Set(sv.typed)].map(v => "<i>" + esc(v) + "</i>").join(" ") + "<em>" + (sv.typed.length > 1 ? sv.typed.length + " times, last " + rel(sv.last) : rel(sv.last)) + (now && now.correct ? ", right later" : "") + "</em></span>" +
-        (w && w.level > 0 ? (w.due === tomorrow ? '<span class="tagok">due tomorrow</span>' : '<button type="button" class="mini" data-retest="' + w.id + '">Test tomorrow</button>') : "") + "</li>";
-    }).join("") + "</ul>" + (slips.length > 6 ? '<p class="muted">and ' + (slips.length - 6) + " more in the Log.</p>" : "") : '<p class="muted">Every first try in the last 7 days was right.</p>';
-    const P = window.WW_PATTERNS;
-    let pats = null, patHtml;
-    if (P && typeof P.summary === "function") {
-      try { pats = P.summary(A.filter(a => a.kind !== "retry")) || []; } catch (e) { pats = null; }
+    // 1. did he play, and for how long
+    let play;
+    if (!T.played) play = '<p class="big">Not yet today.</p><p>' + (lastPlayed ? "He last played " + (W.daysBetween(lastPlayed, t) === 1 ? "yesterday, " : "on ") + day3(lastPlayed) + "." : "He has not played the game yet.") + "</p>";
+    else {
+      const L = [];
+      if (T.mins) L.push("He spent <b>" + many(T.mins, "minute") + "</b> on his words.");
+      T.done.forEach(x => L.push("He finished level " + x.quest_day + "." + (isTest(x.quest_day) ? " It was a spelling test of the island's words: <b>" + (x.test_right || 0) + " of " + (x.test_total || 0) + "</b> right." : "")));
+      if (!T.done.length && T.open.length) L.push("He started level " + T.open[0].quest_day + " and has not finished it yet.");
+      if (!T.done.length && !T.open.length) L.push("He opened the game but has not started his words yet.");
+      if (T.old.length) L.push("He went over " + many(T.old.length, "word") + " he learned before" + (rightOf(T.old) ? ": " + rightOf(T.old) + " right the first time." : "."));
+      const sw = new Set(T.schoolA.map(x => W.key(x.word))).size;
+      if (sw) L.push("He practised " + many(sw, "word") + " from the school spelling list.");
+      if (T.play) L.push("He also had " + many(T.play, "minute") + " of free play.");
+      play = '<p class="big">Yes, he played today.</p><ul class="facts">' + L.map(x => "<li>" + x + "</li>").join("") + "</ul>";
     }
-    if (!P || typeof (P || {}).summary !== "function") patHtml = '<p class="muted">The pattern finder is not installed yet. The slips above show what he typed.</p>';
-    else if (!pats) patHtml = '<p class="muted">The patterns could not be read this time.</p>';
-    else if (!pats.length) patHtml = '<p class="muted">No pattern in the last 14 days.</p>';
-    else patHtml = '<ul class="pats">' + pats.slice(0, 4).map(p => {
-      const tip = (() => { try { return P.tip ? P.tip(p.code) : null; } catch (e) { return null; } })();
-      return "<li><div><b>" + esc(p.name_en || p.code) + "</b> <span class=\"n\">" + many(p.count || 0, "time") + "</span></div>" +
-        '<div class="ex">' + (p.examples || []).slice(0, 3).map(x => '<span><i>' + esc(x.typed) + "</i> for <b>" + esc(x.word) + "</b></span>").join("") + "</div>" +
-        (tip && tip.en ? '<div class="tip">Orbit says: ' + esc(tip.en) + "</div>" : "") + "</li>";
-    }).join("") + "</ul>";
 
-    // before the lesson: what to do about it
-    const sents = await hisSentences();
-    const open = sents.filter(x => !x.answered);
-    const todo = [];
-    if (slips.length) todo.push("Go over " + slips.slice(0, 4).map(x => "<b>" + esc(x.word) + "</b>").join(", ") + " with him.");
-    if (pats && pats.length && pats[0].count >= 2) todo.push("Practise one pattern: " + esc((pats[0].name_en || pats[0].code).toLowerCase()) + ((pats[0].examples || [])[0] ? " (" + esc(pats[0].examples[0].word) + ")" : "") + ".");
-    if (open.length) todo.push('<button type="button" class="link" data-go="chat">Answer ' + many(open.length, "sentence") + "</button> he wrote.");
-    if (!cur) todo.push('<button type="button" class="link" data-go="school">Paste the school list</button> and set the dictation date.');
-    else if (W.daysBetween(t, cur.date) <= 2) todo.push("School dictation on <b>" + day3(cur.date) + "</b>.");
-    todo.push('<button type="button" class="link" data-go="mother">Send the week to his mother</button>.');
+    // 2. the new words of today
+    const seen = new Set(), fresh = [];
+    words.filter(w => w.introduced_on === t).concat(T.news.map(a => words.find(w => W.key(w.word) === W.key(a.word)) || { word: a.word }))
+      .forEach(w => { const k = W.key(w.word); if (!seen.has(k)) { seen.add(k); fresh.push(w); } });
+    const newHtml = fresh.length ? '<ul class="newwords">' + fresh.map(w => "<li>" + picHtml(w) + '<div><b class="ww">' + esc(w.word) + "</b>" +
+      (w.meaning_en ? '<span class="mean">' + esc(w.meaning_en) + "</span>" : "") + (w.meaning_zh ? '<span class="mean zh" lang="zh-CN">' + esc(w.meaning_zh) + "</span>" : "") + "</div></li>").join("") + "</ul>"
+      : '<p class="lead">' + (T.played ? "No new words today." : "His new words show here after he plays.") + "</p>";
 
-    view.innerHTML = '<div class="dash">' +
-      '<section class="box d-today"><div class="bh"><h2>Today</h2><span class="eyebrow">' + day3(t) + "</span></div>" + head + partsHtml + todayKv + "</section>" +
-      '<section class="box d-slips"><div class="bh"><h2>What slipped</h2><span class="eyebrow">first tries, 7 days</span></div>' + slipHtml +
-        '<div class="bh sub2"><h3>Patterns</h3><span class="eyebrow">14 days</span></div>' + patHtml + "</section>" +
-      '<section class="box d-week"><div class="bh"><h2>This week</h2><span class="eyebrow">from ' + day3(wk) + "</span></div>" + weekHtml +
-        '<div class="todo"><div class="bh sub2"><h3>Before the lesson</h3></div><ul>' + todo.map(x => "<li>" + x + "</li>").join("") + "</ul></div></section>" +
-      islandCard() +
-      "</div>" + todayMore(T, A, E);
+    // 3. the words to practise in the lesson
+    const tp = toPractise(A), tomorrow = W.addDays(t, 1);
+    const tpHtml = tp.length ? '<ul class="slips">' + tp.slice(0, 8).map(sv => {
+      const w = sv.w, typed = [...new Set(sv.typed)].filter(Boolean);
+      return '<li><b class="ww">' + esc(sv.word) + '</b><span class="sl-d">' +
+        (typed.length ? "He wrote " + typed.map(v => "<i>" + esc(v) + "</i>").join(" and ") + " · " + rel(sv.last) + (sv.laterRight ? ". Right later." : "") : "Not yet right the last " + (w ? w.wrong_streak : 2) + " times") + "</span>" +
+        (w && w.level > 0 ? (w.due === tomorrow ? '<span class="tagok">In tomorrow\'s game</span>' : '<button type="button" class="mini" data-retest="' + w.id + '">Add to tomorrow\'s game</button>') : "") + "</li>";
+    }).join("") + "</ul>" + (tp.length > 8 ? '<p class="lead">And ' + (tp.length - 8) + " more.</p>" : "")
+      : '<p class="lead">Nothing to practise from the last 7 days: every word was right the first time.</p>';
+    const P = window.WW_PATTERNS;
+    let pats = null;
+    if (P && typeof P.summary === "function") { try { pats = P.summary(A.filter(a => a.kind !== "retry")) || []; } catch (e) { pats = null; } }
+    const twice = (pats || []).filter(p => (p.count || 0) >= 2 && p.code !== "other").slice(0, 2);   // "other" names no pattern to practise
+    const patHtml = twice.length ? '<h3>A spelling pattern to practise</h3><ul class="pats">' + twice.map(p => {
+      const tip = (() => { try { return P.tip ? P.tip(p.code) : null; } catch (e) { return null; } })(), ex = (p.examples || [])[0];
+      return "<li><b>" + esc(p.name_en || p.code) + "</b> came up " + many(p.count || 0, "time") + " in 14 days" + (ex ? ", for example <i>" + esc(ex.typed) + "</i> for " + esc(ex.word) : "") + "." +
+        (tip && tip.en ? '<div class="tip">Tip from the game: ' + esc(tip.en) + "</div>" : "") + "</li>";
+    }).join("") + "</ul>" : "";
+
+    view.innerHTML = '<div class="today">' + speechNotice(E, t) +
+      '<div class="two"><div class="col">' +
+      '<section class="box d-play"><div class="bh"><h2>Did he play today?</h2><span class="eyebrow">' + esc(day3(t)) + "</span></div>" + play + "</section>" +
+      '<section class="box d-new"><div class="bh"><h2>New words today</h2></div>' + newHtml + "</section></div>" +
+      '<section class="box d-slips"><div class="bh"><h2>Words to practise in your lesson</h2></div>' +
+      '<p class="lead">Words he did not get right the first time in the last 7 days. Go over them with him.</p>' + tpHtml + patHtml + "</section>" +
+      "</div></div>";
     wireCommon();
   }
-  // His island: the newest picture the game saved, and one line to use in the lesson.
+  // His island: the newest picture the game saved, and one line to use in the lesson (This week tab).
   function islandCard() {
-    const pic = islandPic(), at = pic && pic.at, k = at ? ld(at) : "";
+    const pic = islandPic(), at = pic && pic.at, k = at ? ld(at) : "", b = buildObj();
+    const pocket = '<p class="lead">In his game: ' + many(diamondsEarned(), "diamond") + " earned for his spelling, " + diamondsSpent() + " spent in the shop, " + (diamondsEarned() - diamondsSpent()) + " left. " +
+      many(b.cells.length + (b.cells3 || []).length, "piece") + " placed on his island.</p>";
     if (!pic) return '<section class="box d-island"><div class="bh"><h2>His island</h2></div>' +
-      '<p class="muted">A picture of his island appears here after he has built something in the game.</p></section>';
+      '<p class="lead">A picture of his island shows here after he has built something in the game.</p>' + pocket + "</section>";
     return '<section class="box d-island"><div class="bh"><h2>His island</h2>' + (k ? '<span class="eyebrow">saved ' + esc(rel(k)) + "</span>" : "") + "</div>" +
       '<img class="isl-pic" src="' + esc(pic.src) + '" alt="The island he built' + (k ? ", saved " + esc(day3(k)) : "") + '">' +
       (k ? '<p class="isl-at">Saved ' + esc(day3(k)) + " at " + esc(W.fmtTime(at)) + ".</p>" : "") +
-      '<p class="isl-ask">Ask him to tell you in English what he built.</p></section>';
-  }
-  // Below the first screen: everything the page showed before, in calm words.
-  function todayMore(T, A, E) {
-    const t = W.today(), od = openDay(), lastDone = levelQuests().filter(x => x.completed).reduce((m, x) => Math.max(m, x.quest_day), 0);
-    const nextL = lastDone + 1, nextSt = nextL <= maxDay() ? dayState(nextL) : "end";
-    const path = "level " + lastDone + " of " + maxDay() + " done · " + zoneName(Math.max(1, lastDone)) + (od ? " · level " + od + " open now" + (isTest(od) ? " (island test)" : "") : nextSt === "empty" ? " · level " + nextL + " has no approved words yet" : nextSt === "locked" ? " · level " + nextL + " opens tomorrow" : " · all done");
-    const total = new Set(sessions.map(x => x.day)).size;
-    const b = buildObj();
-    const row = (k, v) => "<dt>" + k + "</dt><dd>" + v + "</dd>";
-    const levelsToday = T.done.concat(T.open);
-    const kv = '<dl class="kv">' +
-      row("Levels", path) +
-      (levelsToday.length ? row("Level times", levelsToday.map(x => "level " + x.quest_day + " " + W.fmtTime(x.started_at) + (x.finished_at && ld(x.finished_at) === t ? " to " + W.fmtTime(x.finished_at) : ", not finished") + ", " + many(x.diamonds_earned || 0, "diamond")).join("; ")) : "") +
-      row("Days in his world", total + " in all") +
-      row("Diamonds", diamondsEarned() + " earned, " + diamondsSpent() + " spent in the shop, " + (diamondsEarned() - diamondsSpent()) + " in his pocket · " + (b.cells.length + (b.cells3 || []).length) + " pieces placed in his build" + (T.pauses ? " · stopped " + many(T.pauses, "time") + " between parts" : "")) +
-      row("Games", T.games.length ? T.games.filter(g => g.detail && g.detail.correct).length + " of " + T.games.length + " right" : "none played") +
-      row("Sentences", T.copied + " copied, " + T.skipped + " skipped" + (T.sentences.length ? ", " + T.sentences.length + " of his own (the old step)" : "")) +
-      row("Beats clapped", T.claps.length ? many(T.claps.length, "word") : "none") +
-      row("Focus score", T.s && T.s.focus_score ? T.s.focus_score + " / 5" : "not given") + "</dl>";
-    const att = T.attempts;
-    return '<div class="more"><section class="box"><div class="bh"><h2>More about today</h2></div>' + kv +
-      (T.drawn.length ? '<h3>His writing in the box today</h3><div class="drawings">' + T.drawn.map(e => '<figure><img src="' + e.detail.png + '" alt="' + esc(e.detail.word) + '"><figcaption>' + esc(e.detail.word) + " · " + W.fmtTime(e.created_at) + "</figcaption></figure>").join("") + "</div>" : "") +
-      (T.sentences.length ? "<h3>His sentences today</h3>" + T.sentences.map(e => '<div class="mine"><span>' + esc(e.detail.word) + "</span>" + esc(e.detail.sentence) + "</div>").join("") : "") +
-      '</section><section class="box"><div class="bh"><h2>Last 5 weeks</h2></div>' + calendar() + '<p class="muted">Filled: a level finished. Ring: came in, no level finished.</p>' +
-      "<h3>Words that slipped more than once</h3>" + watchList() + "</section></div>" +
-      '<section class="box"><div class="bh"><h2>Every answer today</h2></div>' + (att.length ? '<div class="scroll"><table><tr><th>Time</th><th>Word</th><th>Question</th><th>Kind</th><th>He typed</th><th>Result</th><th>Level</th></tr>' +
-        att.map(a => "<tr><td>" + W.fmtTime(a.created_at) + "</td><td>" + esc(a.word) + "</td><td>" + esc(a.step || "") + "</td><td>" + esc(a.kind) + '</td><td class="typed' + (a.correct ? " ok" : "") + '">' + esc(a.answer) + '</td><td class="' + (a.correct ? "good" : "ny") + '">' + (a.correct ? "right" : "not yet") + "</td><td>" + (a.level_before == null ? "" : a.level_before + " to " + a.level_after) + "</td></tr>").join("") + "</table></div>" : '<p class="muted">Nothing yet today.</p>') + "</section>";
-  }
-  function calendar() {
-    const t = W.today(), start = W.addDays(W.weekStart(t), -28);
-    const map = {}; sessions.forEach(s => map[s.day] = "part"); levelQuests().forEach(x => { if (x.completed && x.finished_at) map[ld(x.finished_at)] = "done"; });
-    let h = '<div class="cal">' + ["M", "T", "W", "T", "F", "S", "S"].map(d => '<div class="hd">' + d + "</div>").join("");
-    for (let k = start, i = 0; i < 35; k = W.addDays(k, 1), i++) h += '<div class="' + (map[k] || "") + (k === t ? " today" : "") + (k > t ? " future" : "") + '">' + +k.slice(8) + "</div>";
-    return h + "</div>";
-  }
-  function watchList() {
-    const bad = words.filter(w => w.level > 0 && w.wrong_streak >= 2).sort((a, b) => b.wrong_streak - a.wrong_streak).slice(0, 8);
-    const noSent = words.filter(w => w.level > 0 && !w.student_sentence).length;
-    const extra = words.filter(w => (w.weak_types || []).length).map(w => "<li><b>" + esc(w.word) + "</b>: extra game not yet right on the first try: " + esc(w.weak_types.join(", ")) + "</li>").join("");
-    return (bad.length ? '<ul class="plain">' + bad.map(w => "<li><b>" + esc(w.word) + "</b>: not yet right " + w.wrong_streak + " times in a row</li>").join("") + "</ul>" : '<p class="muted">No word has slipped twice in a row.</p>') +
-      (extra ? '<ul class="plain">' + extra + "</ul>" : "") +
-      "";   // (the line about "no sentence of his own" went with the My sentence step: he copies the word's sentence now)
+      '<p class="isl-ask">Ask him to tell you in English what he built.</p>' + pocket + "</section>";
   }
   // Buttons that appear on several tabs.
   function wireCommon() {
     view.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(b.dataset.go));
-    // "Test tomorrow": bring a learned word back into tomorrow's old words, whatever its level says.
-    view.querySelectorAll("[data-retest]").forEach(b => b.onclick = async () => { const { error } = await sb.from("words").update({ due: W.addDays(W.today(), 1) }).eq("id", b.dataset.retest); if (error) banner(error.message); else { const w = words.find(x => x.id === b.dataset.retest); if (w) w.due = W.addDays(W.today(), 1); b.textContent = "Due tomorrow"; b.disabled = true; } });
+    // "Add to tomorrow's game": bring a learned word back into tomorrow's words, whatever its memory step says.
+    view.querySelectorAll("[data-retest]").forEach(b => b.onclick = async () => { const { error } = await sb.from("words").update({ due: W.addDays(W.today(), 1) }).eq("id", b.dataset.retest); if (error) banner(error.message); else { const w = words.find(x => x.id === b.dataset.retest); if (w) w.due = W.addDays(W.today(), 1); b.textContent = "In tomorrow's game"; b.disabled = true; } });
   }
 
   // ---------- school list ----------
@@ -364,7 +314,7 @@
   function latestTest() { return tests.slice().sort((a, b) => (a.taken_on < b.taken_on ? -1 : 1)).pop() || null; }
   function listDrillLine(rows) {
     const seen = rows.filter(r => r.tries > 0), lastRight = seen.filter(r => r.last_right === true).length;
-    return seen.length ? seen.length + " of " + rows.length + " words drilled, " + lastRight + " right last time" : rows.length + " words, not drilled yet";
+    return seen.length ? "he has practised " + seen.length + " of the " + rows.length + " words, and " + lastRight + " were right the last time" : rows.length + " words, not practised yet";
   }
   // The pasted list: one word a line or with commas; a line may carry the word's Chinese after it ("because 因为").
   const CJK = /[\u3400-\u9fff\uf900-\ufaff]/;
@@ -400,23 +350,24 @@
     const listHtml = l => {
       const test = tests.filter(x => x.dictation_date === l.date).pop();
       const past = l.date < t;
-      return '<section class="box sc-list' + (past ? " past" : "") + '" data-date="' + l.date + '"><div class="bh"><h2>Dictation ' + day3(l.date) + "</h2><span class=\"eyebrow\">" + (l === cur ? "current list · " : past ? "past · " : "") + many(l.rows.length, "word") + "</span>" +
-        '<span class="grow"></span><label class="inl">Date <input type="date" class="sc-date" value="' + l.date + '"></label><button type="button" class="ghost mini sc-move">Change date</button><button type="button" class="ghost mini red sc-dellist">Delete list</button></div>' +
-        '<p class="muted">' + listDrillLine(l.rows) + (test ? " · practice dictation <b>" + test.score + " of " + test.total + "</b> on " + day3(test.taken_on) + " (marked by himself)" + (test.missed && test.missed.length ? ", missed: " + test.missed.map(esc).join(", ") : "") : "") + "</p>" +
+      return '<section class="box sc-list' + (past ? " past" : "") + '" data-date="' + l.date + '"><div class="bh"><h2>Dictation on ' + day3(l.date) + "</h2><span class=\"eyebrow\">" + (l === cur ? "this week's list · " : past ? "past · " : "") + many(l.rows.length, "word") + "</span></div>" +
+        '<p class="lead">' + cap(listDrillLine(l.rows)) + "." + (test ? " Practice dictation at home: <b>" + test.score + " of " + test.total + "</b> right on " + day3(test.taken_on) + " (he marked it himself)" + (test.missed && test.missed.length ? ". To practise again: " + test.missed.map(esc).join(", ") : "") + "." : "") + "</p>" +
+        '<div class="row sc-tools"><label class="inl">Dictation date <input type="date" class="sc-date" value="' + l.date + '"></label><button type="button" class="ghost mini sc-move">Change the date</button><button type="button" class="ghost mini red sc-dellist">Delete this list</button></div>' +
         '<div class="row sc-zhbar"><span class="sc-fillslot"></span><button type="button" class="mini sc-zhsave" disabled>Save the Chinese</button><span class="muted sc-zhmsg"></span></div>' +
-        '<table class="sc-words"><tr><th>Word</th><th>Chinese</th><th>Drills</th><th>Right first try</th><th>Last time</th><th></th></tr>' + l.rows.map(r => '<tr data-id="' + r.id + '"><td class="w">' + esc(r.word) + (schoolPic(r.word) ? "" : ' <span class="sc-nopic">no picture yet</span>') + '</td><td class="zhc"><input type="text" class="sc-zh" lang="zh" value="' + esc(r.meaning_zh || "") + '" aria-label="Chinese for ' + esc(r.word) + '"></td><td>' + (r.tries || 0) + "</td><td>" + (r.right || 0) + "</td><td>" + (r.last_seen ? (r.last_right === false ? '<span class="ny">not yet</span>' : r.last_right ? '<span class="good">right</span>' : "") + " " + day3(ld(r.last_seen)) : '<span class="muted">not seen</span>') + '</td><td class="acts"><button type="button" class="mini ghost sc-edit">Edit</button><button type="button" class="mini ghost sc-del" aria-label="Delete ' + esc(r.word) + '">' + ICON("x") + "</button></td></tr>").join("") + "</table></section>";
+        '<div class="scroll"><table class="sc-words"><tr><th>Word</th><th>Chinese</th><th>Times practised</th><th>Right the first time</th><th>Last time</th><th></th></tr>' + l.rows.map(r => '<tr data-id="' + r.id + '"><td class="w">' + esc(r.word) + (schoolPic(r.word) ? "" : ' <span class="sc-nopic">no picture yet</span>') + '</td><td class="zhc"><input type="text" class="sc-zh" lang="zh" value="' + esc(r.meaning_zh || "") + '" aria-label="Chinese for ' + esc(r.word) + '"></td><td class="nb" data-l="Times practised">' + (r.tries || 0) + '</td><td class="nb" data-l="Right the first time">' + (r.right || 0) + "</td><td class=\"lt\">" + (r.last_seen ? (r.last_right === false ? '<span class="ny">not yet</span>' : r.last_right ? '<span class="good">right</span>' : "") + " " + day3(ld(r.last_seen)) : '<span class="muted">not practised yet</span>') + '</td><td class="acts"><button type="button" class="mini ghost sc-edit">Change</button><button type="button" class="mini ghost sc-del" aria-label="Delete ' + esc(r.word) + '">' + ICON("x") + "</button></td></tr>").join("") + "</table></div></section>";
     };
     view.innerHTML = '<div class="sc-grid"><section class="box"><div class="bh"><h2>Add the week\'s school words</h2></div>' +
-      '<p class="muted">Paste the list: one word a line, or with commas. Words are kept exactly as typed (February, don\'t). A line may carry the Chinese after the word (because 因为); he sees it when he learns the word. He drills five words a day in the game and does a practice dictation on paper the day before.</p>' +
+      '<p class="lead">Paste the school\'s list: one word a line, or with commas. Words stay exactly as you type them (February, don\'t). You can put the Chinese after a word (because 因为); he sees it when he learns the word.</p><p class="lead">In the game he practises 5 of these words a day, and the day before the dictation he does a practice dictation on paper.</p>' +
       '<textarea id="scText" rows="9" placeholder="February 二月&#10;don\'t&#10;Wednesday&#10;because"></textarea>' +
       '<div class="row"><label class="f inl">Dictation date <input type="date" id="scDate" value="' + (cur ? cur.date : nextWed) + '"></label><button type="button" id="scAdd">Add to the list</button></div><p class="err" id="scErr"></p><p class="ok" id="scOk"></p></section>' +
-      '<div class="sc-lists">' + (L.length ? L.slice().reverse().filter(l => l.date >= W.addDays(t, -21)).map(listHtml).join("") : '<section class="box"><p class="muted">No school list yet.</p></section>') + "</div></div>";
+      '<div class="sc-lists">' + (L.length ? L.slice().reverse().filter(l => l.date >= W.addDays(t, -21)).map(listHtml).join("") : '<section class="box"><p class="lead">No school list yet. Paste the first one on the left.</p></section>') + '<div id="srSlot"></div></div></div>';
+    fillResults();
     $("scAdd").onclick = async () => {
       const date = $("scDate").value, list = splitList($("scText").value);
       $("scErr").textContent = ""; $("scOk").textContent = "";
       if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { $("scErr").textContent = "Set the dictation date."; return; }
       if (!list.length) { $("scErr").textContent = "Paste the words first."; return; }
-      const bad = list.filter(x => !wordOk(x.word)).map(x => x.word); if (bad.length) { $("scErr").textContent = "Only letters, apostrophes and hyphens, please. Check: " + bad.join(", "); return; }
+      const bad = list.filter(x => !wordOk(x.word)).map(x => x.word); if (bad.length) { $("scErr").textContent = "Only letters, apostrophes (') and hyphens (-), please. Check: " + bad.join(", "); return; }
       const have = new Set(school.filter(r => r.dictation_date === date).map(r => W.key(r.word))), add = [], dup = [];
       list.forEach(x => { const k = W.key(x.word); if (have.has(k)) dup.push(x.word); else { have.add(k); add.push(x); } });
       if (add.length) {
@@ -519,16 +470,16 @@
   }
   async function renderChat() {
     const S = await hisSentences();
-    view.innerHTML = '<div class="letters"><section class="box"><div class="bh"><h2>His sentences</h2><span class="eyebrow">' + (S.filter(x => !x.answered).length ? S.filter(x => !x.answered).length + " waiting" : "all answered") + "</span></div>" +
-      '<p class="muted">One tap sends a short letter to his mailbox with his sentence in it. Or write your own.</p>' +
+    view.innerHTML = '<div class="letters"><section class="box"><div class="bh"><h2>Sentences he wrote</h2><span class="eyebrow">' + (S.filter(x => !x.answered).length ? S.filter(x => !x.answered).length + " to answer" : "all answered") + "</span></div>" +
+      '<p class="lead">Sentences he wrote in the game. One tap on an answer sends him a short letter with his sentence in it. Or write your own answer.</p>' +
       (S.length ? '<ul class="sents">' + S.map((s, i) => '<li data-i="' + i + '" class="' + (s.answered ? "done" : "") + '"><div class="sline"><span class="w">' + esc(s.word) + '</span><q>' + esc(s.sentence) + "</q>" + (s.at ? '<span class="muted">' + day3(ld(s.at)) + "</span>" : "") + "</div>" +
         (s.answered ? '<div class="sent-ok">' + ICON("check") + "Answered: " + esc(s.answered) + "</div>" :
           '<div class="stamps">' + STAMPS.map((x, k) => '<button type="button" class="stampbtn" data-stamp="' + k + '">' + esc(x) + "</button>").join("") + '<button type="button" class="ghost mini" data-write>' + ICON("pencil") + "Write a reply</button></div>" +
-          '<form class="replyf" hidden><input type="text" maxlength="200" placeholder="Your reply, short and in English"><button type="submit">Send</button></form>') + "</li>").join("") + "</ul>" : '<p class="muted">No sentences of his own yet. He writes one in the "My sentence" step of a level.</p>') +
-      '</section><section class="box"><div class="bh"><h2>Letters</h2><span class="eyebrow">to ' + esc(student.name) + "</span></div>" +
-      '<p class="muted">Your newest letter is in his mailbox when he comes in. In his game you are <b>' + esc(student.teacher_name || "WordWizard") + "</b>. Keep it short; he cannot write back.</p>" +
-      '<div class="chat" id="chat">' + (messages.length ? messages.map(m => '<div class="msg ' + (m.from_role === "teacher" ? "me" : "him") + '"><span>' + (m.from_role === "teacher" ? "You · " : esc(student.name) + " · ") + day3(ld(m.created_at)) + " " + W.fmtTime(m.created_at) + (m.from_role === "teacher" ? (m.read_at ? " · opened" : " · not opened yet") : "") + "</span>" + esc(m.text) + "</div>").join("") : '<p class="muted">No letters yet.</p>') + "</div>" +
-      '<form id="cf" class="row" autocomplete="off"><input type="text" id="ctext" maxlength="300" placeholder="Write to him…"><button type="submit">Send</button></form></section></div>';
+          '<form class="replyf" hidden><input type="text" maxlength="200" placeholder="Your reply, short and in English"><button type="submit">Send</button></form>') + "</li>").join("") + "</ul>" : '<p class="lead">No sentences from him yet. They show here when he writes one in the game.</p>') +
+      '</section><section class="box"><div class="bh"><h2>Letters to him</h2></div>' +
+      '<p class="lead">Your newest letter is waiting in his mailbox when he opens the game. In his game your name is <b>' + esc(student.teacher_name || "WordWizard") + "</b>. Keep letters short; he cannot write back.</p>" +
+      '<div class="chat" id="chat">' + (messages.length ? messages.map(m => '<div class="msg ' + (m.from_role === "teacher" ? "me" : "him") + '"><span>' + (m.from_role === "teacher" ? "You · " : esc(student.name) + " · ") + day3(ld(m.created_at)) + " " + W.fmtTime(m.created_at) + (m.from_role === "teacher" ? (m.read_at ? " · he opened it" : " · not opened yet") : "") + "</span>" + esc(m.text) + "</div>").join("") : '<p class="muted">No letters yet.</p>') + "</div>" +
+      '<form id="cf" class="row" autocomplete="off"><input type="text" id="ctext" maxlength="300" placeholder="Write a short letter to him…"><button type="submit">Send</button></form></section></div>';
     const chat = $("chat"); chat.scrollTop = chat.scrollHeight;
     const send = async text => { const { error } = await sb.from("messages").insert({ student_id: student.id, from_role: "teacher", text }); if (error) { banner(error.message); return false; } await loadAll(); renderChat(); return true; };
     view.querySelectorAll(".sents li").forEach(li => {
@@ -628,16 +579,16 @@
   });
   const framed = () => { try { return window.self !== window.top; } catch (e) { return true; } };
   async function renderMother() {
-    view.innerHTML = '<div class="mother"><section class="box"><div class="bh"><h2>The week for his mother</h2><span class="eyebrow">in Chinese</span></div>' +
-      '<p class="muted">A short note in Chinese about the last 7 days, and the same as a picture, to forward by WhatsApp or WeChat. You can change the text before you copy it.</p>' +
+    view.innerHTML = '<div class="mother"><section class="box"><div class="bh"><h2>A note for his mother</h2><span class="eyebrow">in Chinese</span></div>' +
+      '<p class="lead">A short note in Chinese about his last 7 days, and the same note as a picture, to send by WhatsApp or WeChat. You can change the text before you copy it.</p>' +
       '<div class="row"><button type="button" id="mkSum">Make the summary</button><button type="button" class="ghost" id="copySum" disabled>' + ICON("copy") + "Copy text</button><span class=\"ok\" id=\"copyOk\"></span></div>" +
       '<textarea id="sumText" rows="12" class="zhtext" lang="zh-CN" placeholder="Press Make the summary."></textarea></section>' +
-      '<section class="box"><div class="bh"><h2>As a picture</h2></div><p class="muted" id="picHow">Press Make the summary.</p><div id="sumPic" class="sumpic"></div></section></div>';
+      '<section class="box"><div class="bh"><h2>The same note as a picture</h2></div><p class="lead" id="picHow">Press Make the summary.</p><div id="sumPic" class="sumpic"></div></section></div>';
     let F = null, timer = null;
     const draw = async () => {
       const src = await motherPicture($("sumText").value, F);
       $("sumPic").innerHTML = src ? '<img id="sumImg" src="' + src + '" alt="The summary as a picture">' + (framed() ? "" : '<p><a href="' + src + '" download="word-world-week.png">Download the picture</a></p>') : '<p class="muted">This browser cannot draw the picture. Copy the text instead.</p>';
-      $("picHow").textContent = src ? "Right-click the picture and choose Copy image or Save image (on a phone: press and hold)." : "";
+      $("picHow").textContent = src ? "To send it: right-click the picture and choose Copy image or Save image. On a phone: press and hold the picture." : "";
     };
     $("mkSum").onclick = async () => {
       F = await motherFacts(); $("sumText").value = motherText(F); $("copySum").disabled = false; $("copyOk").textContent = ""; await draw();
@@ -651,28 +602,81 @@
     };
   }
 
-  // ---------- words ----------
-  function renderWords() {
+  // ---------- words: which words are in the game, and when they appear ----------
+  // A word's state in plain words, from its memory step and the day it comes back.
+  function wordState(w) {
     const t = W.today();
-    const rows = words.map(w => '<tr data-id="' + w.id + '"><td>' + (w.quest_day ? "<b>" + w.quest_day + "</b>" + (isTest(w.quest_day) ? '<br><span class="muted">test</span>' : "") : '<span class="tagw">no level</span>') + "</td><td>" + picHtml(w) + "</td><td><b>" + esc(w.word) + '</b><br><span class="muted">' + esc(w.chunks) + (w.focus ? ' · colour <b class="hot">' + esc(w.focus) + "</b>" : "") + "</span>" + "</td>" +
+    if (!w || !w.level) return "";
+    if (w.level >= W.DIAMOND) return '<span class="good">Knows it well</span>';
+    return "Comes back " + (!w.due || w.due <= t ? "today" : w.due === W.addDays(t, 1) ? "tomorrow" : "on " + esc(day3(w.due)));
+  }
+  function renderWords() {
+    const t = W.today(), on = student.picker !== false;
+    const finished = levelQuests().filter(x => x.completed && x.quest_day).sort((a, b) => a.quest_day - b.quest_day);
+    const wordLine = w => '<li><span class="wl-w">' + picHtml(w) + "<b>" + esc(w.word) + "</b>" + (w.meaning_zh ? ' <span class="zh muted" lang="zh-CN">' + esc(w.meaning_zh) + "</span>" : "") + '</span><span class="wl-s">' + wordState(w) + "</span></li>";
+    const doneHtml = finished.length ? '<ol class="lvlist">' + finished.slice().reverse().map(q => {
+      const ws = words.filter(w => w.quest_day === q.quest_day);
+      return '<li><div class="lv-h"><b>Level ' + q.quest_day + "</b>" + (isTest(q.quest_day) ? " · spelling test of the island's words" : "") + '<span class="muted">' + esc(day3(ld(q.finished_at))) + "</span></div>" +
+        (ws.length ? '<ul class="wl">' + ws.map(wordLine).join("") + "</ul>" : isTest(q.quest_day) ? '<p class="lead">' + (q.test_right || 0) + " of " + (q.test_total || 0) + " right.</p>" : "") + "</li>";
+    }).join("") + "</ol>" : '<p class="lead">No level finished yet. The words of each level he finishes show here, with the day.</p>';
+    // the levels still to come: the open one first, then the next few
+    let first = 1; while (first <= maxDay() && dayDone(first)) first++;
+    const next = []; for (let d = first; d <= Math.min(maxDay(), first + 4); d++) next.push(d);
+    const when = d => { const s = dayState(d); if (s === "open") return "Ready to play now"; if (s === "empty") return d !== first ? "After level " + (d - 1) : on && d >= 4 ? "Ready to play now" : "Waiting for its words";
+      if (d === first) return d === 1 ? "Opens on " + esc(day3(student.start_date || t)) : dayDone(d - 1) ? "Opens tomorrow" : "After level " + (d - 1); return "After level " + (d - 1); };
+    const nextHtml = first > maxDay() ? '<p class="lead">He has finished every level.</p>' : '<ol class="lvlist next">' + next.map(d => {
+      const ws = levelWords(d);
+      return '<li><div class="lv-h"><b>Level ' + d + "</b>" + (isTest(d) ? " · spelling test of the island's words" : "") + '<span class="muted">' + when(d) + "</span></div>" +
+        (ws.length ? '<ul class="wl">' + ws.map(wordLine).join("") + "</ul>" : isTest(d) ? '<p class="lead">He hears up to 10 words from levels ' + (d - PER_ZONE + 1) + " to " + (d - 1) + " and types them.</p>" : '<p class="lead">' + (on && d >= 4 ? "The game chooses 2 words when he gets here." : "No words yet.") + "</p>") + "</li>";
+    }).join("") + "</ol>";
+    const how = on
+      ? "Levels 1 to 3 have fixed words. After that, the game chooses 2 new words for each level, mostly from the Cambridge English word lists for children, by how he did: when he gets most words right the first time, the next words are a little harder; when many are not yet right, they are a little easier."
+      : "The game takes the next 2 words of a fixed list, in order, for each level. In Settings you can let the game choose his words by how he did.";
+    view.innerHTML = '<div class="words">' +
+      '<section class="box"><div class="bh"><h2>How the game chooses his words</h2></div><p>' + how + '</p><p class="lead" id="wBand"></p>' +
+      "<p>Each new word comes back after 1, 4 and 14 days, so he practises it again. When he spells it right each time, he knows it well. Every 10th level is a short spelling test of the island's words. His school spelling list comes on top: he practises 5 of those words a day.</p></section>" +
+      '<div class="two"><section class="box"><div class="bh"><h2>Words he has learned</h2></div><p class="lead">The 2 words of each level he finished, newest first, with the day he finished it.</p>' + doneHtml + "</section>" +
+      '<section class="box"><div class="bh"><h2>Words coming next</h2></div><p class="lead">The next levels and their words.</p>' + nextHtml + "</section></div>" +
+      '<details class="box fold" id="wEdit"' + (openFolds.wEdit ? " open" : "") + '><summary><span class="sum-t">Add or change words yourself</span><span class="sum-s">You rarely need this: the game has its words.</span></summary>' + wordTools() + "</details></div>";
+    view.querySelector("#wEdit").ontoggle = e => { openFolds.wEdit = e.target.open; };
+    wireWordTools();
+    wireCommon();
+    bandLine();
+  }
+  // The difficulty the word choice uses now, as one plain line under "How the game chooses his words".
+  async function bandLine() {
+    const P = window.WW_PICKER, el = $("wBand"); if (!P || !el || student.picker === false) return;
+    const [a, e] = await Promise.all([
+      safe(sb.from("attempts").select("*").eq("student_id", student.id).in("kind", ["new", "review", "test", "probe"])),
+      safe(sb.from("events").select("*").eq("student_id", student.id).in("type", ["rescue", "picked"]))
+    ]);
+    let next = 1; while (next <= maxDay() && dayDone(next)) next++;
+    if (!$("wBand") || next > LEVELS || next < 4) return;
+    try { const B = P.bandFor({ quests, attempts: (a && a.data) || [], events: (e && e.data) || [], words, level: next }); $("wBand").textContent = "Now: difficulty " + B.band + " on a scale from 1 (easiest) to 9 (hardest)."; } catch (x) { }
+  }
+  // The tools to add and change words by hand (kept in a fold on the Words tab).
+  function wordTools() {
+    const t = W.today();
+    const rows = words.map(w => '<tr data-id="' + w.id + '"><td>' + (w.quest_day ? "<b>" + w.quest_day + "</b>" + (isTest(w.quest_day) ? '<br><span class="muted">test</span>' : "") : '<span class="tagw">none yet</span>') + "</td><td>" + picHtml(w) + "</td><td><b>" + esc(w.word) + '</b><br><span class="muted">' + esc(w.chunks) + (w.focus ? ' · letters in colour <b class="hot">' + esc(w.focus) + "</b>" : "") + "</span>" + "</td>" +
       "<td>" + esc(w.meaning_en) + '<br><span class="muted zh">' + esc(w.meaning_zh) + "</span></td>" +
-      "<td>" + (w.approved ? '<span class="tagok">approved</span>' : '<span class="tagw">draft</span>') + "</td>" +
-      "<td>" + ladder[w.level] + (w.level > 0 && w.level < W.DIAMOND ? '<br><span class="muted">due ' + (w.due <= t ? "today" : esc(w.due)) + "</span>" : "") + (w.wrong_streak ? '<br><span class="ny">not yet right ' + w.wrong_streak + " in a row</span>" : "") + (w.level > 0 ? '<br><button type="button" class="ghost mini" data-retest="' + w.id + '">Test tomorrow</button>' : "") + "</td>" +
-      "<td>" + (w.dialogue_q ? '<span class="good">chat</span>' : '<span class="muted">no chat</span>') + "</td><td>" + esc(w.student_sentence) + '</td><td><button type="button" class="ghost mini" data-edit="' + w.id + '">Edit</button></td></tr>').join("");
+      "<td>" + (w.approved ? '<span class="tagok">in the game</span>' : '<span class="tagw">hidden</span>') + "</td>" +
+      "<td>" + (ladder[w.level] || "") + (w.level > 0 && w.level < W.DIAMOND ? '<br><span class="muted">next on ' + (w.due <= t ? "today" : esc(w.due)) + "</span>" : "") + (w.wrong_streak ? '<br><span class="ny">not yet right ' + w.wrong_streak + " times in a row</span>" : "") + (w.level > 0 ? '<br><button type="button" class="ghost mini" data-retest="' + w.id + '">Add to tomorrow\'s game</button>' : "") + "</td>" +
+      "<td>" + esc(w.student_sentence) + '</td><td><button type="button" class="ghost mini" data-edit="' + w.id + '">Change</button></td></tr>').join("");
     const unplanned = words.filter(w => w.approved && !w.quest_day).length;
     let plan = ""; for (let zi = 0; zi < Math.ceil(maxDay() / PER_ZONE); zi++) {
       const first = zi * PER_ZONE + 1, last = Math.min(maxDay(), first + PER_ZONE - 1);
-      plan += '<h3 class="zh3">' + ZONE_NAMES[zi % ZONE_NAMES.length] + " <small>levels " + first + " to " + last + " · " + esc((words.find(w => w.quest_day >= first && w.quest_day <= last && w.rule_en) || { rule_en: "no rule written" }).rule_en) + '</small></h3><div class="plan">';
-      for (let d = first; d <= last; d++) plan += '<div class="pd ' + dayState(d) + (isTest(d) ? " test" : "") + '"><b>' + d + (isTest(d) ? " test" : "") + "</b>" + (words.filter(w => w.quest_day === d).map(w => esc(w.word) + (w.approved ? "" : " (draft)")).join(", ") || '<i class="ny">no words</i>') + "</div>";
+      plan += '<h3 class="zh3">' + ZONE_NAMES[zi % ZONE_NAMES.length] + " <small>levels " + first + " to " + last + " · " + esc((words.find(w => w.quest_day >= first && w.quest_day <= last && w.rule_en) || { rule_en: "no spelling rule written" }).rule_en) + '</small></h3><div class="plan">';
+      for (let d = first; d <= last; d++) plan += '<div class="pd ' + dayState(d) + (isTest(d) ? " test" : "") + '"><b>' + d + (isTest(d) ? " test" : "") + "</b>" + (words.filter(w => w.quest_day === d).map(w => esc(w.word) + (w.approved ? "" : " (hidden)")).join(", ") || '<i class="ny">no words</i>') + "</div>";
       plan += "</div>";
     }
-    view.innerHTML = '<section class="box pk-box" id="pkBox"><div class="bh"><h2>Word picker</h2><span class="eyebrow">levels 4 to 50, by fixed rules</span></div><p class="muted">Loading…</p></section>' +
-      '<section class="box"><div class="bh"><h2>50 levels</h2><span class="eyebrow">level 1 opens on ' + esc(student.start_date || W.today()) + ", change it on the Student tab</span></div>" + plan +
-      '<p class="muted">Each level teaches the two words you give it, then checks older words that are due. He plays them in order: the next opens the day after he finishes, and at most two a day. Every 10th level is the island test: listen and type up to 10 of that island\'s words. A level with no approved words stays shut until you fill it.</p></section>' +
-      '<section class="box"><div class="bh"><h2>Words</h2><span class="eyebrow">' + words.filter(w => w.approved && w.level === 0).length + " approved and waiting, " + words.filter(w => w.level > 0).length + " learned" + (unplanned ? ", " + unplanned + " with no level" : "") + "</span></div>" +
-      '<div class="row"><button type="button" id="addBtn">Add a word</button><button type="button" class="ghost" id="bulkBtn">Paste words (bulk)</button><button type="button" class="ghost" id="autoDays">Give levels to words without one (' + (student.new_per_day || 2) + ' per level)</button><button type="button" class="ghost" id="approveAll">Approve all drafts</button></div>' +
+    return '<p class="lead">Here you can add your own words, give them a level, and change or delete them. A word you add stays hidden from him until you put it in the game.</p>' +
+      '<div class="row"><button type="button" id="addBtn">Add a word</button><button type="button" class="ghost" id="bulkBtn">Paste many words</button><button type="button" class="ghost" id="autoDays">Give a level to words without one (' + (student.new_per_day || 2) + ' per level)</button><button type="button" class="ghost" id="approveAll">Put all hidden words in the game</button></div>' +
       '<div id="editor"></div>' +
-      (words.length ? '<div class="scroll"><table class="wt"><tr><th>Level</th><th></th><th>Word</th><th>Meaning</th><th>Status</th><th>Memory</th><th>Chat</th><th>His sentence</th><th></th></tr>' + rows + "</table></div>" : '<p class="muted">No words yet. Add a word, or paste a week.</p>') + "</section>";
+      '<h3>All his words <small class="muted">' + words.filter(w => w.approved && w.level === 0).length + " waiting, " + words.filter(w => w.level > 0).length + " learned" + (unplanned ? ", " + unplanned + " with no level" : "") + "</small></h3>" +
+      (words.length ? '<div class="scroll"><table class="wt"><tr><th>Level</th><th></th><th>Word</th><th>Meaning</th><th>Can he see it?</th><th>How well he knows it</th><th>His sentence</th><th></th></tr>' + rows + "</table></div>" : '<p class="lead">No words yet. Add a word, or paste many at once.</p>') +
+      '<h3>All 50 levels</h3><p class="lead">Level 1 opens on ' + esc(day3(student.start_date || t)) + " (you can change this in Settings). He plays the levels in order: the next one opens the day after he finishes one, and at most two a day. A level with no words in the game stays shut until it has its words.</p>" + plan;
+  }
+  function wireWordTools() {
     $("addBtn").onclick = () => editor(null);
     $("bulkBtn").onclick = bulk;
     $("autoDays").onclick = async () => {
@@ -687,85 +691,42 @@
       if (error) banner(error.message); await loadAll(); renderWords();
     };
     view.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => editor(words.find(w => w.id === b.dataset.edit)));
-    wireCommon();
-    pickerBox();
-  }
-  // ---------- the word picker (site/picker.js): on or off, the band for his next level and why, the words picked so far ----------
-  // The same rules and the same data as the game (src/js/87-picker.js), so what this box says is what the game will do.
-  async function pickerBox() {
-    const box = $("pkBox"); if (!box) return;
-    const P = window.WW_PICKER, POOL = window.WW_POOL || [], on = student.picker !== false;
-    const [a, e] = await Promise.all([
-      safe(sb.from("attempts").select("*").eq("student_id", student.id).in("kind", ["new", "review", "test", "probe"])),
-      safe(sb.from("events").select("*").eq("student_id", student.id).in("type", ["rescue", "picked"]))
-    ]);
-    if (!$("pkBox")) return;
-    const picked = ((e && e.data) || []).filter(x => x.type === "picked" && x.detail).sort((x, y) => (x.created_at < y.created_at ? -1 : 1));
-    let next = 1; while (next <= maxDay() && dayDone(next)) next++;
-    const has = k => words.some(w => W.key(w.word) === W.key(k));
-    let today = "";
-    if (!P) today = '<p class="muted">The picker script (picker.js) is not on this page.</p>';
-    else if (next > LEVELS) today = "<p>All 50 levels are done.</p>";
-    else {
-      const B = P.bandFor({ quests, attempts: (a && a.data) || [], events: (e && e.data) || [], words, level: next });
-      const lw = levelWords(next);
-      today = '<dl class="kv"><dt>Next level</dt><dd><b>' + next + "</b>" + (next < 4 ? " (levels 1 to 3 keep their own words)" : lw.length >= 2 ? " has its words: " + lw.map(w => esc(w.word)).join(", ") : lw.length ? " has 1 word; the picker adds 1 when the level opens" : " gets 2 words when the level opens") + "</dd>" +
-        "<dt>Band now</dt><dd><b>" + B.band + " of 9</b>" + (on ? "" : " (not used while the picker is off)") + "</dd>" +
-        "<dt>Why</dt><dd>" + esc(B.reason) + "</dd></dl>";
-    }
-    const rows = picked.map(x => { const d = x.detail, ws = Array.isArray(d.words) ? d.words : [], bs = Array.isArray(d.bands) ? d.bands : [];
-      return "<tr><td><b>" + esc(d.level) + "</b></td><td>" + ws.map((w, i) => esc(w) + (bs[i] ? ' <span class="muted">band ' + esc(bs[i]) + "</span>" : "") + (has(w) ? "" : ' <span class="tagw">deleted</span>')).join("<br>") +
-        "</td><td>" + esc(d.band || "") + '</td><td class="muted">' + esc(d.reason || "") + "</td><td>" + esc(rel(ld(x.created_at))) + "</td></tr>"; }).join("");
-    box.innerHTML = '<div class="bh"><h2>Word picker</h2><span class="eyebrow">levels 4 to 50, by fixed rules</span><span class="grow"></span>' +
-      '<button type="button" class="' + (on ? "" : "ghost ") + 'mini" id="pkSwitch" aria-pressed="' + on + '">' + (on ? "On" : "Off") + "</button></div>" +
-      '<p class="muted">' + (on ? "On: when a level opens without 2 approved words, the game picks the missing ones from the pool (" + POOL.length + " words), by his first tries." : "Off: each level gets the next words of the fixed course (the bank's order).") + "</p>" +
-      today +
-      '<div class="bh sub2"><h3>Words picked so far</h3><span class="eyebrow">' + many(picked.reduce((n, x) => n + ((x.detail.words || []).length), 0), "word") + "</span></div>" +
-      (rows ? '<div class="scroll"><table class="pk-t"><tr><th>Level</th><th>Words</th><th>Band</th><th>Why</th><th>When</th></tr>' + rows + "</table></div>" : '<p class="muted">None yet.</p>') +
-      '<div class="bh sub2"><h3>To overrule it</h3></div><ul class="pk-how"><li>Give a level your own word: Add a word, set its level, choose approved. The picker only fills what is missing.</li>' +
-      "<li>Change a picked word: press Edit on its row below.</li><li>Delete a picked word: it is not picked again; the picker fills the gap when the level opens.</li>" +
-      "<li>Rules: start at band 5; 80% or more first tries right, half a band up; 50% or less, half a band down; Look and copy needed, half a band more down; the never-taught word right, a quarter up. One band a day at most.</li></ul>";
-    $("pkSwitch").onclick = async () => {
-      const { error } = await sb.from("students").update({ picker: !on }).eq("id", student.id);
-      if (error) { banner(error.message); return; }
-      student.picker = !on; pickerBox();
-    };
   }
   // A word's checks. Returns an error line or "". The word is kept as typed; duplicates are found with W.key.
   function checkWord(word, chunks, sen, dq, da, focus, selfId) {
-    if (!word) return "Word is missing.";
-    if (!wordOk(word)) return "Only letters, apostrophes and hyphens in a word.";
+    if (!word) return "Type the word first.";
+    if (!wordOk(word)) return "Only letters, apostrophes (') and hyphens (-) in a word.";
     const dup = words.find(x => x.id !== selfId && W.key(x.word) === W.key(word));
     if (dup) return '"' + dup.word + '" is already in the list' + (dup.quest_day ? " (level " + dup.quest_day + ")" : "") + ".";
-    if (W.key(chunks.replace(/-/g, "")) !== W.key(word)) return "The beats must spell the word exactly.";
+    if (W.key(chunks.replace(/-/g, "")) !== W.key(word)) return "The parts must spell the word exactly.";
     if (sen && !W.hasWord(sen, word)) return "The sentence must contain the word.";
-    if ((dq || da) && !(dq && da)) return "Chat needs both lines, or leave both empty.";
-    if (da && !W.hasWord(da, word)) return "The chat reply must contain the word.";
-    if (focus && W.key(word).indexOf(focus) === -1) return "The letters to colour must appear in the word.";
+    if ((dq || da) && !(dq && da)) return "The short talk needs both lines, or leave both empty.";
+    if (da && !W.hasWord(da, word)) return "His answer in the short talk must contain the word.";
+    if (focus && W.key(word).indexOf(focus) === -1) return "The letters in colour must be in the word.";
     return "";
   }
   function editor(w) {
     const v = k => esc(w ? w[k] : "");
     $("editor").innerHTML = '<form id="wf" class="form edit">' +
       '<label class="f">Word (kept as typed: February, don\'t)<input type="text" id="f_word" value="' + v("word") + '" ' + (w && w.level > 0 ? "readonly" : "") + "></label>" +
-      '<label class="f">Beats (um-brel-la)<input type="text" id="f_chunks" value="' + v("chunks") + '"></label>' +
-      '<label class="f">Picture (photo or saved image; shrunk to fit)<input type="file" id="f_pic" accept="image/*">' + (w && w.picture ? '<img src="' + w.picture + '" alt="" class="prev">' : "") + "</label>" +
-      '<label class="f">Letters to colour (the island\'s rule, e.g. ll)<input type="text" id="f_focus" value="' + v("focus") + '" maxlength="6"></label>' +
-      '<label class="f">Rule, one line (shown on the card)<input type="text" id="f_rule" value="' + v("rule_en") + '" placeholder="After a short vowel, double the letter"></label>' +
-      '<label class="f">Rule in Chinese<input type="text" id="f_rulezh" value="' + v("rule_zh") + '"></label>' +
-      '<label class="f">Order<input type="number" id="f_order" value="' + (w ? w.sort_order : (words.length ? Math.max(...words.map(x => x.sort_order)) + 1 : 1)) + '"></label>' +
-      '<label class="f">Level (1 to 50, empty = not planned)<input type="number" id="f_day" min="1" max="99" value="' + (w && w.quest_day ? w.quest_day : "") + '"></label>' +
+      '<label class="f">Parts of the word, as he claps them (um-brel-la)<input type="text" id="f_chunks" value="' + v("chunks") + '"></label>' +
+      '<label class="f">Picture (a photo or a saved picture)<input type="file" id="f_pic" accept="image/*">' + (w && w.picture ? '<img src="' + w.picture + '" alt="" class="prev">' : "") + "</label>" +
+      '<label class="f">Letters in colour (the spelling rule, for example ll)<input type="text" id="f_focus" value="' + v("focus") + '" maxlength="6"></label>' +
+      '<label class="f">Spelling rule, one line (shown with the word)<input type="text" id="f_rule" value="' + v("rule_en") + '" placeholder="After a short vowel, double the letter"></label>' +
+      '<label class="f">Spelling rule in Chinese<input type="text" id="f_rulezh" value="' + v("rule_zh") + '"></label>' +
+      '<label class="f">Place in the list<input type="number" id="f_order" value="' + (w ? w.sort_order : (words.length ? Math.max(...words.map(x => x.sort_order)) + 1 : 1)) + '"></label>' +
+      '<label class="f">Level (1 to 50, or empty for none yet)<input type="number" id="f_day" min="1" max="99" value="' + (w && w.quest_day ? w.quest_day : "") + '"></label>' +
       '<label class="f">Meaning (simple English)<input type="text" id="f_en" value="' + v("meaning_en") + '"></label>' +
       '<label class="f">Meaning (中文)<input type="text" id="f_zh" value="' + v("meaning_zh") + '"></label>' +
       '<label class="f wide">Sentence (must contain the word)<input type="text" id="f_sen" value="' + v("sentence_en") + '"></label>' +
       '<label class="f wide">Sentence (中文)<input type="text" id="f_szh" value="' + v("sentence_zh") + '"></label>' +
-      '<label class="f wide">Chat: what you say to him (e.g. What did you build today?)<input type="text" id="f_dq" value="' + v("dialogue_q") + '"></label>' +
-      '<label class="f wide">Chat: the reply he should pick (must contain the word)<input type="text" id="f_da" value="' + v("dialogue_a") + '"></label>' +
-      '<label class="f"><span>Approved (he can see it)</span><select id="f_ok"><option value="false"' + (w && w.approved ? "" : " selected") + '>draft</option><option value="true"' + (w && w.approved ? " selected" : "") + ">approved</option></select></label>" +
+      '<label class="f wide">Short talk: what the game asks him (for example What did you build today?)<input type="text" id="f_dq" value="' + v("dialogue_q") + '"></label>' +
+      '<label class="f wide">Short talk: the answer he picks (must contain the word)<input type="text" id="f_da" value="' + v("dialogue_a") + '"></label>' +
+      '<label class="f"><span>Can he see it?</span><select id="f_ok"><option value="false"' + (w && w.approved ? "" : " selected") + '>not yet (hidden)</option><option value="true"' + (w && w.approved ? " selected" : "") + ">yes, it is in the game</option></select></label>" +
       '<div class="row wide"><button type="submit">Save</button><button type="button" class="ghost" id="cancel">Cancel</button>' + (w ? '<button type="button" class="red" id="del">Delete</button>' : "") + '<span class="err" id="ferr"></span></div></form>';
     $("cancel").onclick = () => $("editor").innerHTML = "";
     if ($("del")) $("del").onclick = async () => {
-      if (w.level > 0 && !$("del").dataset.sure) { $("del").dataset.sure = "1"; $("del").textContent = "Delete and lose his progress?"; return; }
+      if (w.level > 0 && !$("del").dataset.sure) { $("del").dataset.sure = "1"; $("del").textContent = "Delete it? He has started to learn it."; return; }
       const { error } = await sb.from("words").delete().eq("id", w.id); if (error) banner(error.message); await loadAll(); renderWords();
     };
     $("wf").onsubmit = async e => {
@@ -783,9 +744,9 @@
     };
   }
   function bulk() {
-    $("editor").innerHTML = '<div class="edit"><p class="muted">One word per line, parts separated by TAB (paste from a spreadsheet, or from Claude): word, beats, meaning in English, meaning in Chinese, sentence, sentence in Chinese, (not used: leave empty), chat line you say, chat reply he picks (must contain the word), level, letters to colour, (not used), rule, rule in Chinese. Everything after the sentence in Chinese can be empty; leave the level empty and press "Give levels" afterwards. Words are kept as typed (February, don\'t). Added as drafts in this order; approve after you check them.</p>' +
+    $("editor").innerHTML = '<div class="edit"><p class="muted">Copy the words from a spreadsheet and paste them here: one word a line, one column for each part, in this order: word, parts of the word, meaning in English, meaning in Chinese, sentence, sentence in Chinese, (leave empty), short talk question, his answer, level, letters in colour, (leave empty), spelling rule, spelling rule in Chinese. Everything after the sentence in Chinese can stay empty. The words stay hidden from him until you check them and put them in the game.</p>' +
       '<textarea id="bulkTxt" rows="8" placeholder="remember\tre-mem-ber\tto keep something in your mind\t记住\tI always remember where I hid my diamonds.\t我总是记得我把钻石藏在哪里。\t\tWhat did you build today?\tI remember, I built a big tower!"></textarea>' +
-      '<div class="row"><button type="button" id="bulkGo">Add as drafts</button><button type="button" class="ghost" id="cancel">Cancel</button><span class="err" id="berr"></span></div></div>';
+      '<div class="row"><button type="button" id="bulkGo">Add these words</button><button type="button" class="ghost" id="cancel">Cancel</button><span class="err" id="berr"></span></div></div>';
     $("cancel").onclick = () => $("editor").innerHTML = "";
     $("bulkGo").onclick = async () => {
       let order = words.length ? Math.max(...words.map(x => x.sort_order)) : 0;
@@ -798,7 +759,7 @@
         keys.add(W.key(word));
         rows.push({ student_id: student.id, word, chunks, meaning_en: p[2] || "", meaning_zh: p[3] || "", sentence_en: p[4] || "", sentence_zh: p[5] || "", emoji: "", dialogue_q: dq, dialogue_a: da, quest_day: +p[9] || null, focus, sounds: Math.max(0, +p[11] || 0), rule_en: p[12] || "", rule_zh: p[13] || "", sort_order: ++order, approved: false });
       });
-      if (bad.length) { $("berr").textContent = "Check these lines (beats, sentence or chat reply do not match the word, only one chat line, or the word is already in the list): " + bad.join(", "); return; }
+      if (bad.length) { $("berr").textContent = "Check these lines (the parts, the sentence or his answer do not match the word, only one short talk line, or the word is already in the list): " + bad.join(", "); return; }
       if (!rows.length) return;
       const { error } = await sb.from("words").insert(rows);
       if (error) { $("berr").textContent = error.message; return; }
@@ -806,20 +767,35 @@
     };
   }
 
-  // ---------- log ----------
+  // ---------- everything the game recorded on one day (Settings, folded) ----------
+  // The game's own names for what happened, in plain words. A name not listed here is shown with its underscores as spaces.
+  const EVENT_WORDS = {
+    quest_start: "Started a level", quest_complete: "Finished a level", quest_pause: "Stopped between two parts", part_done: "Finished a part of the level",
+    practice_start: "Started to practise", sentence_saved: "Wrote a sentence", sentence_copied: "Copied a sentence", sentence_skipped: "Left out a sentence",
+    drawn: "Wrote a word by hand", clap: "Clapped the parts of a word", zh_toggle: "Turned the Chinese on or off", zh_shown: "Looked at the Chinese",
+    card_heard: "Listened to a word", guide_again: "Listened to the guide again", story_opened: "Opened the story", story_heard: "Listened to the story",
+    hint: "Pressed for help", rescue: "Looked at the word and copied it", picked: "The game chose new words", pin_wrong: "PIN typed, not yet right",
+    game_meaning: "Played the meaning game", game_sentence: "Played the sentence game", mail_opened: "Opened his mailbox"
+  };
+  const KIND_WORDS = { new: "new word", review: "word from before", retry: "second go", test: "island test", mixed: "mixed round", training: "extra practice",
+    school: "school list word", school_retry: "school list word, second go", school_test: "practice dictation", probe: "word never taught", sentence: "sentence" };
+  const eventName = e => e.type === "speech" ? (e.detail && e.detail.ok === false ? "His laptop's voice did not start" : "His laptop's voice worked") : EVENT_WORDS[e.type] || e.type.replace(/_/g, " ");
   async function renderLog(day) {
     day = day || W.today();
+    const body = $("logBody"); if (!body) return;
     const from = new Date(day + "T00:00:00").toISOString(), to = new Date(W.addDays(day, 1) + "T00:00:00").toISOString();
     const [att, ev] = await Promise.all([
       sb.from("attempts").select("*").eq("student_id", student.id).gte("created_at", from).lt("created_at", to).order("created_at"),
       sb.from("events").select("*").eq("student_id", student.id).gte("created_at", from).lt("created_at", to).order("created_at")
     ]);
-    const shown = d => { const o = Object.assign({}, d); ["png", "audio"].forEach(k => delete o[k]); return Object.keys(o).length ? ' <span class="muted">' + esc(JSON.stringify(o)) + "</span>" : ""; };
-    const items = (att.data || []).map(a => ({ t: a.created_at, h: "<b>" + esc(a.word) + "</b> " + (a.step ? esc(a.step) + " " : "") + esc(a.kind) + ': typed "' + esc(a.answer) + '" <span class="' + (a.correct ? "good" : "ny") + '">' + (a.correct ? "right" : "not yet") + "</span>" + (a.level_before == null ? "" : " (level " + a.level_before + " to " + a.level_after + ")") }))
-      .concat((ev.data || []).filter(e => e.type !== "voice" && e.type !== "say").map(e => ({ t: e.created_at, h: esc(({ pin_wrong: "PIN typed, not yet right" })[e.type] || e.type.replace(/_/g, " ")) + shown(e.detail || {}) })))
+    if (!$("logBody")) return;
+    // the details, short: "word: umbrella · minutes: 5"; never a picture or a sound
+    const shown = d => { const o = Object.assign({}, d); ["png", "audio"].forEach(k => delete o[k]); const ks = Object.keys(o); return ks.length ? ' <span class="muted">' + esc(ks.map(k => k.replace(/_/g, " ") + ": " + (o[k] !== null && typeof o[k] === "object" ? JSON.stringify(o[k]) : o[k])).join(" · ")) + "</span>" : ""; };
+    const items = (att.data || []).map(a => ({ t: a.created_at, h: "<b>" + esc(a.word) + "</b> " + esc(KIND_WORDS[a.kind] || a.kind || "") + ': he wrote "' + esc(a.answer) + '" <span class="' + (a.correct ? "good" : "ny") + '">' + (a.correct ? "right" : "not yet") + "</span>" }))
+      .concat((ev.data || []).filter(e => e.type !== "voice" && e.type !== "say").map(e => ({ t: e.created_at, h: esc(eventName(e)) + shown(e.detail || {}) })))
       .sort((a, b) => a.t < b.t ? -1 : 1);
-    view.innerHTML = '<section class="box"><div class="bh"><h2>Log</h2></div><div class="row"><label class="f inl">Day <input type="date" id="day" value="' + day + '"></label><button type="button" class="ghost" id="csv">Download all answers (CSV)</button></div>' +
-      (items.length ? '<div class="log">' + items.map(i => "<div><time>" + W.fmtTime(i.t) + "</time><span>" + i.h + "</span></div>").join("") + "</div>" : '<p class="muted">Nothing on this day.</p>') + "</section>";
+    body.innerHTML = '<div class="row"><label class="f inl">Day <input type="date" id="day" value="' + day + '"></label><button type="button" class="ghost" id="csv">Save all his answers as a spreadsheet file</button></div>' +
+      (items.length ? '<div class="log">' + items.map(i => "<div><time>" + W.fmtTime(i.t) + "</time><span>" + i.h + "</span></div>").join("") + "</div>" : '<p class="lead">Nothing on this day.</p>');
     $("day").onchange = () => renderLog($("day").value);
     $("csv").onclick = async () => {
       const { data } = await sb.from("attempts").select("*").eq("student_id", student.id).order("created_at");
@@ -829,27 +805,78 @@
     };
   }
 
-  // ---------- his device's voice: the game saves the list (students.voices), reads voice_name and voice_rate ----------
+  // ---------- Settings: the technical parts, each with one plain sentence ----------
+  function renderSettings() {
+    view.innerHTML = '<div class="settings">' +
+      '<p class="intro">The things you set once. Each part says what it does.</p>' +
+      laptopCard() + detailsCard() + voiceCard() +
+      '<section class="box" id="pkBox"><div class="bh"><h2>Choosing his new words</h2></div><p class="lead">Loading…</p></section>' +
+      '<details class="box fold" id="logBox"' + (openFolds.logBox ? " open" : "") + '><summary><span class="sum-t">Everything the game recorded</span><span class="sum-s">A list of everything the game recorded. You will rarely need it.</span></summary><div id="logBody"><p class="lead">Loading…</p></div></details>' +
+      "</div>";
+    view.querySelector("#logBox").ontoggle = e => { openFolds.logBox = e.target.open; };
+    wireVoice();
+    $("newcode").onclick = async () => { const { error } = await sb.rpc("reset_pairing", { student: student.id }); if (error) banner(error.message); await loadAll(); renderSettings(); };
+    $("stf").onsubmit = async e => {
+      e.preventDefault();
+      const n = (id, d, lo, hi) => { const x = Math.round(+$(id).value); return isFinite(x) && $(id).value !== "" ? Math.max(lo, Math.min(hi, x)) : d; };
+      const { error } = await sb.from("students").update({ name: $("s_name").value.trim(), pin: $("s_pin").value.trim(), teacher_name: $("s_tn").value.trim() || "WordWizard", new_per_day: n("s_new", 2, 1, 5), start_date: $("s_start").value || W.today(),
+        review_cap: n("s_cap", W.REVIEW_CAP, 1, 30), play_minutes: n("s_play", 10, 0, 60) }).eq("id", student.id);
+      if (error) banner(error.message); else { $("sok").textContent = "Saved."; await loadAll(); }
+    };
+    pickerBox();
+    renderLog();
+  }
+  // Connect his laptop: the code he types once on his laptop (students.pairing_code), and a new one when needed.
+  function laptopCard() {
+    return '<section class="box s-laptop"><div class="bh"><h2>Connect his laptop</h2></div>' +
+      '<p class="lead">His laptop needs this code once, so the game knows it is his.</p>' +
+      '<p class="state">' + (student.paired_uid ? '<span class="tagok">Connected</span>' + (student.paired_at ? " since " + esc(day3(ld(student.paired_at))) : "") : '<span class="tagw">Not connected yet</span>') + "</p>" +
+      '<p>Code to type on his laptop: <b class="code">' + esc(student.pairing_code) + "</b></p>" +
+      '<p class="lead">On his laptop, open the game and type this code. If he gets a new laptop, or the game asks for the code again, press New code and type the new one there.</p>' +
+      '<div class="row"><button type="button" class="ghost" id="newcode">New code</button></div></section>';
+  }
+  // His name, the PIN, the name he sees for you, and how much the game gives him each day.
+  function detailsCard() {
+    const hint = s => '<span class="fh">' + s + "</span>";
+    return '<section class="box s-details"><div class="bh"><h2>His name, PIN and daily amount</h2></div>' +
+      '<form id="stf" class="form">' +
+      '<label class="f">His name' + hint("Used on this page and in the note for his mother.") + '<input type="text" id="s_name" value="' + esc(student.name) + '"></label>' +
+      '<label class="f">PIN (4 numbers)' + hint("He types this to open the game.") + '<input type="text" id="s_pin" value="' + esc(student.pin) + '" maxlength="4" inputmode="numeric"></label>' +
+      '<label class="f">Your name in his game' + hint("Your letters to him come from this name.") + '<input type="text" id="s_tn" value="' + esc(student.teacher_name || "WordWizard") + '" maxlength="24"></label>' +
+      '<label class="f">First day of the game' + hint("Level 1 opens on this day.") + '<input type="date" id="s_start" value="' + esc(student.start_date || W.today()) + '"></label>' +
+      '<label class="f">Words to go over again each day, at most' + hint("Words he learned before that come back that day.") + '<input type="number" id="s_cap" value="' + (student.review_cap || W.REVIEW_CAP) + '" min="1" max="30"></label>' +
+      '<label class="f">New words in each level' + hint("Used when you give levels to your own words.") + '<input type="number" id="s_new" value="' + (student.new_per_day || 2) + '" min="1" max="5"></label>' +
+      '<label class="f">Free play after his words (minutes)' + hint("Time to build on his island when his words are done.") + '<input type="number" id="s_play" value="' + (student.play_minutes || 10) + '" min="0" max="60"></label>' +
+      '<p class="lead wide">Each word comes back after 1, 4 and 14 days. After that he knows it well. With 2 new words a day, that makes about 6 words to go over each day.</p>' +
+      '<div class="row wide"><button type="submit">Save</button><span class="ok" id="sok"></span></div></form></section>';
+  }
+
+  // ---------- the voice on his laptop: the game saves the list (students.voices), reads voice_name and voice_rate ----------
   const VOICE_SAMPLE = "Umbrella. Take your umbrella. Tap each beat.";
   const VOICE_RATES = { normal: 0.8, slower: 0.62 };   // the same rates the game uses for a word, and for a word said slowly
-  const hisVoices = () => (Array.isArray(student.voices) ? student.voices : []).filter(v => v && v.name);
+  const LANGS = { "en-GB": "British English", "en-US": "American English", "en-AU": "Australian English", "en-IE": "Irish English", "en-IN": "Indian English", "en-ZA": "South African English", "en-NZ": "New Zealand English", "en-CA": "Canadian English" };
+  const allVoices = () => { let v = student.voices; if (typeof v === "string") { try { v = JSON.parse(v); } catch (e) { v = []; } } return (Array.isArray(v) ? v : []).filter(x => x && x.name); };
+  // Only the voices that live on his laptop: a voice over the internet (local: false) sends the spoken words to its maker.
+  const hisVoices = () => allVoices().filter(v => v.local !== false);
   function voiceCard() {
-    const vs = hisVoices(), cur = student.voice_name || "", rate = student.voice_rate === "slower" ? "slower" : "normal";
+    const all = allVoices(), vs = hisVoices(), cur = student.voice_name || "", rate = student.voice_rate === "slower" ? "slower" : "normal";
+    const curNet = cur && all.some(v => v.name === cur && v.local === false);
     const opt = (val, label, extra, listen) => '<li class="' + (val === cur ? "on" : "") + '"><label><input type="radio" name="vname" value="' + esc(val) + '"' + (val === cur ? " checked" : "") + '><span><b>' + esc(label) + "</b>" + (extra ? ' <span class="muted">' + extra + "</span>" : "") + "</span></label>" +
       (listen ? '<button type="button" class="ghost mini" data-listen="' + esc(val) + '">Listen</button>' : "") + "</li>";
     const rows = opt("", "Let the game choose (a British voice if there is one)", "", false) +
-      vs.map(v => opt(v.name, v.name, esc(v.lang || "") + (v.local === false ? " · needs the internet" : ""), true)).join("") +
-      (cur && !vs.some(v => v.name === cur) ? opt(cur, cur, "not in the list his laptop sent last", true) : "");
-    return '<section class="box narrow voice"><div class="bh"><h2>Voice</h2><span class="eyebrow">the voices on his laptop</span></div>' +
-      '<p class="muted">The guide and the words are read by a voice on his laptop. Choose the clearest one.</p>' +
-      (vs.length ? "" : '<p class="needs">The list appears after he has opened the game once on his laptop.</p>') +
-      '<ul class="vlist">' + rows + "</ul>" + '<p class="muted" id="vmsg"></p>' +
-      '<div class="bh sub2"><h3>Speed</h3></div><div class="row vrate">' +
+      vs.map(v => opt(v.name, v.name, esc(LANGS[v.lang] || v.lang || ""), true)).join("") +
+      (cur && !curNet && !vs.some(v => v.name === cur) ? opt(cur, cur, "not in the list his laptop sent last", true) : "");
+    return '<section class="box voice"><div class="bh"><h2>The voice that reads to him</h2></div>' +
+      '<p class="lead">His laptop reads the words and the guide aloud. Choose the clearest voice. Only voices that work on his laptop itself are shown: other voices would send the words over the internet.</p>' +
+      (all.length ? "" : '<p class="needs">The list appears after he has opened the game once on his laptop.</p>') +
+      (curNet ? '<p class="needs">The voice chosen now (' + esc(cur) + ") works over the internet. Please choose one of the voices below.</p>" : "") +
+      '<ul class="vlist">' + rows + "</ul>" + '<p class="lead" id="vmsg"></p>' +
+      '<h3>Speed</h3><div class="row vrate">' +
       ["normal", "slower"].map(r => '<label class="inl"><input type="radio" name="vrate" value="' + r + '"' + (r === rate ? " checked" : "") + "> " + (r === "normal" ? "Normal" : "Slower") + "</label>").join("") +
       '<span class="ok" id="vok"></span></div></section>';
   }
   function wireVoice() {
-    const save = async (row, sel) => {
+    const save = async row => {
       const { error } = await sb.from("students").update(row).eq("id", student.id);
       if (error) { banner(error.message); return; }
       Object.assign(student, row); $("vok").textContent = "Saved.";
@@ -871,30 +898,38 @@
     });
   }
 
-  // ---------- student ----------
-  function renderStudent() {
-    view.innerHTML = '<section class="box narrow"><div class="bh"><h2>' + esc(student.name) + "</h2></div>" +
-      '<dl class="kv"><dt>Device</dt><dd>' + (student.paired_uid ? '<span class="tagok">connected</span>' + (student.paired_at ? " since " + new Date(student.paired_at).toLocaleDateString() : "") : '<span class="tagw">not connected</span>') + "</dd>" +
-      '<dt>Pairing code</dt><dd class="code">' + esc(student.pairing_code) + "</dd></dl>" +
-      '<p class="muted">On his device, open the game and type this code once. If he gets a new device or clears the browser, press New code and connect again.</p>' +
-      '<div class="row"><button type="button" class="ghost" id="newcode">New code</button></div>' +
-      '<form id="stf" class="form"><label class="f">Name<input type="text" id="s_name" value="' + esc(student.name) + '"></label>' +
-      '<label class="f">PIN<input type="text" id="s_pin" value="' + esc(student.pin) + '" maxlength="4" inputmode="numeric"></label>' +
-      '<label class="f">Your gamer name in his game<input type="text" id="s_tn" value="' + esc(student.teacher_name || "WordWizard") + '" maxlength="24"></label>' +
-      '<label class="f">Level 1 opens on (date)<input type="date" id="s_start" value="' + esc(student.start_date || W.today()) + '"></label>' +
-      '<label class="f">Old words a day, at most<input type="number" id="s_cap" value="' + (student.review_cap || W.REVIEW_CAP) + '" min="1" max="30"></label>' +
-      '<p class="muted wide">Each word comes back after 1, 4 and 14 days, then it is a star word. With 2 new words a day that is 6 old words a day.</p>' +
-      '<label class="f">Free play after a level (minutes)<input type="number" id="s_play" value="' + (student.play_minutes || 10) + '" min="0" max="60"></label>' +
-      '<label class="f">Words per level (used by "Give levels")<input type="number" id="s_new" value="' + (student.new_per_day || 2) + '" min="1" max="5"></label>' +
-      '<div class="row wide"><button type="submit">Save</button><span class="ok" id="sok"></span></div></form></section>' + voiceCard();
-    wireVoice();
-    $("newcode").onclick = async () => { const { error } = await sb.rpc("reset_pairing", { student: student.id }); if (error) banner(error.message); await loadAll(); renderStudent(); };
-    $("stf").onsubmit = async e => {
-      e.preventDefault();
-      const n = (id, d, lo, hi) => { const x = Math.round(+$(id).value); return isFinite(x) && $(id).value !== "" ? Math.max(lo, Math.min(hi, x)) : d; };
-      const { error } = await sb.from("students").update({ name: $("s_name").value.trim(), pin: $("s_pin").value.trim(), teacher_name: $("s_tn").value.trim() || "WordWizard", new_per_day: n("s_new", 2, 1, 5), start_date: $("s_start").value || W.today(),
-        review_cap: n("s_cap", W.REVIEW_CAP, 1, 30), play_minutes: n("s_play", 10, 0, 60) }).eq("id", student.id);
-      if (error) banner(error.message); else { $("sok").textContent = "Saved."; await loadAll(); }
+  // ---------- choosing his new words (site/picker.js): on or off, and the words chosen so far ----------
+  // The same rules and the same data as the game (src/js/87-picker.js), so what this box says is what the game will do.
+  async function pickerBox() {
+    const box = $("pkBox"); if (!box) return;
+    const P = window.WW_PICKER, on = student.picker !== false;
+    const [a, e] = await Promise.all([
+      safe(sb.from("attempts").select("*").eq("student_id", student.id).in("kind", ["new", "review", "test", "probe"])),
+      safe(sb.from("events").select("*").eq("student_id", student.id).in("type", ["rescue", "picked"]))
+    ]);
+    if (!$("pkBox")) return;
+    const picked = ((e && e.data) || []).filter(x => x.type === "picked" && x.detail).sort((x, y) => (x.created_at < y.created_at ? -1 : 1));
+    let next = 1; while (next <= maxDay() && dayDone(next)) next++;
+    const has = k => words.some(w => W.key(w.word) === W.key(k));
+    let now = "";
+    if (P && on && next <= LEVELS && next >= 4) {
+      try { const B = P.bandFor({ quests, attempts: (a && a.data) || [], events: (e && e.data) || [], words, level: next }); now = "<p>Now: difficulty <b>" + B.band + "</b> on a scale from 1 (easiest) to 9 (hardest).</p>"; } catch (x) { now = ""; }
+    }
+    const rows = picked.map(x => { const d = x.detail, ws = Array.isArray(d.words) ? d.words : [];
+      return "<tr><td><b>" + esc(d.level) + "</b></td><td>" + ws.map(w => esc(w) + (has(w) ? "" : ' <span class="tagw">deleted</span>')).join(", ") + "</td><td>" + esc(rel(ld(x.created_at))) + "</td></tr>"; }).join("");
+    const n = picked.reduce((s, x) => s + ((x.detail.words || []).length), 0);
+    box.innerHTML = '<div class="bh"><h2>Choosing his new words</h2><span class="grow"></span>' +
+      '<span class="sw-l">' + (on ? "Chosen by how he did" : "Fixed list") + '</span><button type="button" class="' + (on ? "" : "ghost ") + 'mini sw" id="pkSwitch" aria-pressed="' + on + '">' + (on ? "On" : "Off") + "</button></div>" +
+      '<p class="lead">' + (on ? "On: from level 4, the game chooses his next words itself, mostly from the Cambridge English word lists for children, by how he did. Press to switch it off." : "Off: each level gets the next words of a fixed list, in order. Press to let the game choose by how he did.") + "</p>" +
+      (P ? now : '<p class="lead">This part of the game is not on this page.</p>') +
+      '<details class="inner"><summary>Words the game chose so far (' + n + ")</summary>" +
+      (rows ? '<div class="scroll"><table class="pk-t"><tr><th>Level</th><th>Words</th><th>When</th></tr>' + rows + "</table></div>" : '<p class="lead">None yet.</p>') +
+      '<ul class="pk-how"><li>To give a level your own word: on the Words tab, open "Add or change words yourself", add the word, give it the level and put it in the game. The game only fills what is missing.</li>' +
+      "<li>To change a word the game chose: press Change on its line there.</li><li>If you delete a word the game chose, it is not chosen again; the game fills the gap when the level opens.</li></ul></details>";
+    $("pkSwitch").onclick = async () => {
+      const { error } = await sb.from("students").update({ picker: !on }).eq("id", student.id);
+      if (error) { banner(error.message); return; }
+      student.picker = !on; pickerBox();
     };
   }
 
@@ -1133,82 +1168,91 @@
     if (o.line != null) { const y = base - (base - top) * Math.min(1, o.line / max); s = '<line x1="0" x2="' + Wd + '" y1="' + y.toFixed(1) + '" y2="' + y.toFixed(1) + '" class="th"></line>' + s; }
     return '<svg class="bars" viewBox="0 0 ' + Wd + " " + H + '" role="img" aria-label="' + esc((o.what || "Each week") + ". " + desc.join(", ")) + '">' + s + "</svg>";
   }
-  const chartNote = (P, counts, line) => '<p class="cap">One bar a week, Monday to Sunday, this week on the right' + (counts && counts.some(c => c > 0 && c < RULES.smallCount) ? "; pale bars rest on fewer than " + RULES.smallCount + " answers" : "") + (line ? "; the dotted line is " + line : "") + ".</p>";
-  const needs = (what, more) => '<p class="needs"><b>Will show</b> ' + what + (more ? ' <span class="muted">' + more + "</span>" : "") + "</p>";
 
-  function progressCards(P) {
-    const L = P.last, labels = P.weeks.map(wkLabel), R = RULES;
-    const big = (v, sub) => '<p class="pv"><b>' + v + "</b> " + (sub ? '<span class="muted">' + sub + "</span>" : "") + "</p>";
-    const card = (cls, title, eyebrow, body) => '<section class="box pg-card ' + cls + '"><div class="bh"><h2>' + title + '</h2><span class="eyebrow">' + eyebrow + "</span></div>" + body + "</section>";
-    // memory
-    const memAll = add(P.mem), mw = P.mem[L];
-    const awayRows = AWAY.map((x, j) => { const c = P.away[L][j], c3 = add(P.win.map(i => P.away[i][j])); return "<tr><td>" + x.label + "</td><td>" + (c.n ? c.right + " of " + c.n : '<span class="muted">none</span>') + "</td><td>" + (c3.n ? c3.right + " of " + c3.n : '<span class="muted">none</span>') + "</td></tr>"; }).join("");
-    const memBody = !memAll.n ? needs("the share of old words he spells right on the first try when they come back, week by week, and split by how long each word was away.", "Needs " + many(R.oldTriesNeeded, "old-word answer") + "; none yet.") :
-      big(mw.n ? pct(shareOf(mw)) + "%" : "none yet", mw.n ? "right first try this week, " + mw.right + " of " + mw.n + (mw.n < R.smallCount ? " (too few to trust)" : "") : "no old words came back this week") +
-      bars(P.mem.map(c => c.n ? pct(shareOf(c)) : null), { max: 100, fmt: v => v + "%", labels, counts: P.mem.map(c => c.n), what: "Old words right on the first try, each week" }) + chartNote(P, P.mem.map(c => c.n)) +
-      '<p class="one">' + (mw.n ? "This week he spelled " + mw.right + " of " + many(mw.n, "old word") + " right on the first try." : "No old word came back this week yet.") + " In all " + many(memAll.n, "answer") + " in " + R.weeksShown + " weeks.</p>" +
-      '<table class="away"><tr><th>Back</th><th>This week</th><th>Last 3 weeks</th></tr>' + awayRows + "</table>";
-    // new-rule words
-    const prAll = add(P.probe), pw = P.probe[L], isl = Object.keys(P.islands).sort();
-    const prBody = '<p class="one">Words he was never taught that follow the island\'s rule, one try each. This is the number that says whether the method works.</p>' +
-      (!prAll.n ? needs("the share of these words right, week by week.", "Needs " + many(R.probesNeeded, "new-rule word") + "; none yet (one comes at the end of each level).") :
-        big(pw.n ? pct(shareOf(pw)) + "%" : "none yet", pw.n ? "right this week, " + pw.right + " of " + pw.n + (pw.n < R.smallCount ? " (too few to trust)" : "") : "no new-rule word this week") +
-        bars(P.probe.map(c => c.n ? pct(shareOf(c)) : null), { max: 100, fmt: v => v + "%", labels, counts: P.probe.map(c => c.n), line: R.newRule * 100, what: "New-rule words right, each week" }) + chartNote(P, P.probe.map(c => c.n), pct(R.newRule) + "%") +
-        '<p class="one">' + many(prAll.n, "new-rule word") + " in " + R.weeksShown + " weeks" + (prAll.n < R.probesNeeded ? ", " + (R.probesNeeded - prAll.n) + " more needed before the verdict" : "") + "." +
-        (isl.length ? " By island: " + isl.map(k => "island " + esc(k) + " " + P.islands[k].right + " of " + P.islands[k].n).join(", ") + "." : "") + "</p>");
-    // words he can spell now
-    const ch = P.spell[L] - P.spell[L - 1];
-    const spBody = !P.anyLevel ? needs("how many words he can spell now (memory level 2 or more) at the end of each week, and the change from the week before.", "Needs one finished level; a word reaches level 2 when it comes back right.") :
-      big(P.spell[L], (P.spell[L] === 1 ? "word" : "words") + " at level 2 or more, " + (ch > 0 ? ch + " more than" : ch < 0 ? -ch + " fewer than" : "the same as") + " last week") +
-      bars(P.spell, { labels, what: "Words at level 2 or more at the end of each week" }) + chartNote(P) +
-      '<p class="one">' + (P.slippedWords.length ? many(P.slippedWords.length, "word") + " slipped back down a step this week: " + P.slippedWords.slice(0, 6).map(w => "<b>" + esc(w) + "</b>").join(", ") + "." : "No word slipped back down a step this week.") + "</p>";
-    // help
-    const hw = P.help[L];
-    const patRows = P.patterns && P.patterns.length ? '<table class="away"><tr><th>Slips by pattern</th><th>This week</th><th>4 weeks before</th></tr>' + P.patterns.slice(0, 5).map(p => "<tr><td>" + esc(p.name) + (p.examples[0] ? ' <span class="muted"><i>' + esc(p.examples[0].typed) + "</i> for " + esc(p.examples[0].word) + "</span>" : "") + "</td><td>" + p.now + "</td><td>" + p.before + "</td></tr>").join("") + "</table>" :
-      '<p class="muted">' + (P.patterns ? "No pattern in the slips of the last 5 weeks." : "The pattern finder is not installed yet.") + "</p>";
-    const hBody = !P.totals.firstTries ? needs("hints per first try, week by week, the three words with the most hints, and the slips by pattern.", "Needs first tries from a level; none yet.") :
-      big(hw.n ? round1(P.hintsPer[L]) : "none yet", hw.n ? "hints per first try this week, " + hw.hints + " on " + hw.n : "no first tries this week") +
-      bars(P.hintsPer.map(x => x == null ? null : round1(x)), { labels, counts: P.help.map(h => h.n), line: R.hintsHigh, max: Math.max(1, ...P.hintsPer.filter(x => x != null)), what: "Hints per first try, each week" }) + chartNote(P, P.help.map(h => h.n), R.hintsHigh + " hints per first try") +
-      '<p class="one">' + (P.hintWords.length ? "Most hints this week: " + P.hintWords.slice(0, 3).map(h => "<b>" + esc(h.word) + "</b> (" + h.hints + ")").join(", ") + "." : "No hints used this week.") + "</p>" + patRows;
-    return '<div class="pg-cards">' + card("pg-mem", "Memory", "old words back", memBody) + card("pg-rule", "New-rule words", "the method", prBody) +
-      card("pg-spell", "Words he can spell now", "end of each week", spBody) + card("pg-help", "Help he needed", "hints and slips", hBody) + "</div>";
+  // ---------- This week: the numbers a tutor needs, in plain words ----------
+  function glanceHtml(P, aDays) {
+    const t = W.today(), wk = W.weekStart(t), wdays = [...Array(7)].map((_, i) => W.addDays(wk, i));
+    const playedSet = new Set(sessions.map(x => x.day));
+    const daysNow = P.days[P.last];
+    // the days of this week from the rows the tab counted, so the dots and the number always agree
+    const fresh = words.filter(w => w.introduced_on && w.introduced_on >= wk && w.introduced_on <= t);
+    const lv = levelQuests().filter(x => x.completed && ld(x.finished_at) >= wk).map(x => x.quest_day).sort((a, b) => a - b);
+    const dots = '<div class="weekdots" aria-label="Days played this week">' + wdays.map((k, i) => '<span class="' + (playedSet.has(k) || aDays.has(k) ? "on" : "") + (k === t ? " now" : "") + (k > t ? " later" : "") + '" title="' + esc(day3(k)) + '">' + "MTWTFSS"[i] + "</span>").join("") + "</div>";
+    const stat = (cls, label, value, note) => '<div class="stat ' + cls + '"><span class="st-l">' + label + '</span><b class="st-v">' + value + "</b>" + (note ? '<span class="st-n">' + note + "</span>" : "") + "</div>";
+    const cur = currentList(), test = latestTest();
+    const school = cur ? listDrillLine(cur.rows) + "." + (test && test.taken_on >= wk ? " Practice dictation: " + test.score + " of " + test.total + " right on " + day3(test.taken_on) + " (he marked it himself)." : "")
+      : 'No school spelling list yet. <button type="button" class="link" data-go="school">Add the list</button>';
+    return '<section class="box wk-glance"><div class="bh"><h2>This week at a glance</h2><span class="eyebrow">from ' + esc(day3(wk)) + "</span></div>" +
+      '<div class="stats">' +
+      stat("st-days", "Days played this week", daysNow + " of 5", dots + (daysNow >= 5 ? "The goal of 5 days is reached." : "The goal is 5 days a week.")) +
+      stat("st-well", "Words he knows well now", String(knowsWell().length), "He spelled them right after 1, 4 and 14 days.") +
+      stat("st-mem", "Words he can spell from memory", String(P.anyLevel ? P.spell[P.last] : canSpell().length), "Right again on a later day. This counts the words he knows well too.") +
+      stat("st-new", "New words this week", String(fresh.length), fresh.length ? fresh.map(w => esc(w.word)).join(", ") : "") +
+      "</div>" +
+      '<ul class="facts">' +
+      "<li>" + (lv.length ? "Levels finished this week: " + (lv.length > 1 ? lv[0] + " to " + lv[lv.length - 1] : lv[0]) + "." : "No level finished this week yet.") + "</li>" +
+      (P.weekMins > 0 ? "<li>Time on his words this week: " + many(Math.round(P.weekMins), "minute") + ".</li>" : "") +
+      "<li>School spelling list: " + school + "</li></ul></section>";
   }
-
-  function verdictHtml(P) {
-    const v = P.verdict;
-    const smalls = [["Days played this week", P.days[P.last] + " of 7"],
-      ["Minutes per level", P.perLevel.length ? round1(median(P.perLevel)) + " (median of " + P.perLevel.length + ")" : '<span class="muted">no level finished this week</span>'],
-      ["Words typed a minute", P.weekMins > 0 ? round1(P.typed / P.weekMins) + ' <span class="muted">(' + P.typed + " in " + Math.round(P.weekMins) + " min of levels)</span>" : '<span class="muted">no level time this week</span>']];
-    return '<section class="box pg-verdict v-' + v.kind + '"><div class="bh"><h2>' + esc(v.title) + '</h2><span class="eyebrow">by fixed rules · week of ' + wkLabel(P.weeks[P.last]) + "</span></div>" +
-      '<p class="why">' + esc(v.reason) + '</p><p class="try"><b>What to try:</b> ' + esc(v.next) + "</p>" +
-      '<dl class="kv pg-small">' + smalls.map(r => "<dt>" + r[0] + "</dt><dd>" + r[1] + "</dd>").join("") + "</dl></section>";
+  // One chart only, with its numbers on the bars: words he can spell from memory at the end of each week.
+  function memoryChart(P) {
+    if (!P.anyLevel) return "";
+    const labels = P.weeks.map(wkLabel);
+    return '<section class="box wk-chart"><div class="bh"><h2>Words he can spell from memory, week by week</h2></div>' +
+      '<p class="lead">Each bar is one week, and the number on it is how many words he could spell from memory at the end of that week. This week is on the right. Taller bars mean more words.</p>' +
+      bars(P.spell, { labels, what: "Words he could spell from memory at the end of each week" }) + "</section>";
   }
-
-  function howHtml(P) {
-    const R = RULES, p = x => Math.round(x * 100) + "%";
-    return '<section class="box pg-how"><div class="bh"><h2>How this is worked out</h2><span class="eyebrow">the rule, in full</span></div>' +
-      '<p class="muted">Everything on this tab is counted from the game\'s answers by fixed rules. These lines are a first guess, not research findings; they can be changed.</p><ul class="plain">' +
-      "<li><b>Weeks</b> run Monday to Sunday on this device's clock. <b>The last 3 weeks</b> are this week and the two before it once this week has " + R.daysPerWeek + " days played; until then, the three weeks before this one" + (P.thisCounts ? " (now: including this week)" : " (now: the three weeks before this one)") + ".</li>" +
-      "<li><b>Memory:</b> old words that came back (review and island test), the first try of each word on a day. Back after 1, 4 or 14 days is the memory step the word was on (answers saved on the old ladder's 14- and 30-day steps count as 14 days or more).</li>" +
-      "<li><b>New-rule words:</b> words never taught that follow the island's rule, one try each.</li>" +
-      "<li><b>Words he can spell now:</b> words at memory level 2 or more at the end of each week, rebuilt from the level after each answer.</li>" +
-      "<li><b>Help:</b> hint presses before each first try, divided by the number of first tries.</li>" +
-      "<li><b>Too early to say</b> while any of these is missing: " + R.weeksNeeded + " weeks with " + R.daysPerWeek + " days played or more; " + R.oldTriesNeeded + " old-word answers and " + R.probesNeeded + " new-rule words in the " + R.weeksShown + " weeks shown; " + R.longAwayNeeded + " answers on words back after 14 days or more in the last 3 weeks.</li>" +
-      "<li><b>It is working</b> when, over the last 3 weeks, words back after 14 days or more are " + p(R.memoryLong) + " right or more, AND new-rule words are " + p(R.newRule) + " or more (or rose 3 weeks running), AND words he can spell now grew in at least " + R.growWeeks + " of the 3 weeks.</li>" +
-      "<li><b>It is not working yet</b> otherwise. The suggestion follows the first of: fewer than " + R.daysPerWeek * R.windowWeeks + " days played in the 3 weeks; memory under " + p(R.memoryLong) + "; new-rule words under " + p(R.newRule) + " and not rising; " + R.hintsHigh + " hints per first try or more and rising; otherwise the growth of words he can spell now.</li>" +
-      "<li>A count under " + R.smallCount + " is marked too few to trust.</li></ul></section>";
+  // "Is the game helping?" in plain words, from the same fixed rules as the numbers sent to Claude.
+  function helpingHtml(P) {
+    const v = P.verdict, R = RULES, pc = x => Math.round(x * 100) + "%";
+    let title, say;
+    if (v.kind === "early") { title = "Too early to say"; say = "The game can tell whether it is helping after about 3 weeks in which he plays on " + R.daysPerWeek + " days or more. Until then, keep going as now."; }
+    else if (v.kind === "working") { title = "Yes, it is helping"; say = "He remembers most words two weeks later, and the number of words he can spell from memory is growing. Keep going as now."; }
+    else {
+      title = "Not helping enough yet";
+      const n = v.next || "";
+      if (/^The problem is not the method/.test(n)) say = "He played on " + P.pooled.days + " days in the last 3 weeks. The game works best on " + R.daysPerWeek + " days a week or more. Talk with him and his mother about a fixed time to play.";
+      else if (/^One new word a day/.test(n)) say = "Many words were not yet right when they came back after two weeks. Go over his older words with him in your lesson.";
+      else if (/remembers the words but not the rule/.test(n)) say = "He remembers the words he learned, but words he never learned that follow the same spelling rule are often not yet right. Teach the rule again in your lesson with new examples.";
+      else if (/too hard/.test(n)) say = "He has pressed for help more and more often in the last weeks. The words may be too hard for now. Spend your lesson on words he has met before.";
+      else say = "The number of words he can spell from memory is not growing yet. Words only count when they come back on a later day, so check that he plays on enough days.";
+    }
+    return '<section class="box wk-help v-' + v.kind + '"><div class="bh"><h2>Is the game helping?</h2></div>' +
+      '<p class="verdict">' + esc(title) + '</p><p>' + esc(say) + "</p>" +
+      '<details class="inner"><summary>How the game decides this</summary><ul class="plain">' +
+      "<li>It looks at the last 3 weeks in which he played on " + R.daysPerWeek + " days or more.</li>" +
+      "<li>It says yes when three things are true: he spells at least " + pc(R.memoryLong) + " of his words right when they come back after two weeks; he spells at least " + pc(R.newRule) + " of the words he never learned right when they follow a spelling rule he learned (or that number goes up three weeks running); and the number of words he can spell from memory grew in at least " + R.growWeeks + " of the 3 weeks.</li>" +
+      "<li>Before that, it needs enough answers to be fair: " + R.oldTriesNeeded + " answers on words from before and " + R.probesNeeded + " on words he never learned, in the last " + R.weeksShown + " weeks.</li>" +
+      "<li>These lines are a first guess and can be changed.</li></ul></details></section>";
   }
-
-  // The school's own dictation mark: typed by the tutor.
-  function schoolHtml(P) {
-    const rs = P.results.slice(-8);
-    return '<section class="box pg-school"><div class="bh"><h2>School dictation</h2><span class="eyebrow">your input: the school\'s mark</span></div>' +
+  // The school's own dictation mark: typed by the tutor (School spelling list tab).
+  function resultsHtml(rs) {
+    rs = rs.slice(-8);
+    return '<section class="box pg-school"><div class="bh"><h2>His mark in the school dictation</h2></div>' +
+      '<p class="lead">When the school gives the dictation back, type his mark here. You can then see it next to the game.</p>' +
       '<form id="srf" class="row srf" autocomplete="off"><label class="inl">Date <input type="date" id="sr_date" value="' + W.today() + '"></label>' +
       '<label class="inl">Right <input type="number" id="sr_right" min="0" max="200"></label><label class="inl">out of <input type="number" id="sr_total" min="1" max="200"></label>' +
-      '<label class="inl grow">Note <input type="text" id="sr_note" maxlength="120" placeholder="optional, for you"></label><button type="submit">Save</button><span class="err" id="srErr"></span></form>' +
-      (rs.length ? bars(rs.map(r => Math.round(100 * +r.right / +r.total)), { max: 100, fmt: v => v + "%", labels: rs.map(r => wkLabel(r.date)), noNow: true, what: "School dictation, share right" }) +
-        '<p class="cap">One bar a dictation, newest on the right.</p><ul class="plain srl">' + rs.slice().reverse().map(r => "<li>" + day3(r.date) + ": <b>" + (+r.right) + " of " + (+r.total) + "</b>" + (r.note ? ' <span class="muted">' + esc(r.note) + "</span>" : "") + ' <button type="button" class="mini ghost" data-srdel="' + esc(r.id) + '" aria-label="Delete">' + ICON("x") + "</button></li>").join("") + "</ul>"
-        : needs("the school's dictation mark each week as a small chart, next to the game's numbers.", "Type the first one above.")) + "</section>";
+      '<label class="inl grow">Note <input type="text" id="sr_note" maxlength="120" placeholder="only for you"></label><button type="submit">Save</button><span class="err" id="srErr"></span></form>' +
+      (rs.length ? '<div style="max-width:' + Math.max(220, rs.length * 70) + 'px">' + bars(rs.map(r => Math.round(100 * +r.right / +r.total)), { max: 100, fmt: v => v + "%", labels: rs.map(r => wkLabel(r.date)), noNow: true, what: "School dictation, share right" }) + "</div>" +
+        '<p class="cap">One bar for each dictation, newest on the right. The number is the share he got right.</p><ul class="plain srl">' + rs.slice().reverse().map(r => "<li>" + day3(r.date) + ": <b>" + (+r.right) + " of " + (+r.total) + "</b>" + (r.note ? ' <span class="muted">' + esc(r.note) + "</span>" : "") + ' <button type="button" class="mini ghost" data-srdel="' + esc(r.id) + '" aria-label="Delete">' + ICON("x") + "</button></li>").join("") + "</ul>"
+        : '<p class="needs">No mark typed yet.</p>') + "</section>";
+  }
+  async function fillResults() {
+    const slot = $("srSlot"); if (!slot) return;
+    const sr = await safe(sb.from("school_results").select("*").eq("student_id", student.id).order("date"));
+    if (!$("srSlot")) return;
+    const rs = ((sr && !sr.error && sr.data) || []).filter(r => r && r.date && +r.total > 0).slice().sort((a, b) => (a.date < b.date ? -1 : 1));
+    $("srSlot").innerHTML = resultsHtml(rs);
+    $("srf").onsubmit = async ev => {
+      ev.preventDefault();
+      const date = $("sr_date").value, right = Math.round(+$("sr_right").value), total = Math.round(+$("sr_total").value);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { $("srErr").textContent = "Set the date."; return; }
+      if (!($("sr_total").value && total >= 1) || $("sr_right").value === "" || !(right >= 0) || right > total) { $("srErr").textContent = "Type how many were right and out of how many."; return; }
+      const { error } = await safe(sb.from("school_results").insert({ student_id: student.id, date, right, total, note: $("sr_note").value.trim() }));
+      if (error) { $("srErr").textContent = error.message || "Could not be saved."; return; }
+      fillResults();
+    };
+    $("srSlot").querySelectorAll("[data-srdel]").forEach(b => b.onclick = async () => { const { error } = await safe(sb.from("school_results").delete().eq("id", b.dataset.srdel)); if (error) banner(error.message); fillResults(); });
   }
 
   // ---- Claude's notes ----
@@ -1229,8 +1273,8 @@
   function costLine(u) {
     const i = Math.max(0, Math.round(+(u && u.input_tokens) || 0)), o = Math.max(0, Math.round(+(u && u.output_tokens) || 0));
     if (!i && !o) return "";
-    const c = (i * AI_PRICE.input + o * AI_PRICE.output) / 1e4, f = n => n.toLocaleString("en-US");   // US cents
-    return "This run: " + f(i) + " tokens in, " + f(o) + " out, about " + (c < 1 ? "1 US cent or less" : Math.round(c) + " US cents") + ".";
+    const c = (i * AI_PRICE.input + o * AI_PRICE.output) / 1e4;   // US cents
+    return "This one cost about " + (c < 1 ? "1 US cent or less" : Math.round(c) + " US cents") + ".";
   }
   // The function's own short message when it sent one (401, 403, 413, 429, 500, 502), else the general one.
   async function fnMessage(err) {
@@ -1239,12 +1283,12 @@
   }
   function wireSite(P) {
     const ctl = $("aiCtl");
-    ctl.innerHTML = '<div class="row"><button type="button" id="aiGo">Write this week\'s analysis</button><span class="muted" id="aiMsg">Sends the numbers on this page to Claude, without his name. Only when you press.</span></div><p class="muted ai-cost" id="aiCost" hidden></p>';
+    ctl.innerHTML = '<div class="row"><button type="button" id="aiGo">Write this week\'s analysis</button><span class="muted" id="aiMsg">Sends this week\'s numbers to Claude, without his name. Only when you press.</span></div><p class="muted ai-cost" id="aiCost" hidden></p>';
     $("aiGo").onclick = async () => {
       const b = $("aiGo"), msg = $("aiMsg"), cost = $("aiCost"); b.disabled = true; cost.hidden = true; msg.textContent = "Writing… this takes about a minute";
       let res;
       try { res = await sb.functions.invoke(AI_FUNCTION, { body: { numbers: aiNumbers(P) } }); } catch (e) { res = { data: null, error: e }; }
-      if (tab !== "progress" || $("aiGo") !== b) return;   // she left the tab; a kept result shows on her next visit
+      if (tab !== "week" || $("aiGo") !== b) return;   // she left the tab; a kept result shows on her next visit
       const data = res && !res.error ? res.data : null;
       if (!data || !data.record || typeof data.record.json !== "string") { msg.textContent = res && res.error ? await fnMessage(res.error) : AI_SORRY; b.disabled = false; return; }
       $("aiOut").innerHTML = analysisHtml(data.record, P);
@@ -1260,19 +1304,19 @@
     const list = (h, x) => items(x).length ? "<h3>" + h + "</h3><ul>" + items(x).map(s => "<li>" + esc(s) + "</li>").join("") + "</ul>" : "";
     const c = o.confidence, level = typeof c === "string" ? c : c && c.level, why = o.confidence_reason || (c && c.reason) || "";
     const at = rec.at ? day3(ld(rec.at)) + " " + W.fmtTime(rec.at) : "";
-    return '<div class="ai-note"><p class="ai-head">' + esc(o.headline) + "</p>" + list("What changed", o.changed) + list("In the slips", o.patterns) + list("For the next lesson", o.next_lesson) +
-      (level ? '<p class="ai-conf"><b>Confidence: ' + esc(String(level)) + "</b>" + (why ? " · " + esc(String(why)) : "") + "</p>" : "") +
-      '<p class="ai-by">Written by Claude from the numbers on this page. Check it against them. · ' + esc(at) + (rec.week && P && rec.week !== P.weeks[P.last] ? " · about the week of " + wkLabel(rec.week) : "") + "</p></div>";
+    return '<div class="ai-note"><p class="ai-head">' + esc(o.headline) + "</p>" + list("What changed", o.changed) + list("In his spelling", o.patterns) + list("For your next lesson", o.next_lesson) +
+      (level ? '<p class="ai-conf"><b>How sure Claude is: ' + esc(String(level)) + "</b>" + (why ? " · " + esc(String(why)) : "") + "</p>" : "") +
+      '<p class="ai-by">Written by Claude from this week\'s numbers. Check them against what you know. · ' + esc(at) + (rec.week && P && rec.week !== P.weeks[P.last] ? " · about the week of " + wkLabel(rec.week) : "") + "</p></div>";
   }
   async function wireAi(P, saved) {
     const box = $("aiBox"); if (!box) return;
     const sample = await getSample();
-    if (tab !== "progress" || !$("aiBox")) return;
+    if (tab !== "week" || !$("aiBox")) return;
     const ctl = $("aiCtl");
     if (!sample) { if (onSite()) return wireSite(P); ctl.innerHTML = '<p class="muted">' + OFF_SITE + "</p>"; return; }
-    ctl.innerHTML = '<div class="row"><button type="button" id="aiGo">Analyse this week</button><span class="muted" id="aiMsg">Sends the numbers on this page to Claude, without his name. Only when you press.</span></div>';
+    ctl.innerHTML = '<div class="row"><button type="button" id="aiGo">Write this week\'s analysis</button><span class="muted" id="aiMsg">Sends this week\'s numbers to Claude, without his name. Only when you press.</span></div>';
     $("aiGo").onclick = async () => {
-      const b = $("aiGo"), msg = $("aiMsg"); b.disabled = true; msg.textContent = "Claude is reading the numbers…";
+      const b = $("aiGo"), msg = $("aiMsg"); b.disabled = true; msg.textContent = "Claude is reading the week…";
       try {
         const out = await sample.json(buildAiInput(P), { modelTier: "default" });
         if (!out || typeof out !== "object" || typeof out.headline !== "string") throw { code: "shape" };
@@ -1282,9 +1326,9 @@
         msg.textContent = r && r.error ? "Shown, but it could not be kept for next time." : "Kept on this page for next time.";
       } catch (e) {
         const code = e && e.code;
-        msg.textContent = code === "rate_limited" ? "Claude has had many questions just now. Try again later; the numbers above are complete without it." :
+        msg.textContent = code === "rate_limited" ? "Claude has had many questions just now. Try again later." :
           code === "not_granted" ? "The analysis is switched off for this page." :
-          "The analysis could not be written this time. The numbers above are complete without it.";
+          "The analysis could not be written this time. Try again later.";
         if (code === "not_granted") { b.hidden = true; return; }
       }
       b.disabled = false;
@@ -1307,33 +1351,26 @@
     }
     return { data: out.reverse() };
   }
-  async function renderProgress() {
-    view.innerHTML = '<section class="box"><p class="hint">Counting…</p></section>';
+  async function renderWeek() {
+    view.innerHTML = '<section class="box"><p class="lead">Counting…</p></section>';
     await loadAll();
     const t = W.today(), from = new Date(W.addDays(W.weekStart(t), -7 * (RULES.weeksShown - 1)) + "T00:00:00").toISOString();
     const [a, e, sr, an] = await Promise.all([fetchSince("attempts", from), fetchSince("events", from),
       safe(sb.from("school_results").select("*").eq("student_id", student.id).order("date")),
       safe(sb.from("analyses").select("*").eq("student_id", student.id).order("at"))]);
-    if (tab !== "progress") return;
+    if (tab !== "week") return;
     if (a.error) banner(a.error.message);
     const P = computeProgress({ attempts: a.data, events: e.data, words, sessions, results: (sr && !sr.error && sr.data) || [], today: t });
     const saved = ((an && !an.error && an.data) || []).slice(-1)[0] || null;
-    view.innerHTML = '<div class="pg">' + verdictHtml(P) +
-      '<section class="box pg-ai" id="aiBox"><div class="bh"><h2>Claude\'s notes on this week</h2><span class="eyebrow">a further look at the same numbers</span></div>' +
-      '<div id="aiOut">' + (saved ? analysisHtml(saved, P) : '<p class="muted">No analysis yet. It is written only when you press the button.</p>') + "</div>" +
-      '<div id="aiCtl"><p class="muted">Checking whether Claude can be asked from here…</p></div></section>' +
-      progressCards(P) + '<div class="pg-two">' + schoolHtml(P) + howHtml(P) + "</div></div>";
-    $("srf").onsubmit = async ev => {
-      ev.preventDefault();
-      const date = $("sr_date").value, right = Math.round(+$("sr_right").value), total = Math.round(+$("sr_total").value);
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { $("srErr").textContent = "Set the date."; return; }
-      if (!($("sr_total").value && total >= 1) || $("sr_right").value === "" || !(right >= 0) || right > total) { $("srErr").textContent = "Type how many were right and out of how many."; return; }
-      const { error } = await safe(sb.from("school_results").insert({ student_id: student.id, date, right, total, note: $("sr_note").value.trim() }));
-      if (error) { $("srErr").textContent = error.message || "Could not be saved."; return; }
-      renderProgress();
-    };
-    view.querySelectorAll("[data-srdel]").forEach(b => b.onclick = async () => { const { error } = await safe(sb.from("school_results").delete().eq("id", b.dataset.srdel)); if (error) banner(error.message); renderProgress(); });
+    const aDays = new Set((a.data || []).map(x => ld(x.created_at)));
+    view.innerHTML = '<div class="wk">' + glanceHtml(P, aDays) +
+      '<section class="box pg-ai" id="aiBox"><div class="bh"><h2>A written look at the week</h2></div>' +
+      '<p class="lead">Claude, an AI helper, reads this week\'s numbers and writes a few short notes for your lesson. It only does this when you press the button.</p>' +
+      '<div id="aiOut">' + (saved ? analysisHtml(saved, P) : '<p class="lead">No notes yet.</p>') + "</div>" +
+      '<div id="aiCtl"><p class="lead">Checking whether Claude can be asked from here…</p></div></section>' +
+      '<div class="two">' + helpingHtml(P) + islandCard() + "</div>" + memoryChart(P) + "</div>";
     wireAi(P, saved);
+    wireCommon();
   }
 
   // For checks: the Chinese summary of the data as it is now.
