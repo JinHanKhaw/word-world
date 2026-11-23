@@ -12,3 +12,6 @@ window.WORD_TOWER_CONFIG = {
   SUPABASE_ANON_KEY: "sb_publishable_yopYfJkPW2cN17NbJjt9SA_2RF6ZqKJ",
   TEACHER_PIN: ""
 };
+// The five prize things of the shop (one after each island test). false: held back until the tutor has seen and approved
+// them; delete this line (or set it to true) to let them appear.
+window.WW_PRIZES = false;

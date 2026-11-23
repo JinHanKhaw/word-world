@@ -87,6 +87,8 @@
     "Listen to yourself:": "听听你自己：", "✓ Keep it": "✓ 保留", "Again": "再来", "Saved ✓": "已保存 ✓", "Tap again to try.": "再点一下试试。",
     "I did not hear you. Try again, a bit louder.": "我没听到你。再试一次，大声一点。", "I did not hear anything. Try again, a bit louder.": "我什么都没听到。再试一次，大声一点。",
     "Sunny Island": "阳光岛", "Jungle": "丛林", "Under the Sea": "海底", "Ice Cave": "冰洞", "Sky Castle": "天空城堡",
+    // the grey lines inside empty answer lines (placeholders)
+    "type the word here": "在这里打这个词", "copy the sentence here": "在这里抄句子", "copy the word here": "在这里抄这个词",
   };
   Object.assign(X, PRAISE);
   const R = [
@@ -167,8 +169,19 @@
       const zh = lookup(en); if (!zh) return;
       const s = document.createElement("span"); s.className = "zhx"; s.dataset.for = en; s.textContent = zh; el.appendChild(s);
     });
+    // The grey line inside an empty answer line ("type the word here", "copy the sentence here"): a placeholder cannot hold a
+    // second line, so its Chinese follows the English on the same line; switched off, the English alone comes back.
+    root.querySelectorAll("input[placeholder], textarea[placeholder]").forEach(el => {
+      if (el.matches(SKIP)) return;
+      const ph = el.getAttribute("placeholder"); if (el.dataset.zhPh && ph === el.dataset.zhPh) return;
+      const zh = lookup(ph); if (!zh) return;
+      el.dataset.enPh = ph; el.dataset.zhPh = ph + " · " + zh; el.setAttribute("placeholder", el.dataset.zhPh);
+    });
   }
-  function clear() { document.querySelectorAll(".zhx").forEach(n => n.remove()); }
+  function clear() {
+    document.querySelectorAll(".zhx").forEach(n => n.remove());
+    document.querySelectorAll("[data-zh-ph]").forEach(el => { if (el.getAttribute("placeholder") === el.dataset.zhPh) el.setAttribute("placeholder", el.dataset.enPh); delete el.dataset.zhPh; delete el.dataset.enPh; });
+  }
   function set(v, root) {
     on = !!v; try { localStorage.setItem("wt.zh", on ? "1" : "0"); } catch (e) {}
     document.documentElement.classList.toggle("zh-on", on);

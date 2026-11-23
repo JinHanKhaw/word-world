@@ -769,7 +769,7 @@
      square was tapped. Squares are i (along x) and j (along z) of B.GRID; y counts blocks up from a square's first block.
      Heights are a world-wide grid of whole units: the first block of a square tops out at LK.base(i, j). */
   var B = api.build = { active: false, GRID: GRID, n: GRID.n, hmax: LK.HMAX, cap: LK.CAP, onTap: null, hand: null, colors: ["#b5442f", "#c89a62", "#868d99", "#a9ddff", "#7cc04d", "#f1c94b"] };
-  var THING_H = { door: 2, window: 1, torch: 2, flower: 1, tree: 2, flag: 3, fence: 1, roof: 1, steps: 1, lantern: 2, chest: 1, bed: 1, table: 1, well: 2, bridge: 1, signpost: 2 };
+  var THING_H = { door: 2, window: 1, torch: 2, flower: 1, tree: 2, flag: 3, fence: 1, roof: 1, steps: 1, lantern: 2, chest: 1, bed: 1, table: 1, well: 2, bridge: 1, signpost: 2, trophy: 1, banner: 3, fountain: 1, windmill: 2, orbitstatue: 2 };
   var ART_THINGS = ["door", "window", "torch", "flower", "flag", "fence", "roof", "steps", "lantern", "chest", "bed", "table", "well", "bridge", "signpost"];
   /* soft things stand on the real ground when placed on bare ground; everything else stands on the height grid */
   var SOFT = { flower: 1, tree: 1, torch: 1, flag: 1, lantern: 1, fence: 1, signpost: 1 };
@@ -821,7 +821,7 @@
   function prism(w, h, len){ var sh = new THREE.Shape(); sh.moveTo(-w / 2, 0); sh.lineTo(w / 2, 0); sh.lineTo(0, h); sh.lineTo(-w / 2, 0); var g = new THREE.ExtrudeGeometry(sh, { depth: len, bevelEnabled: false }); g.translate(0, 0, -len / 2); g.rotateY(Math.PI / 2); return g; }
   function shapeProto(kind){
     var L = [], g = new THREE.Group(), glowAt = 0, k;
-    var bx = function(w, h, d){ return new THREE.BoxGeometry(w, h, d); }, cy = function(a, b, h, n){ return new THREE.CylinderGeometry(a, b, h, n || 10); }, sp = function(r){ return new THREE.IcosahedronGeometry(r, 1); };
+    var bx = function(w, h, d){ return new THREE.BoxGeometry(w, h, d); }, cy = function(a, b, h, n){ return new THREE.CylinderGeometry(a, b, h, n || 10); }, sp = function(r){ return new THREE.IcosahedronGeometry(r, 1); }, tor = function(r, t, arc){ return new THREE.TorusGeometry(r, t, 6, 18, arc || Math.PI * 2); };
     var WD = 0x9a6a40, DK = 0x6a4630, ST = 0xa29db0, GD = 0xe2b04a;
     switch(kind){
       case "door": part(L, bx(0.12, 1.96, 0.24), DK, -0.44, 0.98); part(L, bx(0.12, 1.96, 0.24), DK, 0.44, 0.98); part(L, bx(1, 0.14, 0.26), DK, 0, 1.93); part(L, bx(0.76, 1.86, 0.1), 0xb07440, 0, 0.93); part(L, sp(0.055), GD, 0.25, 0.95, 0.07); break;
@@ -840,6 +840,47 @@
       case "well": part(L, cy(0.46, 0.48, 0.62, 14), ST, 0, 0.31); part(L, cy(0.37, 0.37, 0.02, 14), 0x3d4d7a, 0, 0.63); part(L, bx(0.08, 1.05, 0.08), DK, -0.4, 1.12); part(L, bx(0.08, 1.05, 0.08), DK, 0.4, 1.12); part(L, prism(0.6, 0.38, 1.04), 0xc0573a, 0, 1.6, 0); part(L, cy(0.03, 0.03, 0.8, 6), WD, 0, 1.38, 0, 0, 0, Math.PI / 2); part(L, cy(0.08, 0.07, 0.14, 8), WD, 0, 1.05); break;
       case "bridge": for(k = 0; k < 5; k++){ part(L, bx(0.86, 0.07, 0.19), k % 2 ? WD : 0xa87648, 0, 0.12 + 0.2 * Math.sin(Math.PI * (k + 0.5) / 5), -0.4 + k * 0.2, Math.cos(Math.PI * (k + 0.5) / 5) * 0.35); } [-0.42, 0.42].forEach(function(x){ [-0.4, 0, 0.4].forEach(function(z){ part(L, bx(0.06, 0.5, 0.06), DK, x, 0.25 + (z === 0 ? 0.18 : 0.05), z); }); part(L, bx(0.05, 0.05, 0.96), DK, x, 0.6); }); break;
       case "signpost": part(L, bx(0.12, 1.75, 0.12), DK, 0, 0.88); part(L, bx(0.66, 0.2, 0.05), 0xe0a85e, 0.2, 1.5, 0.08); part(L, new THREE.ConeGeometry(0.1, 0.12, 3), 0xe0a85e, 0.58, 1.5, 0.08, 0, 0, -Math.PI / 2); part(L, bx(0.56, 0.18, 0.05), 0xd99550, -0.16, 1.2, 0.08); break;
+      /* the five prizes (opened by the island tests, 20-build-data.js PRIZES): stone, gold, water and Orbit's own colours */
+      case "trophy":   /* the watch trophy: a gold cup holding a small flame, on a stone block with a plaque */
+        part(L, bx(0.62, 0.3, 0.62), ST, 0, 0.15); part(L, bx(0.7, 0.06, 0.7), 0xb8b2c4, 0, 0.33); part(L, bx(0.28, 0.11, 0.03), GD, 0, 0.17, 0.315);
+        part(L, cy(0.16, 0.2, 0.07, 16), GD, 0, 0.395); part(L, cy(0.045, 0.07, 0.2, 10), GD, 0, 0.53); part(L, sp(0.065), GD, 0, 0.62);
+        part(L, cy(0.25, 0.1, 0.3, 18), GD, 0, 0.8); part(L, tor(0.245, 0.03), 0xf1c94b, 0, 0.95, 0, Math.PI / 2); part(L, cy(0.22, 0.22, 0.02, 18), 0x9a6a2a, 0, 0.94);
+        part(L, tor(0.1, 0.026, Math.PI), GD, 0.25, 0.8, 0, 0, 0, -Math.PI / 2); part(L, tor(0.1, 0.026, Math.PI), GD, -0.25, 0.8, 0, 0, 0, Math.PI / 2);
+        var fl = new THREE.SphereGeometry(0.085, 12, 8); fl.scale(1, 1.25, 1); part(L, fl, 0xffa236, 0, 1.03); part(L, new THREE.ConeGeometry(0.068, 0.17, 10), 0xffa236, 0, 1.16); part(L, sp(0.05), 0xfff0a0, 0, 1.02, 0.04); glowAt = 1.06; break;
+      case "banner": {   /* the hero banner: a blue cloth with a gold star, hanging from a crossbar on a tall pole */
+        part(L, bx(0.42, 0.16, 0.42), ST, 0, 0.08); part(L, cy(0.04, 0.05, 2.3, 8), DK, 0, 1.23); part(L, sp(0.07), GD, 0, 2.43);
+        part(L, cy(0.03, 0.03, 0.92, 8), DK, 0, 2.2, 0.05, 0, 0, Math.PI / 2); part(L, sp(0.06), GD, -0.47, 2.2, 0.05); part(L, sp(0.06), GD, 0.47, 2.2, 0.05);
+        var cl = new THREE.Shape(); cl.moveTo(-0.35, 0); cl.lineTo(0.35, 0); cl.lineTo(0.35, -1.1); cl.lineTo(0, -0.88); cl.lineTo(-0.35, -1.1); cl.lineTo(-0.35, 0);
+        part(L, new THREE.ExtrudeGeometry(cl, { depth: 0.03, bevelEnabled: false }), 0x3b6fb6, 0, 2.16, 0.07);
+        part(L, bx(0.72, 0.07, 0.04), GD, 0, 2.12, 0.09); part(L, bx(0.72, 0.03, 0.035), GD, 0, 1.97, 0.09);
+        var st = new THREE.Shape(); for(k = 0; k < 10; k++){ var a = Math.PI / 2 + k * Math.PI / 5, r = k % 2 ? 0.075 : 0.18; if(k){ st.lineTo(Math.cos(a) * r, Math.sin(a) * r); } else { st.moveTo(Math.cos(a) * r, Math.sin(a) * r); } }
+        part(L, new THREE.ExtrudeGeometry(st, { depth: 0.025, bevelEnabled: false }), 0xf1c94b, 0, 1.62, 0.095);
+        part(L, sp(0.045), GD, -0.35, 1.03, 0.085); part(L, sp(0.045), GD, 0.35, 1.03, 0.085); part(L, sp(0.04), GD, 0, 1.25, 0.085); break; }
+      case "fountain":   /* the fountain: a round stone basin of water, a column, a small bowl and a jet, four streams falling */
+        part(L, cy(0.47, 0.49, 0.3, 18), ST, 0, 0.15); part(L, tor(0.45, 0.05), 0xb8b2c4, 0, 0.3, 0, Math.PI / 2); part(L, cy(0.41, 0.41, 0.02, 18), 0x6fc3e8, 0, 0.275);
+        part(L, cy(0.07, 0.1, 0.5, 10), ST, 0, 0.5); part(L, cy(0.21, 0.08, 0.1, 16), 0xb8b2c4, 0, 0.78); part(L, cy(0.18, 0.18, 0.015, 16), 0x6fc3e8, 0, 0.83);
+        part(L, cy(0.025, 0.045, 0.22, 8), 0xbfe8f7, 0, 0.94); part(L, sp(0.055), 0xd9f3fb, 0, 1.05);
+        for(k = 0; k < 4; k++){   /* each stream curls over the bowl's rim, then falls into the basin */
+          var ph = Math.PI / 4 + k * Math.PI / 2, ar = new THREE.TorusGeometry(0.15, 0.016, 5, 10, Math.PI / 2); ar.translate(0.2, 0.66, 0); ar.rotateY(ph); part(L, ar, 0xbfe8f7);
+          var fall = cy(0.016, 0.02, 0.36, 6); fall.translate(0.35, 0.48, 0); fall.rotateY(ph); part(L, fall, 0xbfe8f7);
+          var dr = sp(0.032); dr.translate(0.36, 0.31, 0.05); dr.rotateY(ph); part(L, dr, 0xd9f3fb); }
+        break;
+      case "windmill":   /* the windmill: a white tower with wooden bands, a red cap and four sails, turned to the front */
+        part(L, cy(0.27, 0.4, 1.4, 8), 0xece0c8, 0, 0.7, 0, 0, Math.PI / 8); part(L, cy(0.41, 0.41, 0.08, 8), WD, 0, 0.04, 0, 0, Math.PI / 8); part(L, cy(0.29, 0.29, 0.06, 8), WD, 0, 1.38, 0, 0, Math.PI / 8);
+        part(L, bx(0.2, 0.36, 0.06), DK, 0, 0.18, 0.36); part(L, bx(0.14, 0.16, 0.05), 0xa9ddff, 0, 0.85, 0.3); part(L, bx(0.18, 0.03, 0.06), DK, 0, 0.76, 0.3);
+        part(L, new THREE.ConeGeometry(0.36, 0.5, 8), 0xc0573a, 0, 1.66, 0, 0, Math.PI / 8); part(L, sp(0.05), GD, 0, 1.93);
+        part(L, cy(0.07, 0.07, 0.22, 10), DK, 0, 1.45, 0.36, Math.PI / 2);
+        for(k = 0; k < 4; k++){ var sa = Math.PI / 4 + k * Math.PI / 2, ca = Math.cos(sa), sn = Math.sin(sa); part(L, bx(0.05, 0.72, 0.04), WD, ca * 0.36, 1.45 + sn * 0.36, 0.47, 0, 0, sa - Math.PI / 2); part(L, bx(0.15, 0.52, 0.02), 0xf3ead8, ca * 0.43 - sn * 0.09, 1.45 + sn * 0.43 + ca * 0.09, 0.49, 0, 0, sa - Math.PI / 2); }
+        part(L, sp(0.06), GD, 0, 1.45, 0.5); break;
+      case "orbitstatue": {   /* a statue of Orbit, the guide drone: on a stone block, in its own colours (body, visor, eyes, engines, flag) */
+        part(L, bx(0.66, 0.42, 0.66), ST, 0, 0.21); part(L, bx(0.74, 0.07, 0.74), 0xb8b2c4, 0, 0.455); part(L, bx(0.3, 0.1, 0.03), GD, 0, 0.24, 0.335); part(L, cy(0.13, 0.18, 0.12, 12), ST, 0, 0.55);
+        var bg = new THREE.SphereGeometry(0.3, 20, 14); bg.scale(1, 0.78, 0.92); part(L, bg, 0xe9dcc4, 0, 0.84);
+        var vg = new THREE.SphereGeometry(0.306, 20, 6, Math.PI / 2 - 0.95, 1.9, 1.3, 0.5); vg.scale(1, 0.78, 0.92); part(L, vg, 0x2e2836, 0, 0.84);
+        [-1, 1].forEach(function(sx){ var eg = new THREE.SphereGeometry(0.035, 8, 6); eg.scale(0.7, 1.4, 0.6); part(L, eg, 0xffb347, sx * 0.075, 0.845, 0.283);
+          part(L, cy(0.1, 0.1, 0.14, 14), 0xb3a99a, sx * 0.36, 0.83, 0, 0, 0, Math.PI / 2); part(L, tor(0.1, 0.02), 0xe8873a, sx * 0.43, 0.83, 0, 0, Math.PI / 2); part(L, cy(0.07, 0.07, 0.02, 12), 0xffb347, sx * 0.435, 0.83, 0, 0, 0, Math.PI / 2); });
+        var tg = tor(0.285, 0.022); tg.rotateX(Math.PI / 2); tg.scale(1, 1, 0.92); part(L, tg, 0xe8873a, 0, 0.77);
+        part(L, tor(0.12, 0.025), 0xe8873a, 0, 1.055, 0, Math.PI / 2); part(L, cy(0.09, 0.1, 0.03, 14), 0xffb347, 0, 1.07);
+        part(L, cy(0.012, 0.012, 0.32, 6), DK, 0.1, 1.2, -0.04, 0, 0, -0.35); part(L, sp(0.035), 0xe8873a, 0.155, 1.36, -0.04); part(L, bx(0.14, 0.07, 0.012), 0xe8873a, 0.23, 1.31, -0.04); break; }
       default: part(L, bx(0.6, 0.6, 0.6), WD, 0, 0.3);
     }
     var geo = merged(L), m = new THREE.Mesh(geo, shapeMat), eg = geo.clone(); m.castShadow = true; m.receiveShadow = true; g.add(m);

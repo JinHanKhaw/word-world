@@ -571,10 +571,8 @@ body[data-hd-open="build"] #w3open:not([data-spot="build"]){opacity:.6;filter:sa
 .sl-pill{position:absolute;right:calc(var(--u)*16);top:calc(var(--u)*60);z-index:2;display:flex;align-items:center;gap:calc(var(--u)*8);height:calc(var(--u)*34);padding:0 calc(var(--u)*16) 0 calc(var(--u)*12);font-family:var(--f-body);font-size:calc(var(--u)*14);letter-spacing:.02em;white-space:nowrap;pointer-events:none;transition:opacity .6s ease}
 .sl-pill[hidden]{display:none}
 .sl-pill .ic{width:calc(var(--u)*20);height:calc(var(--u)*20);fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;color:var(--glow)}
-.sl-pill .zhx{display:inline;margin:0 0 0 calc(var(--u)*6);font-size:calc(var(--u)*12.5)}
-/* with 中文 on, the pill shows the Chinese line only, so it stays small */
-html.zh-on .sl-pill .zhk{font-size:0}
-html.zh-on .sl-pill .zhk .zhx{font-size:calc(var(--u)*13.5);margin:0}
+/* with 中文 on, its Chinese line follows the English on the same line, as on his plate (it showed the Chinese alone before) */
+.sl-pill .zhx{display:inline;margin:0 0 0 calc(var(--u)*8);font-size:calc(var(--u)*13.5)}
 /* near the end the sun icon turns to dusk; nothing flashes, nothing counts seconds */
 .sl-pill.sl-low .ic{color:#b9c4ff}
 /* over the shop and plot page it keeps the same place */
@@ -946,6 +944,32 @@ html.zh-on .sl-pill .zhk .zhx{font-size:calc(var(--u)*13.5);margin:0}
 .bd-mlock .bd-mart{box-shadow:inset 0 0 0 calc(var(--u)*1.4) rgba(110,84,62,.5)}
 .bd-mlock .bd-mname{color:var(--ink-3)}
 .bd-mopen .bd-mnote{color:var(--leaf)}
+/* the five prizes (opened by the island tests): a third string of small tags; its name sits on the string at the left */
+.bd-prizes{padding-top:calc(var(--u)*13)}
+.bd-prlabel{position:absolute;left:calc(var(--u)*-8);top:calc(var(--u)*1);z-index:2;padding:0 calc(var(--u)*8) 0 calc(var(--u)*4);background:var(--paper);font-family:var(--f-display);font-size:calc(var(--u)*12.5);letter-spacing:.16em;text-transform:uppercase;line-height:1.3;color:var(--ink-2)}
+.bd-prlabel .zhx{display:inline;margin-left:calc(var(--u)*5);font-size:calc(var(--u)*12.5);letter-spacing:0}
+.bd-prizes .bd-stage{flex:1 1 0;gap:calc(var(--u)*10);padding-left:calc(var(--u)*66)}
+.bd-prize .bd-tag{gap:calc(var(--u)*1);padding:calc(var(--u)*14) calc(var(--u)*4) calc(var(--u)*5)}
+.bd-prize .bd-hole{top:calc(var(--u)*6);width:calc(var(--u)*7);height:calc(var(--u)*7);margin-left:calc(var(--u)*-3.5)}
+.bd-prize .bd-tag::after{inset:calc(var(--u)*4)}
+.bd-prize.bd-locked .bd-tag::after{inset:0}
+.bd-prize .bd-art{width:calc(var(--u)*32);height:calc(var(--u)*32)}
+.bd-prize .bd-art .bd-thing{width:calc(var(--u)*31);height:calc(var(--u)*31)}
+.bd-prize:not(.bd-locked) .bd-tag{background-image:var(--grain),linear-gradient(180deg,#fffaf0,#f6e6c4)}
+.bd-pline{display:flex;align-items:baseline;justify-content:center;flex-wrap:wrap;gap:0 calc(var(--u)*5);margin-bottom:calc(var(--u)*2)}
+.bd-prize .bd-name{font-size:calc(var(--u)*15)}
+.bd-pline .bd-name .zhx{display:block}
+.bd-prize .bd-price{font-size:calc(var(--u)*14.5)}
+.bd-prize .bd-need{min-height:0;margin:auto 0 0}
+.bd-prize .bd-own{margin:0}
+.bd-prize .buy{position:relative;margin-top:auto}
+.bd-prize .buy::before{content:"";position:absolute;inset:calc(var(--u)*-7) calc(var(--u)*-4)}   /* the tap area: 44 at least */
+#shop:has(.bd-prizes) .bd-tags:not(.bd-prizes){padding-top:calc(var(--u)*10)}
+#shop:has(.bd-prizes) .bd-tag{padding-top:calc(var(--u)*19)}
+#shop:has(.bd-prizes) .bd-prize .bd-tag{padding-top:calc(var(--u)*14)}
+#shop:has(.bd-prizes) .bd-mats{margin-top:calc(var(--u)*4)}
+/* a small window or 中文 on: the page scrolls rather than cut the last row */
+#buildpage .page:has(#shopTab:not([hidden])){overflow-y:auto;scrollbar-width:thin}
 
 /* ---- 72-build3d.css ---- */
 /* Building on the whole island (part 72-build3d): the glass bar at the bottom. Prefix: b3- */
@@ -1152,6 +1176,26 @@ mark.lv-cmark.lv-cspace{display:inline-block;min-width:calc(var(--u)*11)}
 .lv-pbzh{margin:0;font-family:var(--f-zh);font-size:calc(var(--u)*30);line-height:1.2;color:var(--ink)}
 /* the stamp between parts: a long part name ("old words", "orbit's training") stays inside the circle (it ran over the ring) */
 .lv-center .stamp.lv-ok>span:first-child{max-width:calc(var(--u)*72);letter-spacing:.06em;line-height:1.05}
+
+/* the first Hint press on a page without the word's Chinese meaning: the meaning, large, over the letter lines */
+.lv-hintzh{margin:0 0 calc(var(--u)*4);font-family:var(--f-zh);font-size:calc(var(--u)*34);line-height:1.2;color:var(--ink)}
+/* in the night watch's strip (one low line of paper) the meaning stands beside the lines, so the strip does not grow */
+.rd-in .lv-hintshow{display:flex;flex-wrap:wrap;align-items:flex-end;gap:calc(var(--u)*4) calc(var(--u)*18)}
+.rd-in .lv-hintzh{margin:0;font-size:calc(var(--u)*30)}
+/* the quick check: the count, the picture (when the word has one), the Chinese meaning large and the sound button in one row */
+.lv-qk{margin:calc(var(--u)*6) 0 0}
+.lv-qk .kind{margin:0}
+.lv-cue.lv-qkcue{margin:calc(var(--u)*8) 0 calc(var(--u)*2);gap:calc(var(--u)*30)}
+.lv-cue.lv-qkcue .paint.lv-pic{width:calc(var(--u)*120)}
+.lv-cue.lv-qkcue .lv-zbig,.lv-cue.lv-agcue .lv-zbig{margin:0}
+.fb.lv-qkfb{margin:calc(var(--u)*10) 0 0;min-height:calc(var(--u)*24)}
+.lv-qkshow{margin:calc(var(--u)*4) 0 0}
+.lv-qkshow .lv-rword{margin:calc(var(--u)*2) 0 0}
+/* a quiet link to look at, a full-size place to tap (44 px also in a 1024 x 640 window) */
+.pg-foot .btn.quiet.lv-qkno{min-height:calc(var(--u)*56);min-width:calc(var(--u)*150);padding:0 calc(var(--u)*10);font-size:calc(var(--u)*15.5)}
+.lv-center .do.lv-qksum{margin:calc(var(--u)*4) 0 calc(var(--u)*2)}
+/* "One more time": the Chinese meaning and the sound button side by side */
+.lv-cue.lv-agcue{margin:calc(var(--u)*14) 0 calc(var(--u)*4)}
 
 /* ---- 82-school.css ---- */
 /* ============ school words at the watchtower (owner: school team; prefix sc-) ============ */
@@ -1400,6 +1444,14 @@ body.rd-morn #questJournal{top:50%}
 .rd-keep figcaption{font-size:calc(var(--u)*16);font-weight:600;color:var(--ink)}
 .rd-keep .zhx{font-weight:400}
 .rd-morn-pg .pg-foot{margin-top:calc(var(--u)*16)}
+/* the five more diamonds and the new thing in the shop (a finished game with the monster): on the morning page and the end page */
+.rd-more{display:flex;align-items:center;gap:calc(var(--u)*9);margin:calc(var(--u)*-6) 0 calc(var(--u)*12);font-size:calc(var(--u)*17);font-weight:600;color:var(--ink);line-height:1.25}
+.rd-more .ic{flex:none;font-size:calc(var(--u)*22);color:#2a8fb5;fill:rgba(134,230,255,.35)}
+.rd-more .bd-thing,.rd-endnew .bd-thing{flex:none;width:calc(var(--u)*30);height:calc(var(--u)*30)}
+.rd-more .zhx{display:block;font-size:calc(var(--u)*14);font-weight:400}
+.rd-more.rd-prize{margin-top:0}
+.rd-endmore{margin-top:calc(var(--u)*-2)}
+.rd-endnew{display:flex;align-items:center;gap:calc(var(--u)*9);margin:0 0 calc(var(--u)*8)}
 
 @media (max-width:700px){.rd-cols{grid-template-columns:1fr}}
 

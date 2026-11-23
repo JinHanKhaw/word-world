@@ -4,25 +4,26 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Word World</title>
-<link rel="stylesheet" href="fonts.css?v=202611231457">
-<link rel="stylesheet" href="ui.css?v=202611231457">
+<link rel="stylesheet" href="fonts.css?v=202611231625">
+<link rel="stylesheet" href="ui.css?v=202611231625">
 <!-- Backend. On claude.ai these two files stand in for the database (progress stays in this browser).
      On the real site, load supabase-js and config.js here instead. -->
-<script src="bank.js?v=202611231457"></script>
-<script src="probes.js?v=202611231457"></script>
-<script src="rude.js?v=202611231457"></script>
-<script src="vendor/supabase.js?v=202611231457"></script>
-<script src="config.js?v=202611231457"></script>
-<script src="common.js?v=202611231457"></script>
-<script src="zh.js?v=202611231457"></script>
-<script src="audio.js?v=202611231457"></script>
-<script src="patterns.js?v=202611231457"></script>
-<script src="pool.js?v=202611231457"></script>
-<script src="picker.js?v=202611231457"></script>
-<script src="img/words/pics.js?v=202611231457"></script>
-<script src="img/school/pics.js?v=202611231457"></script>
-<script src="story.js?v=202611231457"></script>
-<script src="pairs.js?v=202611231457"></script>
+<script src="bank.js?v=202611231625"></script>
+<script src="probes.js?v=202611231625"></script>
+<script src="rude.js?v=202611231625"></script>
+<script src="vendor/supabase.js?v=202611231625"></script>
+<script src="config.js?v=202611231625"></script>
+<script src="common.js?v=202611231625"></script>
+<script src="zh.js?v=202611231625"></script>
+<script src="audio.js?v=202611231625"></script>
+<script src="patterns.js?v=202611231625"></script>
+<script src="pool.js?v=202611231625"></script>
+<script src="first.js?v=202611231625"></script>
+<script src="picker.js?v=202611231625"></script>
+<script src="img/words/pics.js?v=202611231625"></script>
+<script src="img/school/pics.js?v=202611231625"></script>
+<script src="story.js?v=202611231625"></script>
+<script src="pairs.js?v=202611231625"></script>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -130,17 +131,17 @@
   <div id="full" class="modal full" hidden><div class="journal"><div class="cover"></div><article class="page paper modal-card"><button type="button" class="pgclose" id="fullClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button><div id="fullBody"></div></article></div></div>
 </div>
 
-<script src="vendor/three.min.js?v=202611231457"></script>
-<script src="vendor/GLTFLoader.js?v=202611231457"></script>
-<script src="models/hero.js?v=202611231457"></script>
-<script src="models/heroidle.js?v=202611231457"></script>
-<script src="models/tower.js?v=202611231457"></script>
-<script src="models/pod.js?v=202611231457"></script>
-<script src="models/tree.js?v=202611231457"></script>
-<script src="models/watchfire.js?v=202611231457"></script><!-- night watch (raid team): the watch-fire he owns -->
-<script src="world3d.js?v=202611231457"></script>
-<script src="orbit3d.js?v=202611231457"></script>
-<script src="raid3d.js?v=202611231457"></script><!-- night watch (raid team): the island test as a watch at the gate -->
+<script src="vendor/three.min.js?v=202611231625"></script>
+<script src="vendor/GLTFLoader.js?v=202611231625"></script>
+<script src="models/hero.js?v=202611231625"></script>
+<script src="models/heroidle.js?v=202611231625"></script>
+<script src="models/tower.js?v=202611231625"></script>
+<script src="models/pod.js?v=202611231625"></script>
+<script src="models/tree.js?v=202611231625"></script>
+<script src="models/watchfire.js?v=202611231625"></script><!-- night watch (raid team): the watch-fire he owns -->
+<script src="world3d.js?v=202611231625"></script>
+<script src="orbit3d.js?v=202611231625"></script>
+<script src="raid3d.js?v=202611231625"></script><!-- night watch (raid team): the island test as a watch at the gate -->
 <script>
 (function () {
   const W = window.WT, $ = id => document.getElementById(id);
@@ -246,10 +247,15 @@
   function dayState(d) {
     if (dayDone(d)) return "done";
     if (d === 1 ? startDate() > today() : !(dayDone(d - 1) && (doneOn(d - 1) < today() || doneToday() < LEVELS_A_DAY))) return "locked";
-    return dayWords(d).length ? "open" : "empty"; // empty: the teacher has not put words on this level yet
+    // "No new words for now" (students.pause_new, the tutor's switch): a level he has not started does not open; his old words
+    // go on without a lesson (87-picker.js pkOldStart). Switched off, the level is exactly as it was.
+    if (student && student.pause_new && !questRow(d)) return "paused";
+    // empty: the teacher has not put words on this level yet. An island test (every 10th level) gets no new words: it is
+    // open without them (old words and the test).
+    return dayWords(d).length || isTest(d) ? "open" : "empty";
   }
   function openDay() { for (let d = 1; d <= maxDay(); d++) if (dayState(d) === "open") return d; return null; }
-  function nextLockedDay() { for (let d = 1; d <= maxDay(); d++) { const st = dayState(d); if (st === "locked" || st === "empty") return d; } return null; }
+  function nextLockedDay() { for (let d = 1; d <= maxDay(); d++) { const st = dayState(d); if (st === "locked" || st === "empty" || st === "paused") return d; } return null; }
   const zoneRule = zi => { const w = words.find(x => x.quest_day && zoneOf(x.quest_day) === zi && x.rule_en); return w ? { en: w.rule_en, zh: w.rule_zh } : null; };
   // Memory checks are limited each day (students.review_cap, W.REVIEW_CAP = 6 unless the teacher changes it); the words that
   // wait longest and are least sure come first (lowest step, then oldest due date); the rest wait for tomorrow.
@@ -1061,7 +1067,7 @@
       if (!allOpened()) { mail.i = mail.cards.findIndex(c => !cardDone(c.w)); renderMailCard(); return; }
       if (ritual) { await saveSession({ mail_opened_at: new Date().toISOString() }); logEvent("ready", { day: d }); }
       closeModal(); W.sfx("squash"); renderStats();
-      $("worldhint").textContent = openDay() ? "Your map is ready. Go to the map table." : unreadCount() ? "You have mail!" : doneToday() ? "Done for today. Come back tomorrow!" : "No level today. Come back tomorrow!";
+      $("worldhint").textContent = openDay() ? "Your map is ready. Go to the map table." : unreadCount() ? "You have mail!" : doneToday() ? "Done for today. Come back tomorrow!" : student.pause_new ? "No new words today. Old words only." : "No level today. Come back tomorrow!";
       drawWorld(); animate();
     };
     renderMailCard();
@@ -1487,9 +1493,35 @@
   });
   // night watch (raid team): the watch-fire is owned, never sold (no price, in no shop stage); one per island test watched
   if (!ITEMS.some(x => x.id === "watchfire")) ITEMS.push({ id: "watchfire", name: "Watch-fire" }); ITEM_COL.watchfire = "#ff9b2f";
+  // ---- prizes (the tutor, 23 November): every finished game with the monster (the island tests of levels 10, 20, 30, 40
+  // and 50) opens one more thing in the shop, in this order. They hang in the shop from the start, shut, and open one by one;
+  // then he buys them with diamonds like any other thing. Opened by the number of island tests finished: nothing is stored.
+  // PRIZES_ON = false takes the five out completely (a finished island test then gives only its five diamonds: 86-raid.js).
+  // Their 3D shapes are in site/world3d.js (shapeProto), their drawings below (BD_ART).
+  const PRIZES_ON = window.WW_PRIZES !== false;   // the real website's config.js can hold them back (window.WW_PRIZES = false) until the tutor has seen them
+  const PRIZES = [
+    { id: "trophy", name: "Watch trophy", zh: "守夜奖杯", price: 4, col: "#e2b04a" },
+    { id: "banner", name: "Hero banner", zh: "英雄旗帜", price: 5, col: "#3b6fb6" },
+    { id: "fountain", name: "Fountain", zh: "喷泉", price: 6, col: "#6fc3e8" },
+    { id: "windmill", name: "Windmill", zh: "风车", price: 7, col: "#e9d2a6" },
+    { id: "orbitstatue", name: "Orbit statue", zh: "Orbit 雕像", price: 8, col: "#e8873a" },
+  ];
+  // the prices stay known even when the prizes are off, so a balance never changes with the switch
+  PRIZES.forEach(p => { PRICES[p.id] = p.price; if (PRIZES_ON) { if (!ITEMS.some(x => x.id === p.id)) ITEMS.push({ id: p.id, name: p.name }); ITEM_COL[p.id] = p.col; } });
+  const isPrize = k => PRIZES_ON && PRIZES.some(p => p.id === k);
+  // island tests finished (each level once; the five diamonds' rows have a kind and no level)
+  function testsDoneBut(day) { const d = {}; quests.forEach(x => { if (x.completed && x.quest_day && x.quest_day !== day && !x.kind && isTest(x.quest_day)) d[x.quest_day] = 1; }); return Object.keys(d).length; }
+  const prizesOpen = () => (PRIZES_ON ? Math.min(PRIZES.length, testsDoneBut(0)) : 0);
+  const prizeOpen = k => { const i = PRIZES_ON ? PRIZES.findIndex(p => p.id === k) : -1; return i >= 0 && i < prizesOpen(); };
+  // the prize that the island test of `day` opens when it is finished for the first time (null: none left, or prizes off)
+  const prizeFor = day => (PRIZES_ON && PRIZES[testsDoneBut(day)]) || null;
+  if (ZH) ZH.add(Object.assign({}, ...PRIZES.map(p => ({ [p.name]: p.zh }))), [
+    [/^After the next night watch\.$/, "下一次守夜之后。"], [/^After (\d) more night watches\.$/, "再守夜 $1 次之后。"],
+    [/^After the next island test\.$/, "下一次小岛测验之后。"], [/^After (\d) more island tests\.$/, "再做 $1 次小岛测验之后。"]
+  ]);
   const shopStageOf = k => SHOP_STAGES.find(s => s.goods.includes(k)) || SHOP_STAGES[0];
   const canSpell = () => (typeof spellCounts === "function" ? spellCounts().can : 0);
-  const isOpenGood = k => k !== "watchfire" && canSpell() >= shopStageOf(k).at;   // night watch: the watch-fire is never in the shop
+  const isOpenGood = k => k !== "watchfire" && (isPrize(k) ? prizeOpen(k) : !PRIZES.some(p => p.id === k) && canSpell() >= shopStageOf(k).at);   // night watch: the watch-fire is never in the shop
   const materialOf = kind => MATERIALS.find(m => m.id === kind) || null;
   // true for the six painted colours; a material (6 to 9) once "Words I can spell now" reaches its stage
   const materialOpen = kind => kind >= 0 && kind <= 5 && kind === Math.floor(kind) ? true : !!materialOf(kind) && canSpell() >= materialOf(kind).at;
@@ -1516,7 +1548,8 @@
   // Each entry is [path, wash]: wash 0 = ink line only, 1 = the thing's own colour, 2 = wood, 3 = leaf, 4 = gold.
   const bdCirc = (x, y, r) => "M" + (x - r) + " " + y + "a" + r + " " + r + " 0 1 0 " + 2 * r + " 0a" + r + " " + r + " 0 1 0 " + -2 * r + " 0z";
   const BD_WASH = { door: "#c08a55", window: "#9fd6f6", flower: "#f58db8", tree: "#7cc04d", torch: "#ff9b2f", flag: "#e65a46",
-    fence: "#c89a62", roof: "#c9644a", steps: "#aaa3b4", lantern: "#ffd36a", chest: "#c08a55", bed: "#7aa7e0", table: "#c89a62", well: "#a29db0", bridge: "#8cc3e3", signpost: "#e0a85e", watchfire: "#ff9b2f" };
+    fence: "#c89a62", roof: "#c9644a", steps: "#aaa3b4", lantern: "#ffd36a", chest: "#c08a55", bed: "#7aa7e0", table: "#c89a62", well: "#a29db0", bridge: "#8cc3e3", signpost: "#e0a85e", watchfire: "#ff9b2f",
+    trophy: "#ff9b2f", banner: "#4a7cc4", fountain: "#8fd0ee", windmill: "#ecd3a2", orbitstatue: "#f2c891" };
   const BD_ART = {
     door: [["M6.5 20.5V9.6a5.5 5.5 0 0 1 11 0v10.9z", 1], ["M12 4.3v16.2", 0], ["M9.2 9.5v1.2M14.8 9.5v1.2", 0], [bdCirc(14.6, 14, .55), 0], ["M4 20.5h16", 0]],
     window: [["M5 4.5h14v13.6H5z", 1], ["M12 4.5v13.6M5 11.3h14", 0], ["M7 6.8l2.2-1.6M14 13.6l2.6-2", 0], ["M3.6 18.1h16.8l-.6 2.4H4.2z", 2]],
@@ -1535,8 +1568,21 @@
     bridge: [["M2.4 14.6Q12 7.4 21.6 14.6v2.6Q12 10.2 2.4 17.2z", 2], ["M2.4 14.6V9.8M21.6 14.6V9.8M7.2 11.4V7M16.8 11.4V7M12 9.6V5.6M2.4 9.8Q12 3.2 21.6 9.8", 0], ["M3 20.5c2-1 3.6 1 5.6 0s3.6 1 5.6 0 3.6 1 5.6 0", 1]],
     signpost: [["M11 9.8h2v10.7h-2z", 2], ["M4.8 4.2h11.6l3 3-3 3H4.8z", 1], ["M7.8 7.2h6.2", 0], ["M7 20.5h10", 0]],
     watchfire: [["M12 2.6c2.6 2.2 3.9 4.2 3.5 6-.3 1.2-1.6 1.9-3.5 1.9s-3.2-.7-3.5-1.9c-.4-1.8.9-3.8 3.5-6z", 1], ["M12 6.2c1 1 1.4 1.8 1.1 2.5-.2.4-.6.6-1.1.6s-.9-.2-1.1-.6c-.3-.7.1-1.5 1.1-2.5z", 4], ["M5.4 10.6h13.2l-1.6 5.2H7z", 2], ["M8.8 10.6l.6 5.2M12 10.6v5.2M15.2 10.6l-.6 5.2", 0], ["M8.2 15.8l-1.8 4.7M15.8 15.8l1.8 4.7M12 15.8v4.2", 0]],   // night watch (raid team)
+    // the five prizes, drawn from their 3D shapes (site/world3d.js), seen from the front
+    trophy: [["M12 1.4c1.3 1.2 1.9 2.2 1.6 3-.2.5-.8.8-1.6.8s-1.4-.3-1.6-.8c-.3-.8.3-1.8 1.6-3z", 1], ["M7.2 5.6h9.6v1.9c0 3-2.1 5.2-4.8 5.2s-4.8-2.2-4.8-5.2z", 4], ["M7.2 7H5.4c-.3 2.4.9 3.8 2.9 4M16.8 7h1.8c.3 2.4-.9 3.8-2.9 4", 0],
+      ["M12 12.7v1.8", 0], ["M9.3 14.5h5.4l.7 1.7H8.6z", 4], ["M6.4 16.2h11.2v4.3H6.4z", 5], [bdCirc(12, 18.3, .7), 4], ["M4.5 20.5h15", 0]],
+    banner: [["M4.6 3.8h14.8", 0], [bdCirc(4.6, 3.8, .75), 4], [bdCirc(19.4, 3.8, .75), 4], ["M6.6 4.4h10.8v11.4L12 13l-5.4 2.8z", 1], ["M6.6 6h10.8", 0],
+      ["M12 6.7L12.68 8.47L14.57 8.57L13.09 9.76L13.59 11.58L12 10.55L10.41 11.58L10.91 9.76L9.43 8.57L11.32 8.47z", 4], ["M12 2.6v1.2M12 13.6v6.9", 0], ["M9.4 18.6h5.2v1.9H9.4z", 5]],
+    fountain: [["M3.6 15.2h16.8l-1.3 5.3H4.9z", 5], ["M4.4 15.2c2.5-1.1 5 1.1 7.6 0s5.1 1.1 7.6 0", 0], ["M11 15.2V9.9h2v5.3", 5], ["M7.2 9.9h9.6c-.5 1.6-2.3 2.4-4.8 2.4s-4.3-.8-4.8-2.4z", 5],
+      ["M11.3 9.7c0-2.5.3-4.4.7-5.9.4 1.5.7 3.4.7 5.9z", 6], ["M12 3.8c-2 .2-3.4 2-3.6 4.4M12 3.8c2 .2 3.4 2 3.6 4.4", 0], ["M7.4 10.8c-1.1 1.1-1.6 2.5-1.6 4.1M16.6 10.8c1.1 1.1 1.6 2.5 1.6 4.1", 0]],
+    windmill: [["M9 20.5l1.3-11.3h3.4l1.3 11.3z", 1], ["M9.6 9.4L12 6.3l2.4 3.1z", 7], ["M11 20.5v-2.4a1 1 0 0 1 2 0v2.4M10.1 14.6h3.8", 0],
+      ["M13.13 9.33L16.67 12.87L15.32 14.21L11.79 10.67zM10.87 9.33L7.33 12.87L5.99 11.52L9.53 7.99zM10.87 7.07L7.33 3.53L8.68 2.19L12.21 5.73zM13.13 7.07L16.67 3.53L18.01 4.88L14.47 8.41z", 8],
+      ["M12 8.2L16.95 13.15M12 8.2L7.05 13.15M12 8.2L7.05 3.25M12 8.2L16.95 3.25", 0], [bdCirc(12, 8.2, .8), 2], ["M5 20.5h14", 0]],
+    orbitstatue: [["M5.6 15.6h12.8v4.9H5.6z", 5], ["M9.6 13.4h4.8v2.2H9.6z", 5], ["M6.8 9.4a5.2 4.2 0 1 0 10.4 0a5.2 4.2 0 1 0-10.4 0z", 1], [bdCirc(5.7, 10, 1.35), 7], [bdCirc(18.3, 10, 1.35), 7],
+      ["M7.7 8.9c2.8-1.3 5.8-1.3 8.6 0v2.2c-2.8 1.2-5.8 1.2-8.6 0z", 9], ["M10 9.2v1.5M14 9.2v1.5", 4], ["M13.6 5.4l1.6-3", 0], [bdCirc(15.3, 2.2, .6), 7], ["M15.6 2.6l2.8.5-2.2 1.3", 7], [bdCirc(12, 18, .7), 4], ["M4 20.5h16", 0]],
   };
-  const BD_FILL = [null, null, "#c89a62", "#7cc04d", "#f1c94b"];
+  // washes for a part in a set colour: 2 wood, 3 leaf, 4 gold, 5 stone, 6 water, 7 roof red, 8 sail cloth, 9 Orbit's dark glass
+  const BD_FILL = [null, null, "#c89a62", "#7cc04d", "#f1c94b", "#aaa3b4", "#8fd0ee", "#d0694c", "#f4ead6", "#4a4352"];
   // One thing as a small drawing: first a wash of colour set a little off the line (as a brush does), then the ink.
   function bdThing(k, cls) {
     const art = BD_ART[k]; if (!art) return "";
@@ -1668,7 +1714,7 @@
     if (n && n.go === "tower") return HD_SCHOOL;
     if (n && n.key === "story") return HD_STORY;
     if (pl.wait) { hdHintLate = true; return ""; }
-    return openDay() ? "" : doneToday() ? "Done for today. Come back tomorrow!" : "No level today. Come back tomorrow!";
+    return openDay() ? "" : doneToday() ? "Done for today. Come back tomorrow!" : student && student.pause_new ? "No new words today. Old words only." : "No level today. Come back tomorrow!";
   }
 
   // Today's task first (the tutor, 21 November): until it is done, a tap on the ground, an arrow key or a shut button (Build)
@@ -1908,7 +1954,7 @@
     "Opens on your start day.": "到你开始的那天就开启。", "All 50 levels done!": "50 关全部完成！", "Open today's word cards first.": "先打开今天的单词卡。",
     "Tap Start.": "点“开始”。", "Practise again after today's task.": "完成今天的任务后再练习。", "Tap Go on.": "点“继续”。"
   }, [
-    [/^Level (\d+) · Today$/, "第 $1 关 · 今天"], [/^Level (\d+) · Done$/, "第 $1 关 · 完成"], [/^Level (\d+) · Island test$/, "第 $1 关 · 小岛测验"],
+    [/^Level (\d+) · Today$/, "第 $1 关 · 今天"], [/^Level (\d+) · Done$/, "第 $1 关 · 完成"], [/^Level (\d+) · Island test$/, "第 $1 关 · 小岛测验"], [/^Level (\d+) · Not today$/, "第 $1 关 · 今天不开"],
     [/^(\d+) new words? · (\d+) old words? to check$/, "$1 个新单词 · $2 个旧单词要检查"], [/^(\d+) new words?$/, "$1 个新单词"], [/^(\d+) old words? to check$/, "$1 个旧单词要检查"],
     [/^Start level (\d+)$/, "开始第 $1 关"], [/^Go on with level (\d+)$/, "继续第 $1 关"], [/^Opens after level (\d+)\.$/, "完成第 $1 关后开启。"],
     [/^Level (\d+) opens tomorrow\. Two levels a day!$/, "第 $1 关明天开启。每天最多两关！"], [/^Level (\d+) opens after level (\d+)\.$/, "完成第 $2 关后，第 $1 关开启。"],
@@ -1933,7 +1979,7 @@
     return d;
   }
   // a short word for a level's state (the marker's spoken name)
-  function stoneLabel(st, d) { return (st === "done" ? "done" : st === "open" ? "today" : st === "empty" ? "no words yet" : "locked") + (isTest(d) ? ", island test" : ""); }
+  function stoneLabel(st, d) { return (st === "done" ? "done" : st === "open" ? "today" : st === "empty" ? "no words yet" : st === "paused" ? "no new words today" : "locked") + (isTest(d) ? ", island test" : ""); }
   const cmKind = p => p.t === "home" ? "home" : { done: "done", open: "today" }[dayState(p.n)] || "locked";
   const cmCount = (n, one) => n + " " + one + (n === 1 ? "" : "s");
   function cmLastDone() { let last = 0; for (let d = 1; d <= LEVELS; d++) if (dayDone(d)) last = d; return last; }
@@ -1941,6 +1987,7 @@
   function cmNextNote() {
     const nl = nextLockedDay();
     if (!nl || nl > LEVELS) return "All 50 levels done!";
+    if (dayState(nl) === "paused") return PK_PAUSE_LINE;
     if (dayState(nl) === "empty") return "Level " + nl + " has no words yet. " + TN() + " is adding them.";
     if (nl === 1) return "Opens on your start day.";
     return dayDone(nl - 1) ? "Level " + nl + " opens tomorrow. Two levels a day!" : "Level " + nl + " opens after level " + (nl - 1) + ".";
@@ -1968,6 +2015,12 @@
       return { eyebrow: "Level " + n + " · Done", lines, btn: "Practise again", id: "practice", go: () => startQuest(n, true) };
     }
     if (st === "empty") return { eyebrow: "Level " + n + (test ? " · Island test" : ""), lines: ["No words here yet. Ask your teacher."] };
+    // "No new words for now" (the tutor's switch): this level waits; his old words can still be done here, without a lesson
+    if (st === "paused") {
+      const old = dueReviews().length;
+      return { eyebrow: "Level " + n + " · Not today", lines: [PK_PAUSE_LINE, old ? cmCount(old, "old word") + " to check" : "Your old words are done."],
+        btn: old ? "Do your old words" : "", primary: true, id: "pkOld", go: () => pkOldStart() };
+    }
     const why = n === 1 ? "Opens on your start day." : dayDone(n - 1) ? "Opens tomorrow. Two levels a day!" : "Opens after level " + (n - 1) + ".";
     return { eyebrow: "Level " + n + (test ? " · Island test" : ""), lines: test ? [why, "Island test: ten words from this island."] : [why] };
   }
@@ -2058,7 +2111,8 @@
       levels.appendChild(b); cm.buttons.push(b);
     });
     // first selection: today's level; else the last level done (with what comes next); else the first level not open yet
-    const pick = (od && od <= LEVELS ? od : 0) || lastDone || nextLockedDay() || 1;
+    let paused = 0; if (!od && student && student.pause_new) { const nl = nextLockedDay(); if (nl && dayState(nl) === "paused") paused = nl; }
+    const pick = (od && od <= LEVELS ? od : 0) || paused || lastDone || nextLockedDay() || 1;
     cmSelect(CM_PTS.find(p => p.n === Math.min(pick, LEVELS)));
     if (window.ResizeObserver) { cm.ro = new ResizeObserver(() => cmPlace()); cm.ro.observe(cm.tag); cm.ro.observe(cm.chart); }
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(cmPlace);
@@ -2433,7 +2487,9 @@
     [/^No (door|window|flower|tree|torch|flag|fence|roof|lantern|chest|bed|table|well|bridge|signpost)s left\. Buy one in the shop\.$/, m => "没有" + BD_ZH_NAME[m[1]] + "了。去商店买一个吧。"],
     [/^No steps left\. Buy one in the shop\.$/, "没有台阶了。去商店买一个吧。"],
     [/^Spell (\d+) more words?\.$/, "再学会拼 $1 个单词。"],
+    [/^No (watch trophies|hero banners|fountains|windmills|Orbit statues) left\. Buy one in the shop\.$/, m => "没有" + { "watch trophies": "守夜奖杯", "hero banners": "英雄旗帜", fountains: "喷泉", windmills: "风车", "Orbit statues": "Orbit 雕像" }[m[1]] + "了。去商店买一个吧。"],
   ]);
+  if (ZH) ZH.add({ "Prizes": "奖品" });
 
   function showBuildTab(which) {
     const flat = !(typeof b3Can === "function" && b3Can());   // with the 3D world he builds in the outpost; the flat plot is the fallback
@@ -2467,6 +2523,11 @@
         (open ? '<p class="bd-mnote">Ready to use.</p>' : '<p class="bd-mnote">' + ICON("lock") + "<span>" + bdSpellMore(m.at) + "</span></p>") + "</span></div>";
     }).join("") + "</div>";
   }
+  // A prize not open yet: how many more island tests (night watches with the 3D world) open it.
+  function bdPrizeLine(k) {
+    const n = Math.max(1, PRIZES.findIndex(p => p.id === k) - prizesOpen() + 1), watch = typeof rdW === "function" && !!rdW();
+    return n === 1 ? "After the next " + (watch ? "night watch." : "island test.") : "After " + n + " more " + (watch ? "night watches." : "island tests.");
+  }
   function renderShop() {
     const d = diamonds(); bdHead();
     const goodOf = k => k === "brick" ? { id: "brick", name: "Bricks", note: "10 in a pack" } : bdItem(k);
@@ -2478,7 +2539,7 @@
         '<i class="bd-hole" aria-hidden="true"></i><span class="bd-art">' + art(g.id, "bd-ghost") + "</span>" +
         '<span class="bd-what"><b class="bd-name zhk">' + W.esc(g.name) + "</b></span>" +
         '<span class="bd-price" aria-label="' + price + ' diamonds">' + ICON("gem") + price + "</span>" +
-        '<p class="bd-lock">' + ICON("lock") + "<span>" + bdLockLine(g.id) + "</span></p>" +
+        '<p class="bd-lock">' + ICON("lock") + "<span>" + (isPrize(g.id) ? bdPrizeLine(g.id) : bdLockLine(g.id)) + "</span></p>" +
         '<button type="button" class="btn buy" data-k="' + g.id + '" disabled hidden>Buy</button></div></div>';
       return '<div class="good bd-good' + (g.id === "brick" ? " bd-pack" : "") + (need > 0 ? " bd-cant" : "") + '" style="--bd-tilt:' + tilt + 'deg"><div class="bd-tag">' +
         '<i class="bd-hole" aria-hidden="true"></i><span class="bd-art">' + art(g.id) + "</span>" +
@@ -2496,7 +2557,21 @@
     let hb = $("b3Go");
     if (go3d && !hb) { hb = document.createElement("button"); hb.type = "button"; hb.className = "btn primary bd-go3"; hb.id = "b3Go"; hb.innerHTML = ICON("build") + "Build on the island"; $("bBack").parentNode.insertBefore(hb, $("bBack")); }
     if (hb) hb.hidden = !go3d;
-    $("shop").innerHTML = strings.map(st => '<div class="bd-tags">' + st.map(s => '<div class="bd-stage' + (canSpell() >= s.at ? "" : " bd-shut") + '">' + s.goods.map(k => tag(goodOf(k))).join("") + "</div>").join("") + "</div>").join("") + bdMats();
+    // the prizes: a third string, one tag for each, shut until its island test is finished (20-build-data.js PRIZES)
+    // Small tags: the picture, the name with its price, then Buy (or what is missing, or when it opens).
+    const ptag = p => {
+      const open = isOpenGood(p.id), need = p.price - d, tilt = [-.5, .4, -.3, .6, -.4][PRIZES.indexOf(p)];
+      return '<div class="good bd-good bd-prize' + (open ? (need > 0 ? " bd-cant" : "") : " bd-locked") + '" style="--bd-tilt:' + tilt + 'deg"><div class="bd-tag">' +
+        '<i class="bd-hole" aria-hidden="true"></i><span class="bd-art">' + art(p.id, open ? "" : "bd-ghost") + "</span>" +
+        '<span class="bd-pline"><b class="bd-name zhk">' + W.esc(p.name) + "</b>" +
+        '<span class="bd-price" aria-label="' + p.price + ' diamonds">' + ICON("gem") + p.price + "</span></span>" +
+        (!open ? '<p class="bd-lock">' + ICON("lock") + "<span>" + bdPrizeLine(p.id) + "</span></p>"
+          : (bought(p.id) > 0 ? '<p class="bd-own">You have ' + bought(p.id) + "</p>" : "") +
+            (need > 0 ? '<p class="bd-need">You need ' + need + " more " + (need === 1 ? "diamond." : "diamonds.") + "</p>" : '<button type="button" class="btn buy" data-k="' + p.id + '">Buy</button>')) +
+        "</div></div>";
+    };
+    const prizes = PRIZES_ON ? '<div class="bd-tags bd-prizes"><span class="bd-prlabel zhk">Prizes</span><div class="bd-stage">' + PRIZES.map(ptag).join("") + "</div></div>" : "";
+    $("shop").innerHTML = strings.map(st => '<div class="bd-tags">' + st.map(s => '<div class="bd-stage' + (canSpell() >= s.at ? "" : " bd-shut") + '">' + s.goods.map(k => tag(goodOf(k))).join("") + "</div>").join("") + "</div>").join("") + prizes + bdMats();
     $("shop").querySelectorAll(".buy").forEach(b => b.onclick = () => buy(b.dataset.k));
     // "Finish a level to earn diamonds" only while he has none to spend: the page keeps its room for the tags.
     const hint = $("shopTab").querySelector(":scope > .hint"); if (hint) hint.hidden = d >= PRICES.brick;
@@ -2549,7 +2624,8 @@
     else if (leftOf(kindName(paint)) > 0) { cells.push([c, r, paint]); W.sfx("pop"); }
     else {
       const need = kindName(paint);
-      bdSetHint(need === "brick" ? "No bricks left. Buy some in the shop." : "No " + (need === "steps" ? need : need + "s") + " left. Buy one in the shop.", true); W.sfx("squash"); return;
+      const many = isPrize(need) ? { trophy: "watch trophies", banner: "hero banners", orbitstatue: "Orbit statues" }[need] || need + "s" : need === "steps" ? need : need + "s";
+      bdSetHint(need === "brick" ? "No bricks left. Buy some in the shop." : "No " + many + " left. Buy one in the shop.", true); W.sfx("squash"); return;
     }
     $("buildHint").classList.remove("bd-warn");
     student.build = { cells, bought: b.bought, cells3: b.cells3 }; renderBuild(); saveBuild();
@@ -2791,6 +2867,9 @@
   // gets one small extra game at the end of the part. Then the day's new words TAKE TURNS, round by round:
   // meet, with the beats tapped in turn (A, B) > type (A, B; this one scores) > build (A, B) > the mixed round > copy the
   // sentence (A, B) > one never-taught word. No handwriting step and no separate drum page (the tutor's decisions, 21 November).
+  // Since 23 November: between Orbit's training and the new words, the quick check (four short words, once a day, see
+  // quickTurns) and the pair game when its part says it is ready (pairsReady, 83-pairs.js); after the last step and before
+  // the end page, "One more time": each word not right on its first try today in this level, asked once more (againWords).
   // Whenever he types, the word is hidden, and the same answer never comes twice in a row.
   // Island test (every 10th level): listen and type up to 10 of the island's words, weakest first.
   // Practice: the same level again, nothing saved. Between parts he can stop; "Stop here" on every page leaves at once,
@@ -2897,12 +2976,17 @@
     let probe = !isTest(day) && student.probes !== false && probeList(zoneOf(day) + 1).length ? zoneOf(day) + 1 : 0;
     if (probe) { try { const r = await sb.from("attempts").select("*").eq("quest_id", row.id).eq("kind", "probe"); if ((r.data || []).length) probe = 0; } catch (e) {} }
     const training = typeof trainingTurns === "function" ? await trainingTurns(day, due, fresh.concat(scored), skip) : [];   // training hook
+    const quick = await quickTurns(day, fresh);   // the quick check: four short words before the main words, once a day
     const behind = await stagesBehind(row.id);   // the trail: steps of this level already behind him before this start
     q = { day, row, items: reviews.concat(newTurns(fresh, scored, false, probe), test), i: 0, results: {}, tries: 0, startedAt: Date.now(), mixSkip: skip, mixPaid: met, mixAtt };
-    q.items.splice(reviews.length, 0, ...training);   // training hook
+    // pairs hook (83-pairs.js). Asked only now that the level exists: pairsReady() looks at the level (practice, island test),
+    // and asked before it, it always said no (found in the lead's play-through, 23 November).
+    const pairs = fresh.length && !isTest(day) && pairsWanted() ? [{ type: "pairs", step: "pairs", part: "new" }] : [];
+    q.items.splice(reviews.length, 0, ...training, ...quick.items, ...pairs);   // training hook; then the quick check and the pair game
+    q.quickPrev = quick.prev;
     q.stages = lvStages(behind);
     if (!q.items.length) { q.step = "end"; return renderQ(); }
-    logEvent("quest_start", { day, reviews: due.length, new: fresh.length, test: testWords.length });
+    logEvent("quest_start", { day, reviews: due.length, new: fresh.length, test: testWords.length, quick: quick.items.length });
     $("qTitle").innerHTML = "Level " + day + (isTest(day) ? " <small>island test</small>" : "");
     renderQ();
   }
@@ -2977,15 +3061,15 @@
   // The trail: ONE dot for each step of today's level, the same dots on every page of it: old words, Orbit's training, meet,
   // type, build, the last round, copy the sentence, the never-taught word, the island test (those this level has). Steps behind
   // him are filled, this one is marked. Words and questions inside a step are counted on the page itself, never by the dots.
-  const STAGES = ["review", "training", "meet", "type", "build", "mix", "sentence", "probe", "test"];
-  const stageOf = it => it.part !== "new" ? it.part : it.step === "probe" ? "probe" : ["meet", "type", "build", "mix", "sentence"][Math.min(it.round || 0, 4)];
+  const STAGES = ["review", "training", "quick", "pairs", "meet", "type", "build", "mix", "sentence", "probe", "test", "again"];
+  const stageOf = it => it.part !== "new" ? it.part : it.step === "probe" ? "probe" : it.step === "pairs" ? "pairs" : ["meet", "type", "build", "mix", "sentence"][Math.min(it.round || 0, 4)];
   function lvStages(behind) {
     const has = new Set(q.items.map(stageOf).concat(behind || []));
     if (["meet", "type", "build", "mix", "sentence", "probe"].some(s => has.has(s))) ["meet", "type", "build", "mix"].concat(q.practice ? [] : ["sentence"]).forEach(s => has.add(s));
     return STAGES.filter(s => has.has(s));
   }
   async function stagesBehind(questId) {   // from the level's saved tries: the steps he already went through before this start
-    const of = { review: "review", game: "review", training: "training", "new": "type", mixed: "mix", sentence: "sentence", probe: "probe", test: "test" };
+    const of = { review: "review", game: "review", training: "training", quick: "quick", "new": "type", mixed: "mix", sentence: "sentence", probe: "probe", test: "test", again: "again" };
     try { const r = await sb.from("attempts").select("*").eq("quest_id", questId); return (r.data || []).map(a => of[a.kind]).filter(Boolean); } catch (e) { return []; }
   }
   function lvTrail(it) {
@@ -2997,8 +3081,9 @@
   }
   function head() {
     const it = cur();
-    const what = it.step === "mixed" ? "Last round" : it.step === "probe" ? "Work it out" : it.part === "new" ? "New word" : it.part === "test" ? "Island test" : "Old word";
-    const brow = q.practice ? "Practice · Level " + q.day : "Level " + q.day + " · " + what;
+    const what = it.step === "mixed" ? "Last round" : it.step === "probe" ? "Work it out" : it.part === "quick" ? "Quick check" : it.part === "again" ? "One more time" :
+      it.part === "new" ? "New word" : it.part === "test" ? "Island test" : "Old word";
+    const brow = q.practice ? "Practice · Level " + q.day : q.oldOnly ? "Old words" : "Level " + q.day + " · " + what;   // pause hook
     return '<header class="pg-head"><span class="eyebrow">' + brow + "</span>" + lvTrail(it) +
       '<button type="button" class="btn quiet" id="pauseBtn">Stop here</button></header>';
   }
@@ -3043,8 +3128,17 @@
     if (it.hintKit && it.hintKit.btn === $("lv-hintBtn")) return it.hintKit;
     const step = it.part === "training" ? "training" : it.type === "test" ? "test" : it.step;
     const kind = it.part === "training" ? "training" : it.step === "mixed" ? "mixed" : it.extra || it.step === "gap" || it.step === "talk" ? "game" : it.type;
-    it.hintKit = hintKit({ px: "lv", word: w.word, chunks: w.chunks, st: it.hint, inp: () => $("ans"), step, kind });
+    it.hintKit = hintKit({ px: "lv", word: w.word, chunks: w.chunks, st: it.hint, inp: () => $("ans"), step, kind, zh: lvHintZh(w, $("lv-hintBtn")) });
     return it.hintKit;
+  }
+  // The Chinese meaning the first Hint press shows (the tutor, 23 November: "the hint can also be given in Chinese words"),
+  // or "" when the page already shows it (the Chinese clue of the last round, a word without a picture, "One more time").
+  // The page is the journal page, or the night watch's strip (86-raid.js), whichever holds the Hint button.
+  function lvHintZh(w, btn) {
+    const zh = String((w && w.meaning_zh) || "").trim(); if (!zh || !btn) return "";
+    const page = btn.closest("#questBody, .rd-strip") || qb;
+    const shown = Array.from(page.querySelectorAll(".lv-zbig, .paint-zh, .mean .zh, .lv-pbzh")).some(e => !e.closest(".lv-hintarea") && e.textContent.trim() === zh);
+    return shown ? "" : zh;
   }
   const lvHints = () => { const it = q && q.items && cur(); return it && it.hint ? it.hint.n : 0; };
   async function lvAttempt(w, kind, step, answer, correct, before, after, hints) {   // saveAttempt (core) with the hint presses before this try
@@ -3065,7 +3159,8 @@
 
   // ---- hints after a miss (also used by the school words drill) ----
   // One press at a time, at most three for a word on one page; every press is logged ("hint") and saved on the next try.
-  //  1: he hears the word again, slowly, and sees one line for each letter, grouped in beats. No letters.
+  //  1: he hears the word again, slowly, and sees one line for each letter, grouped in beats. No letters. Where the page does
+  //     not show the word's Chinese meaning, it shows now, large, over the lines (lvHintZh).
   //  2: the first beat that does not match what he typed is marked, and he hears that beat (school words: the first letter).
   //  3: the whole word on the lines for 3 seconds (window.__hintMs for checks), then hidden; he types it from memory.
   const HINT_MAX = 3;
@@ -3128,7 +3223,8 @@
     }).join("") + "</span>").join("");
     return '<div class="lv-hintword' + (open ? " lv-hintopen" : "") + '" role="img" aria-label="' + count + ' letters">' + html + "</div>";
   }
-  // o: { px, word, chunks (none for school words), st: { n, last }, inp: () => the answer input, step, kind }
+  // o: { px, word, chunks (none for school words), st: { n, last }, inp: () => the answer input, step, kind,
+  //      zh: the word's Chinese meaning, shown from the first press on (only where the page does not show it already) }
   function hintKit(o) {
     const st = o.st, btn = $(o.px + "-hintBtn"), area = $(o.px + "-hintArea"), show = $(o.px + "-hintShow"), say = $(o.px + "-hintSay");
     const byLetter = !o.chunks, groups = hintGroups(o.word, o.chunks);
@@ -3136,7 +3232,8 @@
     const draw = () => {
       if (!live() || !st.n) return;
       const mark = hintMark(groups, st.last, byLetter);
-      area.hidden = false; show.innerHTML = hintHtml(groups, st.n, mark, byLetter, !!st.open);
+      area.hidden = false;
+      show.innerHTML = (o.zh ? '<p class="lv-hintzh nozh" lang="zh-Hans">' + W.esc(o.zh) + "</p>" : "") + hintHtml(groups, st.n, mark, byLetter, !!st.open);
       say.textContent = st.open ? "Look. It hides in 3 seconds." : st.n === 2 ? (byLetter ? "Look at this letter." : "Look at this beat.") : "";
       say.hidden = !say.textContent;
       btn.hidden = !st.miss || st.n >= HINT_MAX;
@@ -3248,6 +3345,7 @@
   const tapLine = (verb, beat) => "<b>" + verb + '</b> <b class="lv-dob">' + W.esc(beat) + "</b>.";
   function renderQ() {
     if (!q) return;
+    if (q.step === "end" && q.oldOnly && typeof pkOldEnd === "function") return pkOldEnd();   // pause hook: old words without a lesson (87-picker.js)
     if (q.step === "end") return (typeof raidMorning === "function" && raidMorning()) || renderEnd();   // raid hook: the morning page first
     if (q.step === "part") return renderPart();
     if (cur().step === "mixplan") { expandMix(); if (q.i >= q.items.length) { q.step = "end"; return renderQ(); } }
@@ -3258,6 +3356,8 @@
     if (cur().part === "training") return renderTraining(cur());   // training hook
     if (cur().part === "test" && typeof raidOn === "function" && raidOn()) return renderRaid(cur());   // raid hook: the island test as the night watch
     if (cur().step === "probe") return renderProbe(cur());
+    if (cur().part === "quick") return renderQuick(cur());
+    if (cur().step === "pairs") return renderPairs(cur());   // pairs hook
     const it = cur(), w = it.w, k = w.word, step = it.step;
     q.peek = false;
     if (step === "meet") {
@@ -3300,6 +3400,15 @@
       wireAnswer(checkSpelling);
       W.speak(k);   // a new word is said too: the picture alone does not always say which word (Orbit's line waits for it)
       Guide.step(it.type === "test" ? "test" : step);
+    }
+    else if (step === "again") {
+      // "One more time": he hears the word and sees its Chinese meaning; nothing else shows unless he presses Hint after a miss
+      qp(head() + title("One more time", "<b>Listen.</b> <b>Type</b> the word.") +
+        '<div class="lv-cue lv-agcue"><p class="lv-zbig nozh" lang="zh-Hans">' + W.esc(w.meaning_zh || "") + "</p>" + soundBtn() + "</div>" + answerForm());
+      $("hear").onclick = () => W.speak(k);
+      wireAnswer(checkAgain);
+      W.speak(k);
+      if (!q.againSaid) { q.againSaid = true; Guide.text("One more time. Listen and type.", "再来一次。听一听，打出来。"); }
     }
     else if (step === "build" || step === "bubbles") {
       // He hears the word; its beats lie shuffled as paper slips; he taps them in order. The whole word shows only at the end.
@@ -3587,6 +3696,162 @@
     W.speak(p.word); Guide.text("A new word. Can you work it out?", "一个新词。你能自己拼出来吗？");
   }
 
+  // ---- the quick check: four short words before the main words (the tutor, 23 November) ----
+  // It finds the short words that still need a lesson, without giving a lesson on the others.
+  // Once a day, in a level with new words; never in an island test or in practice, never while student.pause_new is on.
+  // Each word ONE try, no Hint. Right: the word becomes his at the last ladder step (back in 14 days, then a star word).
+  // Not right, or "I do not know it": the right spelling is shown, and the word becomes a waiting word (his, level 0, no
+  // level of its own) for a later lesson. Words come from WW_FIRST.quick (site/first.js) in its order, then the pool's short
+  // words (fewer than 3 beats and fewer than 7 letters) easiest first, never one he has. He adds each word with ONE call,
+  // sb.rpc("add_quick_words", { p_words: [word] }) (deploy/schema.sql); a right one is then moved up as any word is (saveWord).
+  // A stop in the middle: the words he answered are his now, so a new start takes the next ones, never one twice.
+  const QUICK_N = 4;
+  // student.pause_new: a column another part adds; missing reads as off
+  const quickOff = () => !student || !!student.pause_new;
+  function quickHas() {   // the words he has, in any form (and their simple plural or singular)
+    const have = new Set(); words.forEach(w => have.add(W.key(w.word)));
+    return k => have.has(k) || have.has(k + "s") || have.has(k + "es") || (/s$/.test(k) && have.has(k.slice(0, -1))) || (/es$/.test(k) && have.has(k.slice(0, -2)));
+  }
+  function quickList(n) {
+    const P = window.WW_POOL || []; if (!P.length || n <= 0) return [];
+    const byKey = {}; P.forEach(r => { if (r && r[0]) byKey[W.key(r[0])] = r; });
+    const F = window.WW_FIRST || {}, main = new Set((F.main || []).map(W.key)), has = quickHas();
+    const first = (F.quick || []).map(x => byKey[W.key(x)]).filter(Boolean);
+    const short = P.map((r, i) => ({ r, i })).filter(x => x.r && x.r[0] && (+x.r[17] || 0) < 3 && String(x.r[0]).replace(/[^A-Za-z]/g, "").length < 7 && !main.has(W.key(x.r[0])))
+      .sort((a, b) => ((+a.r[14] || 99) - (+b.r[14] || 99)) || a.i - b.i).map(x => x.r);   // the tutor's main words keep their full lesson
+    const out = [], seen = new Set();
+    first.concat(short).forEach(r => { const k = W.key(r[0]); if (out.length >= n || seen.has(k) || has(k) || !r[3]) return; seen.add(k); out.push(r); });
+    return out.map(r => ({ id: null, word: r[0], chunks: r[1] || r[0], meaning_en: r[2] || "", meaning_zh: r[3] || "", picture: "" }));
+  }
+  // Today's quick check for this level: { items, prev: { n, right } } (prev: the words he already answered today).
+  async function quickTurns(day, fresh) {
+    const none = { items: [], prev: { n: 0, right: 0 } };
+    if (isTest(day) || !fresh.length || quickOff()) return none;
+    let prev = none.prev;
+    try {
+      const since = new Date(today() + "T00:00:00").toISOString();
+      const [a, ev] = await Promise.all([
+        sb.from("attempts").select("*").eq("student_id", student.id).eq("kind", "quick").gte("created_at", since),
+        sb.from("events").select("*").eq("student_id", student.id).eq("type", "quick_done").gte("created_at", since)
+      ]);
+      if ((ev.data || []).length) return none;
+      const by = {}; (a.data || []).forEach(x => { by[W.key(x.word)] = by[W.key(x.word)] || !!x.correct; });
+      prev = { n: Object.keys(by).length, right: Object.values(by).filter(Boolean).length };
+    } catch (e) { return none; }
+    if (prev.n >= QUICK_N) return none;
+    return { items: quickList(QUICK_N - prev.n).map(w => ({ w, type: "quick", step: "quick", part: "quick" })), prev };
+  }
+  function renderQuick(it) {
+    const w = it.w, k = w.word, list = q.items.filter(x => x.part === "quick"), pv = q.quickPrev || { n: 0 };
+    const no = pv.n + list.indexOf(it) + 1, of = pv.n + list.length;
+    qp(head() + title("Quick check", "<b>Listen.</b> <b>Type</b> the word.") +
+      '<div class="clue lv-qk"><p class="kind">' + ICON("speaker") + "Word " + no + " of " + of + "</p>" +
+      '<div class="lv-cue lv-qkcue">' + (hasPic(w) ? picHtml(w, "lv-pic") : "") + '<p class="lv-zbig nozh" lang="zh-Hans">' + W.esc(w.meaning_zh) + "</p>" + soundBtn() + "</div></div>" +
+      '<form class="answer" id="wf" autocomplete="off"><label class="line" id="ansLine">' + ICON("pencil") +
+      '<input id="ans" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="24" placeholder="type the word here" aria-label="Type the word"></label>' +
+      '<button type="submit" class="btn primary" id="check">Check</button></form>' +
+      '<p class="fb lv-qkfb" id="fb" aria-live="polite"></p><div class="lv-qkshow" id="qkShow" hidden></div>' +
+      '<footer class="pg-foot"><button type="button" class="btn quiet lv-qkno" id="qkNo">I do not know it</button><span class="grow"></span>' +
+      '<button type="button" class="btn primary" id="go" hidden>Next' + ICON("arrow") + "</button></footer>");
+    $("hear").onclick = () => W.speak(k);
+    $("qkNo").addEventListener("mousedown", e => e.preventDefault());
+    $("qkNo").onclick = () => checkQuick("", true);
+    wireAnswer(v => checkQuick(v, false));
+    W.speak(k);
+    if (!q.quickSaid) { q.quickSaid = true; Guide.text("Quick check. Type the words you know.", "快速检查。把你会的词打出来。"); }
+  }
+  async function checkQuick(val, dunno) {
+    const it = cur(); if (!q || !it || it.part !== "quick" || it.done || q.busy) return;
+    const w = it.w, a = dunno ? "" : norm(val); if (!dunno && !a) return;
+    const right = !dunno && a === W.key(w.word), qq = q;
+    it.done = true; q.busy = true;
+    $("ans").readOnly = true; $("ans").placeholder = ""; $("check").disabled = true; $("qkNo").hidden = true;
+    // his: added by the database (waiting, level 0); a right one then moves to the last ladder step, back in 14 days
+    let row = null;
+    try { const r = await sb.rpc("add_quick_words", { p_words: [w.word] }); if (r && !r.error && Array.isArray(r.data) && r.data.length) row = r.data[0]; } catch (e) {}
+    if (row) {
+      if (!words.some(x => x.id === row.id)) words.push(row);
+      if (right) await saveWord(row, { level: W.TOP, due: W.addDays(today(), 14), introduced_on: today(), last_seen: today() });
+    }
+    await lvAttempt(row || w, "quick", "quick", a, right, row ? 0 : null, row ? (right ? W.TOP : 0) : null, 0);
+    await logEvent("quick", { word: w.word, right, answer: a });
+    q.quickGot = (q.quickGot || 0) + (right ? 1 : 0);
+    const list = qq.items.filter(x => x.part === "quick"), pv = qq.quickPrev || { n: 0, right: 0 };
+    if (list.every(x => x.done) && !qq.quickLogged) { qq.quickLogged = true; await logEvent("quick_done", { right: pv.right + (qq.quickGot || 0), of: pv.n + list.length }); }
+    if (q !== qq || cur() !== it) return;
+    q.busy = false;
+    const f = $("fb");
+    if (right) {
+      W.sfx("right"); $("ansLine").classList.add("good"); f.className = "fb good lv-qkfb"; f.innerHTML = ICON("check") + "Yes. You know it.";
+      Guide.right(w.word, "memory");
+      later(nextStep, 1400);
+      return;
+    }
+    W.sfx("notyet"); if (!dunno) $("ansLine").classList.add("bad");
+    f.className = "fb lv-qkfb"; f.textContent = "Not yet. You will learn it soon.";
+    const sh = $("qkShow"); sh.innerHTML = rescueWordHtml(hintGroups(w.word, w.chunks), true, dunno ? -1 : firstDiff(a, w.word)); sh.hidden = false;
+    W.speak(w.word, { slow: true });
+    // a double press of Enter (the second one lands on Next) must not skip the right spelling: Next waits a moment
+    const shownAt = Date.now();
+    $("go").hidden = false; $("go").onclick = () => { if (cur() === it && Date.now() - shownAt >= ansGuardMs()) nextStep(); }; $("go").focus();
+  }
+  // The line about what he knew, on the stop point after the quick check ("Quick check done."); never a count that reads 0.
+  function quickSummary() {
+    const pv = q.quickPrev || { right: 0 }, n = pv.right + (q.quickGot || 0);
+    return n ? (n === 1 ? "You know 1 of these." : "You know " + n + " of these.") : "You will learn them soon.";
+  }
+
+  // ---- the pair game (83-pairs.js, another part): after the quick check, before the first main word ----
+  // Its part defines pairsReady() and pairsStep(next); the step and its dot are there only when pairsReady() says so.
+  function pairsWanted() { try { return typeof pairsStep === "function" && typeof pairsReady === "function" && !!pairsReady(); } catch (e) { return false; } }
+  function renderPairs(it) {
+    if (typeof pairsStep !== "function") return nextStep();
+    const qq = q; let gone = false;
+    const next = () => { if (gone || q !== qq || cur() !== it) return; gone = true; nextStep(); };
+    try { pairsStep(next); } catch (e) { console.warn(e); next(); }
+  }
+
+  // ---- "One more time": at the end of the level, each word not right on its first try today in this level ----
+  // (old words, the main words in any step; never the quick check's words). He hears it and sees its Chinese meaning, and
+  // types it; the Hint button works as on every typing page. Nothing moves on the ladder: the word comes back tomorrow anyway.
+  // Tries are saved with kind "again" (the first) and "retry"; a word with an "again" try is not asked twice.
+  const AGAIN_FROM = ["review", "new", "test", "mixed", "game"];
+  async function againWords() {
+    if (!q || q.practice || !q.row || !q.row.id) return [];
+    let rows = [];
+    try { const r = await sb.from("attempts").select("*").eq("quest_id", q.row.id); rows = (r && r.data) || []; } catch (e) { return []; }
+    const since = new Date(today() + "T00:00:00").toISOString();
+    rows = rows.filter(a => !a.created_at || a.created_at >= since).sort((a, b) => (a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : 0));
+    const done = new Set(rows.filter(a => a.kind === "again").map(a => a.word_id)), ids = [];
+    rows.forEach(a => { if (AGAIN_FROM.indexOf(a.kind) >= 0 && a.correct === false && a.word_id && !done.has(a.word_id) && ids.indexOf(a.word_id) < 0) ids.push(a.word_id); });
+    return ids.map(id => byId(id)).filter(Boolean);
+  }
+  // Called by renderEnd before the end page: true when "One more time" now runs (the end page comes after it).
+  async function againFirst() {
+    if (!q || q.practice || q.againPlanned || !q.row || q.row.completed) return false;
+    q.againPlanned = true;
+    const qq = q, list = await againWords();
+    if (q !== qq || !list.length) return false;
+    const at = q.items.length;
+    q.items = q.items.concat(list.map(w => ({ w, type: "again", step: "again", part: "again" })));
+    q.i = at; q.step = null; q.tries = 0; q.peek = false; q.busy = false;
+    renderQ();
+    return true;
+  }
+  async function checkAgain(val) {
+    const it = cur(), w = it.w, a = norm(val);
+    if (!a || q.busy) return;
+    const right = a === W.key(w.word), first = !it.tried, qq = q, hn = lvHints();
+    it.tried = true; q.busy = true;
+    if (first) it.firstRight = right;
+    await lvAttempt(w, first ? "again" : "retry", "again", a, right, w.level, w.level, hn);   // the level stays as it is
+    if (right) await logEvent("again", { word: w.word, right: !!it.firstRight, hints: hn });
+    if (q !== qq || cur() !== it) return;
+    q.busy = false;
+    if (right) { showRight(w, first, "memory", first && !hn ? MEM_STAMP : null); later(nextStep, first ? 1400 : 1000); }
+    else showMiss(w, val);
+  }
+
   // Scoring step (type for new words, listen for old words and the island test): the first try sets the level; he keeps trying until it is right.
   async function checkSpelling(val) {
     const it = cur(), w = it.w, k = w.word, a = norm(val);
@@ -3673,15 +3938,16 @@
     renderQ();
   }
   // Between parts he can stop: the level waits, what he earned is kept, and tapping the level goes on from here.
-  const PART = { review: "Old words", "new": "New words", test: "Island test" };
+  const PART = { review: "Old words", "new": "New words", test: "Island test", quick: "Quick check", again: "One more time" };
   function renderPart() {
     const done = q.partDone, next = cur().part, ids = [];
-    q.items.slice(q.i).forEach(x => { if (x.part === next && x.w && ids.indexOf(x.w.id) < 0) ids.push(x.w.id); });
+    q.items.slice(q.i).forEach(x => { const id = x.w && (x.w.id || x.w.word); if (x.part === next && id && ids.indexOf(id) < 0) ids.push(id); });   // a quick-check word has no id yet
     if (next === "new") cur().news && cur().news.forEach(w => { if (ids.indexOf(w.id) < 0) ids.push(w.id); });
     if (!q.partLogged) { q.partLogged = true; logEvent("part_done", { day: q.day, part: done, minutes: Math.round((Date.now() - q.startedAt) / 6000) / 10 }); }
     qp('<header class="pg-head"><span class="eyebrow">Level ' + q.day + '</span></header><div class="lv-center">' +
       '<div class="stamp lv-ok"><span class="nozh">' + PART[done].toLowerCase() + "</span><b>" + ICON("check") + "</b><span>done</span></div>" +
-      '<h3 class="pg-title">' + PART[done] + " done.</h3><p class=\"do\"><b>Next:</b> " + PART[next] + " (" + ids.length + ")</p>" +
+      '<h3 class="pg-title">' + PART[done] + " done.</h3>" + (done === "quick" ? '<p class="do lv-qksum">' + quickSummary() + "</p>" : "") +
+      "<p class=\"do\"><b>Next:</b> " + PART[next] + " (" + ids.length + ")</p>" +
       '<footer class="pg-foot lv-mid"><button type="button" class="btn" id="stopHere">Stop here</button><button type="button" class="btn primary" id="goOn">Go on' + ICON("arrow") + "</button></footer>" +
       '<p class="hint">Stop now or later. Diamonds stay safe.</p></div>');
     W.sfx("pop");
@@ -3690,6 +3956,8 @@
     $("goOn").focus();
   }
   async function renderEnd() {
+    if (await againFirst()) return;   // "One more time" first, when a word was not right on its first try today
+    if (!q || q.ended) return;
     const ks = Object.keys(q.results), r = q.row, day = q.day;
     // first-try results of the scoring steps; for a real level they come from the quest row, so a stop and a new start keep them
     const ok = q.practice ? ks.filter(x => q.results[x]).length : (r.new_right || 0) + (r.reviews_right || 0) + (r.test_right || 0);
@@ -3775,8 +4043,15 @@
     "All correct!": "全部正确！", "Some words come back tomorrow.": "有些词明天会再来。", "All levels done!": "所有关卡都完成了！",
     "How focused were you today?": "你今天有多专心？", "1 = hard. 5 = very focused.": "1 = 很难专心。5 = 非常专心。",
     "Read today's story": "读今天的故事", "Go to your school words": "去做学校单词", "Open the mailbox": "打开信箱", "Back to the outpost": "回到营地", "Go to the shop": "去商店", "Back to the map": "回到地图",
-    "Practice done": "练习完成", "No diamonds. Tomorrow gets easier.": "没有钻石。明天会更容易。"
+    "Practice done": "练习完成", "No diamonds. Tomorrow gets easier.": "没有钻石。明天会更容易。",
+    "Quick check": "快速检查", "Quick check done.": "快速检查完成了。", "I do not know it": "我还不会这个词",
+    "Yes. You know it.": "对了。你会这个词。", "Not yet. You will learn it soon.": "还不会。你很快就会学到它。",
+    "You will learn them soon.": "你很快就会学到它们。", "You know 1 of these.": "这些词里你会 1 个。",
+    "One more time": "再来一次", "One more time done.": "再来一次完成了。"
   }, [
+    [/^Level (\d+) · Quick check$/, "第 $1 关 · 快速检查"], [/^Level (\d+) · One more time$/, "第 $1 关 · 再来一次"],
+    [/^Word (\d+) of (\d+)$/, "第 $1 个词，共 $2 个"], [/^You know (\d+) of these\.$/, "这些词里你会 $1 个。"],
+    [/^Next: (Quick check|One more time) \((\d+)\)$/, m => "下一部分：" + { "Quick check": "快速检查", "One more time": "再来一次" }[m[1]] + "（" + m[2] + "）"],
     [/^Level (\d+) · New word$/, "第 $1 关 · 新单词"], [/^Level (\d+) · Old word$/, "第 $1 关 · 旧单词"], [/^Level (\d+) · Last round$/, "第 $1 关 · 最后一轮"],
     [/^Level (\d+) · Island test$/, "第 $1 关 · 小岛测验"], [/^Level (\d+) · Work it out$/, "第 $1 关 · 动脑拼一拼"], [/^Practice · Level (\d+)$/, "练习 · 第 $1 关"], [/^Level (\d+) done$/, "第 $1 关完成"],
     [/^(\d+) of (\d+) beats? heard$/, "听了 $1 拍，一共 $2 拍"],
@@ -4893,19 +5168,70 @@
     });
   }
 
+  // ---- a game with the monster that was stopped (the tutor, 23 November) ----
+  // Once an island test is started, he goes nowhere else until it is finished: only the map opens (and the mailbox when a new
+  // letter comes), the walking view is locked, practice waits. 90-boot.js asks here in hdPlan and hdTaskDone (marked "raid
+  // hook"); the usual rule (until today's task is done only the next part's place opens) then does the rest. It holds the
+  // same with and without 3D, also on the next day, and also when it is his second level of the day.
+  function rdHeld() {
+    if (!student) return false;
+    const d = openDay(); if (!d || !isTest(d)) return false;
+    const r = questRow(d); return !!(r && !r.completed);
+  }
+
+  // ---- five diamonds for every finished game with the monster (the tutor, 23 November) ----
+  // Paid once per island test, the first time it is finished (night watch or the plain test page), as their own row in
+  // quests, as the school words pay theirs: { quest_day: null, kind: "watch:<level>", diamonds_earned: 5 } and no
+  // "completed" (that would count as a level played). The kind names the level, so a test is never paid twice, also after
+  // a reload between the last word and the end page. The level's own row and its end page reckoning stay as they were.
+  const RD_GEMS = 5, rdGemKind = d => "watch:" + d;
+  let rdPaying = {};
+  async function rdPay(day) {
+    if (!student || practising() || rdPaying[day] || quests.some(x => x.kind === rdGemKind(day))) return false;
+    rdPaying[day] = true;
+    try {
+      const { data, error } = await sb.from("quests").insert({ student_id: student.id, quest_day: null, kind: rdGemKind(day), started_at: new Date().toISOString(), diamonds_earned: RD_GEMS }).select().single();
+      if (error || !data) { banner("No internet? Your diamonds were not saved."); return false; }
+      quests.push(data); renderStats();
+      return true;
+    } catch (e) { return false; } finally { rdPaying[day] = false; }
+  }
+  const rdGemLine = watch => RD_GEMS + " more diamonds for the " + (watch ? "night watch." : "island test.");
+  // The level's own end page, then the two lines under its diamonds: the five more, and what opened in the shop.
+  // The level's end page, with the watch's two lines under its diamonds. When a word was not right on its first try today the
+  // level first asks it "One more time" (80-level.js againFirst) and comes back here afterwards: q.rdAgain keeps what the
+  // first arrival knew (was it his first finish, which prize, watch or plain test), so the second arrival draws the page.
+  function rdEnd(first, prize, watch) {
+    q.rdEnding = false; q.rdAgain = { first, prize, watch };
+    return Promise.resolve(renderEnd()).then(() => {
+      const g = qb.querySelector(".lv-gems"); if (!g || !first) return;
+      g.insertAdjacentHTML("afterend", '<p class="lv-gems rd-endmore">' + ICON("gem") + "<span>" + rdGemLine(watch) + "</span></p>" +
+        (prize ? '<p class="do rd-endnew">' + bdThing(prize.id) + "<span>New in the shop: " + W.esc(prize.name) + ".</span></p>" : ""));
+    });
+  }
   // After the tenth word: the sun comes up and a journal page with few words. "Go on" opens the level's own end page.
+  // The plain island test (no 3D) goes to its end page here too, after its five diamonds are paid.
   function raidMorning() {
-    if (!rd || rd.q !== q || !rdW() || q.practice || !isTest(q.day)) return false;
+    if (!q || q.practice || !q.row || !isTest(q.day)) return false;
+    if (!rd || rd.q !== q || !rdW()) {
+      if (q.rdEnding) return true;   // already on its way to the end page
+      const qq = q, again = q.rdAgain || null, first = again ? again.first : !q.row.completed, prize = again ? again.prize : (first ? prizeFor(q.day) : null);
+      q.rdEnding = true;
+      (first && !again ? rdPay(q.day) : Promise.resolve(false)).then(() => { if (q === qq) rdEnd(first, prize, again ? again.watch : !!rdW()); });
+      return true;
+    }
     rdMorning();
     return true;
   }
   function rdMorning() {
     const r = q.row, R = rdW();
     const home = r.test_right || 0, done = r.test_total || 0, gate = Object.keys(rd.out).filter(k => rd.out[k] === "gate").length;
+    const first = !r.completed, prize = first ? prizeFor(q.day) : null;   // a level finished before gives nothing new
     if (!rd.logged) {
       rd.logged = true;
       logEvent("watch", { sent_home: home, pushed_back: Math.max(0, done - home - gate), at_gate: gate });
       rdGiveFire(r.id);
+      if (first) rdPay(q.day);
       R.morning();
     }
     // the diamonds of this level, worked out as the end page works them out (it saves them a moment later)
@@ -4920,12 +5246,14 @@
       '<div class="rd-bar">' + rdPips("ink") + '<p class="zhk">' + (home ? home + " of " + rd.total + " sent home" : "A long night. More tomorrow.") + "</p></div>" +
       '<div class="rd-cols"><div>' +
       '<p class="rd-gem">' + ICON("gem") + '<b class="nozh">+' + earned + "</b></p>" +
+      (first ? '<p class="rd-more">' + ICON("gem") + '<span class="zhk">' + rdGemLine(true) + "</span></p>" : "") +
+      (prize ? '<p class="rd-more rd-prize">' + bdThing(prize.id) + '<span class="zhk">New in the shop: ' + W.esc(prize.name) + ".</span></p>" : "") +
       (back.length ? '<p class="eyebrow">Back tomorrow</p><div class="rd-words nozh">' + back.map(w => "<span>" + W.esc(w.word) + "</span>").join("") + "</div>" : "") +
       '</div><figure class="rd-keep"><i class="rd-kpic" role="img" aria-label="A watch-fire"></i><figcaption class="zhk">New: a watch-fire</figcaption></figure></div>' +
       '<footer class="pg-foot lv-mid"><button type="button" class="btn primary" id="rdGo">Go on' + ICON("arrow") + "</button></footer></div>");
     W.sfx("page");
     Guide.text("Good watch.", "守得好。");
-    $("rdGo").onclick = () => { rdStop(); renderEnd(); };
+    $("rdGo").onclick = () => { rdStop(); rdEnd(first, prize, true); };
     $("rdGo").focus();
   }
   // The watch-fire: one for every island test watched to the end, whatever the score. Owned, never sold; it waits in his
@@ -4941,8 +5269,10 @@
   }
 
   if (ZH) ZH.add({
-    "It waits": "它在等", "Morning": "天亮了", "Back tomorrow": "明天回来", "New: a watch-fire": "新东西：守夜火盆"
+    "It waits": "它在等", "Morning": "天亮了", "Back tomorrow": "明天回来", "New: a watch-fire": "新东西：守夜火盆",
+    "5 more diamonds for the night watch.": "守夜奖励：再加 5 颗钻石。", "5 more diamonds for the island test.": "小岛测验奖励：再加 5 颗钻石。"
   }, [
+    [/^New in the shop: (.+)\.$/, m => "商店里的新东西：" + ((PRIZES.find(p => p.name === m[1]) || {}).zh || m[1]) + "。"],
     [/^Your turn · Word (\d+) of (\d+)$/, "轮到你了 · 第 $1 个词，共 $2 个"], [/^Word (\d+) of (\d+)$/, "第 $1 个词，共 $2 个"],
     [/^(\d+) of (\d+) sent home\.?$/, "赶回家 $1 只，一共 $2 只"], [/^A long night\. More tomorrow\.$/, "漫长的一夜。明天再来。"]
   ]);
@@ -4954,6 +5284,11 @@
   // words of every earlier "picked" event are left out too (a word she deleted does not come back).
   // No picker.js: nothing happens (the level waits for the tutor, as before). No pool.js: the bank's fixed course.
   // Called by unlock() (90-boot.js) and after a finished level (80-level.js renderEnd), each marked "picker hook".
+  // The order of his main words (the tutor, 23 November; site/picker.js plan): his WAITING words first (his own rows:
+  // approved, level 0, no level yet; words he did not know in the quick check; oldest first), then the week's own words (pattern
+  // weeks: window.WW_FIRST.weeks, site/first.js), then long words with the week's pattern near his band, then any long words by
+  // his band. A waiting word is not added again: the same call gives it the level. Every 10th level is the island test: it gets no new words. "No new words for now" (student.pause_new,
+  // the tutor's switch): nothing is added (see the old words without a lesson below).
   const PK_FIRST = 4;
   let pkBusy = null;
   function pkNextLevel() { let d = 1; while (d <= maxDay() && dayDone(d)) d++; return d; }
@@ -4969,29 +5304,38 @@
     (r.data || []).forEach(w => { if (!words.some(x => x.id === w.id)) words.push(w); });
     return true;
   }
+  const pkPaused = () => !!(student && student.pause_new);
+  // his waiting words, oldest first (src: the rows of the words table this page has)
+  const pkWaiting = list => list.filter(w => w.approved && !w.level && w.quest_day == null)
+    .sort((a, b) => (a.created_at || "") < (b.created_at || "") ? -1 : (a.created_at || "") > (b.created_at || "") ? 1 : (a.sort_order || 0) - (b.sort_order || 0));
   async function pkRun() {
     const P = window.WW_PICKER;
-    if (!P || !student || practising()) return false;
+    if (!P || !student || practising() || pkPaused()) return false;
     const d = pkNextLevel();
-    if (d < PK_FIRST || d > LEVELS || dayState(d) === "locked") return false;
+    if (d < PK_FIRST || d > LEVELS || isTest(d) || dayState(d) === "locked") return false;
     if (dayWords(d).length >= 2) return false;
-    const [a, e] = await Promise.all([
+    const [a, e, mineR] = await Promise.all([
       sb.from("attempts").select("*").eq("student_id", student.id).in("kind", ["new", "review", "test", "probe"]),
-      sb.from("events").select("*").eq("student_id", student.id).in("type", ["rescue", "picked"])
+      sb.from("events").select("*").eq("student_id", student.id).in("type", ["rescue", "picked"]),
+      sb.from("words").select("*").eq("student_id", student.id)
     ]);
     if (a.error || e.error) return false;   // no internet: the level waits; the next start asks again (same answer)
     const avoid = [];
     (e.data || []).forEach(x => { if (x.type === "picked" && x.detail && Array.isArray(x.detail.words)) avoid.push(...x.detail.words); });
+    // every word that is his (a word the tutor set aside too: the database refuses those, so the plan leaves them out)
+    const all = () => words.concat(((mineR && !mineR.error && mineR.data) || []).filter(r => !words.some(x => x.id === r.id)));
     const plan = () => P.plan({ student: student.id, level: d, quests, attempts: a.data || [], events: e.data || [], words,
-      pool: window.WW_POOL || [], bank: window.WW_BANK || [], mine: words.map(w => w.word), avoid, have: dayWords(d).map(w => w.word),
-      need: 2 - dayWords(d).length, pics: window.WW_PICS || null, patterns: window.WW_PATTERNS || null, on: student.picker !== false });
+      pool: window.WW_POOL || [], bank: window.WW_BANK || [], mine: all().map(w => w.word), avoid, have: dayWords(d).map(w => w.word),
+      need: 2 - dayWords(d).length, pics: window.WW_PICS || null, patterns: window.WW_PATTERNS || null, on: student.picker !== false,
+      waiting: pkWaiting(words), weeks: (window.WW_FIRST && window.WW_FIRST.weeks) || [] });
     let pl = plan();
     if (!pl.words.length) return false;
     const added = [];
     const tryAdd = async list => {
       const r = await sb.rpc("add_pool_words", { p_day: d, p_words: list.map(w => w.word) });
       if (r.error || !Array.isArray(r.data)) return false;
-      r.data.forEach(w => { if (!words.some(x => x.id === w.id)) words.push(w); added.push(w); });
+      // a waiting word comes back as the same row with its level: the copy on this page is brought up to date
+      r.data.forEach(w => { const x = words.find(v => v.id === w.id); if (x) Object.assign(x, w); else words.push(w); added.push(w); });
       return true;
     };
     if (!(await tryAdd(pl.words))) {
@@ -5007,8 +5351,9 @@
       }
     }
     if (!added.length) return false;
-    const bandOf = {}; pl.words.concat(pl.spare).forEach(w => { bandOf[W.key(w.word)] = w.band; });
-    logEvent("picked", { level: d, band: pl.band, value: pl.value, words: added.map(w => w.word), bands: added.map(w => bandOf[W.key(w.word)] || null), reason: pl.reason, off: !!pl.off });
+    const bandOf = {}, fromOf = {}; pl.words.concat(pl.spare).forEach(w => { bandOf[W.key(w.word)] = w.band; fromOf[W.key(w.word)] = w.from || "band"; });
+    logEvent("picked", { level: d, band: pl.band, value: pl.value, words: added.map(w => w.word), bands: added.map(w => bandOf[W.key(w.word)] || null),
+      from: added.map(w => fromOf[W.key(w.word)] || "band"), reason: pl.reason, off: !!pl.off });
     return true;
   }
   // A word with no picture yet (most words of the pool) shows its Chinese meaning in the picture's frame, so the frame is
@@ -5026,6 +5371,52 @@
   }
   // The one new line he can read: the label over a picked word's rule when it is not his island's rule (ruleHtml, 05-kit.js).
   if (ZH) ZH.add({ "Spelling rule": "拼写规则" });
+
+  // ============ "No new words for now" (students.pause_new, the tutor's switch on her page) ============
+  // While it is on: nothing is added (pkRun), no level he has not started opens (dayState "paused", 00-core.js), and his old
+  // words that are due can still be done, WITHOUT a lesson: a quests row with no level (kind "old", like the school rows), so
+  // no level is finished and his next level stays exactly where it was. The old words move on the ladder as in a level
+  // (80-level.js checkSpelling) and count toward today's limit (checksToday); a right first try pays one diamond as usual.
+  // The map's slip for the waiting level carries the button (40-map.js); the end page is pkOldEnd (two lines in 80-level.js
+  // marked "pause hook").
+  const PK_PAUSE_LINE = "No new words today. Old words only.";
+  function pkOldRow() { const t = today(); return quests.find(x => x.kind === "old" && x.quest_day == null && x.started_at && W.dkey(new Date(x.started_at)) === t) || null; }
+  async function pkOldStart() {
+    const due = dueReviews(); if (!due.length) return;
+    let row = pkOldRow();
+    if (!row) {
+      const { data, error } = await sb.from("quests").insert({ student_id: student.id, quest_day: null, kind: "old", reviews_due: due.length }).select().single();
+      if (error) { banner("Could not start. Check the internet and reload."); return; }
+      row = data; quests.push(row);
+    }
+    const items = [];
+    due.forEach(w => items.push({ w, type: "review", step: "listen", part: "review" }, { w, type: "review", step: "reveal", part: "review" }));
+    q = { day: pkNextLevel(), row, items, i: 0, results: {}, tries: 0, startedAt: Date.now(), mixSkip: new Set(), mixPaid: new Set(), oldOnly: true, stages: ["review"] };
+    logEvent("old_start", { reviews: due.length });
+    $("qTitle").innerHTML = "Old words";
+    Guide.text(PK_PAUSE_LINE, "今天没有新单词。只复习旧单词。");
+    renderQ();
+  }
+  function pkOldEnd() {
+    const r = q.row, ok = r.reviews_right || 0, total = ok + (r.reviews_wrong || 0), got = r.diamonds_earned || 0;
+    logEvent("old_done", { right: ok, total, minutes: Math.round((Date.now() - q.startedAt) / 6000) / 10, diamonds: got });
+    q = { ended: true };
+    qp('<header class="pg-head"><span class="eyebrow">Old words</span></header><div class="lv-end">' +
+      '<div class="stamp lv-ok"><span class="nozh">old words</span><b>' + ICON("check") + "</b><span>done</span></div>" +
+      '<h3 class="pg-title">Old words done.</h3>' +
+      (got ? '<p class="lv-gems">' + ICON("gem") + "<span>You earned " + got + (got === 1 ? " diamond." : " diamonds.") + "</span></p>" : "") +
+      (ok ? '<p class="do">First try right: <b>' + ok + " of " + total + "</b></p>" : "") +   // never a score that reads 0
+      '<div class="lv-hints"><p class="hint">' + PK_PAUSE_LINE + '</p><p class="hint">Some words come back tomorrow.</p></div>' +
+      '<footer class="pg-foot lv-mid"><button type="button" class="btn primary" id="toWorld">' + ICON("home") + "Back to the outpost</button>" +
+      '<button type="button" class="btn" id="toPath">' + ICON("map") + "Back to the map</button></footer></div>");
+    W.sfx("pop");
+    $("toWorld").onclick = () => { q = null; showPage("world"); };
+    $("toPath").onclick = () => { q = null; renderPath(); };
+    renderStats();
+    return true;
+  }
+  if (ZH) ZH.add({ "No new words today. Old words only.": "今天没有新单词。只复习旧单词。", "Do your old words": "复习旧单词", "Old words": "旧单词",
+    "Your old words are done.": "你的旧单词做完了。" });
   // ============ tester shortcuts (the test version only) ============
   // The tutor asked for a way to reach things without playing up to them ("I don't want to click all the way to level 10").
   // These menu items exist only where the stand-in database runs (window.WW_DEMO), never on the real website.
@@ -5192,10 +5583,12 @@
   function hdPlan() {
     if (!student || !todaySession) return { parts: [], next: null, wait: true };
     const d = openDay(), due = dueReviews().length, any = doneToday() > 0, fresh = d ? dayWords(d).filter(w => w.level === 0).length : 0;
+    // "No new words for now" (the tutor's switch): no New words part; Old words are still today's part, done without a lesson
+    const paused = !!student.pause_new && !d;
     const parts = [
       { key: "mail", go: "mail", done: ritualDone(), n: "", label: "Mail" },
-      { key: "old", go: "chest", done: !due || !d, n: due, label: "Old words", skip: !(due && d) && !checksToday() },
-      { key: "new", go: "chest", done: any || !d, n: fresh || (d ? dayWords(d).length : 0), label: "New words" }
+      { key: "old", go: "chest", done: !due || (!d && !paused), n: due, label: "Old words", skip: !(due && (d || paused)) && !checksToday() },
+      { key: "new", go: "chest", done: (any && !(typeof rdHeld === "function" && rdHeld())) || !d, n: fresh || (d ? dayWords(d).length : 0), label: "New words", skip: paused }   // raid hook: a monster game that was stopped holds the day (86-raid.js rdHeld)
     ].filter(p => !p.skip);
     const school = typeof schoolPart === "function" ? schoolPart() : null;
     if (school) parts.push(Object.assign({ key: "school", go: "tower" }, school));
@@ -5214,6 +5607,8 @@
     const pl = hdPlan();
     if (!ritualDone() || pl.wait) return false;
     if (doneToday() === 0 && openDay()) return false;
+    if (typeof rdHeld === "function" && rdHeld()) return false;   // raid hook: stopped in the monster game: nothing else opens until it is finished
+    if (student.pause_new && pl.parts.some(p => p.key === "old" && !p.done)) return false;   // "No new words for now": his old words are the task
     return pl.parts.every(p => (p.key !== "school" && p.key !== "story") || p.done);
   }
   // The lock follows the task: the 3D world stops taps on the ground and the arrow keys (WW3D.walkLock); the plate, the dock,
