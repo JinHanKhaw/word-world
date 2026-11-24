@@ -904,7 +904,8 @@ body[data-hd-open="build"] #w3open:not([data-spot="build"]){opacity:.6;filter:sa
 .bd-price{display:inline-flex;align-items:center;gap:calc(var(--u)*3);font-size:calc(var(--u)*16);font-weight:700;color:var(--ink)}
 .bd-price .ic{font-size:calc(var(--u)*15)}
 .bd-own{margin:0 0 calc(var(--u)*4);font-size:calc(var(--u)*12.5);font-weight:600;color:var(--ink-2)}
-.bd-tag .buy{margin-top:auto;min-height:calc(var(--u)*30);padding:0 calc(var(--u)*12);font-size:calc(var(--u)*14)}
+.bd-tag .buy{position:relative;margin-top:auto;min-height:calc(var(--u)*30);padding:0 calc(var(--u)*12);font-size:calc(var(--u)*14)}
+.bd-tag .buy::before{content:"";position:absolute;inset:calc(var(--u)*-11) calc(var(--u)*-4) calc(var(--u)*-5)}   /* the tap area: 46 high (11 above, 5 below: the tag itself ends 5 under the button and cuts what is outside it); measured by qa/shop-taps.js */
 .bd-tag .buy[hidden]{display:none}
 .bd-need:empty{display:none}
 .bd-pack .bd-own{white-space:nowrap}
@@ -963,7 +964,6 @@ body[data-hd-open="build"] #w3open:not([data-spot="build"]){opacity:.6;filter:sa
 .bd-prize .bd-need{min-height:0;margin:auto 0 0}
 .bd-prize .bd-own{margin:0}
 .bd-prize .buy{position:relative;margin-top:auto}
-.bd-prize .buy::before{content:"";position:absolute;inset:calc(var(--u)*-7) calc(var(--u)*-4)}   /* the tap area: 44 at least */
 #shop:has(.bd-prizes) .bd-tags:not(.bd-prizes){padding-top:calc(var(--u)*10)}
 #shop:has(.bd-prizes) .bd-tag{padding-top:calc(var(--u)*19)}
 #shop:has(.bd-prizes) .bd-prize .bd-tag{padding-top:calc(var(--u)*14)}
@@ -1188,11 +1188,10 @@ mark.lv-cmark.lv-cspace{display:inline-block;min-width:calc(var(--u)*11)}
 .lv-cue.lv-qkcue{margin:calc(var(--u)*8) 0 calc(var(--u)*2);gap:calc(var(--u)*30)}
 .lv-cue.lv-qkcue .paint.lv-pic{width:calc(var(--u)*120)}
 .lv-cue.lv-qkcue .lv-zbig,.lv-cue.lv-agcue .lv-zbig{margin:0}
-.fb.lv-qkfb{margin:calc(var(--u)*10) 0 0;min-height:calc(var(--u)*24)}
 .lv-qkshow{margin:calc(var(--u)*4) 0 0}
 .lv-qkshow .lv-rword{margin:calc(var(--u)*2) 0 0}
-/* a quiet link to look at, a full-size place to tap (44 px also in a 1024 x 640 window) */
-.pg-foot .btn.quiet.lv-qkno{min-height:calc(var(--u)*56);min-width:calc(var(--u)*150);padding:0 calc(var(--u)*10);font-size:calc(var(--u)*15.5)}
+/* the quick check's Hint button looks as on every typing page; its tap area is 56 high (44 px also in a 1024 x 640 window) */
+.lv-qk~.lv-hintrow .lv-hintbtn::before{content:"";position:absolute;left:0;right:0;top:50%;height:calc(var(--u)*56);margin-top:calc(var(--u)*-28)}
 .lv-center .do.lv-qksum{margin:calc(var(--u)*4) 0 calc(var(--u)*2)}
 /* "One more time": the Chinese meaning and the sound button side by side */
 .lv-cue.lv-agcue{margin:calc(var(--u)*14) 0 calc(var(--u)*4)}

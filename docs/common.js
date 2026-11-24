@@ -138,7 +138,14 @@
   }
   // One more try that stayed silent. Two in a row, with the page reader at hand (claude.ai): the device voice counts as
   // silent from now on and the reader speaks (noVoice() above). Any start event sets the count back to none.
-  function devSilentUp() { if (++devSilent >= 2 && reader && reader.speak) { devDead = true; try { sessionStorage.setItem("ww.dev.dead", "1"); } catch (e) {} } }
+  // Without a page reader (the real website): after three silent tries in a row the device voice is left alone for the rest of
+  // the visit (24 November: on the tutor's Mac every line cost five seconds of waiting for a voice that never starts). What
+  // has a recording never comes here; what has none is then only shown.
+  // (Only where the page has recordings: without them the device voice is all there is, and it goes on being asked.)
+  function devSilentUp() {
+    const limit = reader && reader.speak ? 2 : (W.clipsOn && W.clipsOn() ? 3 : Infinity);
+    if (++devSilent >= limit) { devDead = true; try { sessionStorage.setItem("ww.dev.dead", "1"); } catch (e) {} }
+  }
   W.devStop = function () {
     devSeq++; const c = devCur; devCur = null;
     try { if ("speechSynthesis" in window) speechSynthesis.cancel(); } catch (e) {}
@@ -147,6 +154,13 @@
   W.devSay = function (parts, o) {
     o = o || {};
     const list = (Array.isArray(parts) ? parts : [parts]).map(p => (typeof p === "string" ? { text: p } : p)).filter(p => p && String(p.text || "").trim());
+    // a text that has a recording (a word of the game) is played from the recording, in every caller's place; when it
+    // cannot play, the same call goes on with the device's voice (o.noClip)
+    if (list.length === 1 && !o.noClip) {
+      const r1 = list[0].rate || o.rate || 1, clip = W.clipFor(list[0].text, o.voice || 0, r1 < 0.7 || W.voice().rate < 1);
+      if (clip) return W.clipSay(clip, { onstart: o.onstart, onend: o.onend, onfail: () => W.devSay(parts, Object.assign({}, o, { noClip: true })) });
+    }
+    W.clipStop();   // one voice at a time: a recording still playing is over when the device's voice begins
     let done = false, tStart = 0, tEnd = 0, cur = -1;   // cur: the try whose events count (-1 between two tries)
     const end = ok => { if (done) return; done = true; clearTimeout(tStart); clearTimeout(tEnd); if (devCur === me) { devCur = null; devKeep = []; } try { if (o.onend) o.onend(!!ok); } catch (e) {} };
     const me = { end, quiet: null, byReader: false };
@@ -163,7 +177,7 @@
       W.read(list.map(p => W.readerText(String(p.text))).join(list.length > 1 ? ". " : ""), { rate: (list[0].rate || o.rate || 1) * f, voice: READER_VOICES[(o.voice || 0) % READER_VOICES.length] }).then(ok => { if (mine === devSeq) end(!!ok); });
     };
     if (devDead && reader && reader.speak) { try { if ("speechSynthesis" in window) speechSynthesis.cancel(); } catch (e) {} readIt(); return stop; }
-    if (!W.devOk()) { end(false); return () => {}; }
+    if (!W.devOk() || devDead) { end(false); return () => {}; }   // devDead here: no reader, and the device voice stayed silent three times
     const s = speechSynthesis; devCur = me;
     let busy = false; try { busy = !!(s.speaking || s.pending); s.cancel(); } catch (e) {}
     const state = () => { const st = {}; try { st.speaking = !!s.speaking; st.pending = !!s.pending; st.paused = !!s.paused; st.voices = s.getVoices().length; } catch (e) {} return st; };
@@ -210,6 +224,141 @@
     };
     if (busy) setTimeout(() => run(0), 90); else run(0);
     return stop;
+  };
+  // ---- the recorded voice (24 November) ---------------------------------------------------------------------------
+  // Every word of the game has a recording in one British voice, so a word never depends on the laptop's own voice
+  // (the tutor's Mac never started speaking: 23 and 24 November, "speech" events with why "nostart").
+  // site/voice.js lists the recordings (window.WW_REC); they come as data in a few script files, site/voice/a-0.js ...
+  // (window.WW_CLIPS), made by tools/make_voice.py. Set a: the usual voice, each word at its normal speed and slowly
+  // (same pitch). Set s: the example sentences in that voice. Set b: a second voice, the words of the pair game. Set o:
+  // Orbit's fixed lines in the second voice. beats: for a word, where each of its beats lies in the recording
+  // (tools/make_beats.py), so a tapped beat is that piece of the word itself. Played through an audio context, like the
+  // game's other sounds.
+  //   W.clipFor(text, n, slow)  the recording for this text, or null. n: the speaker (odd: the second voice first, where it has the text)
+  //   W.clipSay(clip, o)        plays it. o.onstart(), o.onend(ok); o.onfail(why) is called INSTEAD of onend when it could
+  //                             not play, so the caller can go on with another voice. Returns a function that stops it.
+  //   W.clipsOn()               are there recordings at all?
+  // The files load one after another in the background from the first seconds on; a word asked for earlier loads its file first.
+  const clipKey = t => String(t == null ? "" : t).toLowerCase().replace(/[.!?,;:]+$/, "").trim().replace(/[^a-z0-9]+/g, "_");
+  const clipIdx = () => window.WW_REC || null;
+  W.clipsOn = () => { const V = clipIdx(); return !!(V && V.a && (window.AudioContext || window.webkitAudioContext)); };
+  W.clipFor = function (text, n, slow) {
+    if (!W.clipsOn()) return null;
+    const V = clipIdx(), k = clipKey(text); if (!k) return null;
+    const set = ((n | 0) % 2 === 1 ? ["b", "o", "a", "s"] : ["a", "s", "o", "b"]).find(x => V[x] && V[x][k]), e = set && V[set][k];
+    if (!e) return null;
+    const useSlow = !!slow && e.length > 2;
+    return { set, key: k, pack: set + "-" + e[0], at: useSlow ? 1 : 0, dur: useSlow ? e[2] : e[1], slow: useSlow };
+  };
+  // One beat of a word, cut from the word's slow recording: the recording with from / len (seconds), or null when the
+  // word has no beat times (then the caller plays the whole word).
+  W.clipBeat = function (word, chunk, at) {
+    try {
+      const V = clipIdx(); if (!W.clipsOn() || !V.beats || window.WW_BEATS === false) return null;
+      const k = clipKey(word), B = V.beats[k], e = V.a[k]; if (!B || !e || e.length < 3) return null;
+      const ck = clipKey(chunk), i = at != null && B.c[at] === ck ? at : B.c.indexOf(ck); if (i < 0 || !B.t[i]) return null;
+      const sc = e[2] / e[1], from = Math.max(0, B.t[i][0] * sc - 0.02), to = Math.min(e[2], B.t[i][1] * sc + 0.03);
+      if (!(to - from >= 0.08)) return null;
+      const c = W.clipFor(word, 0, true); if (!c) return null;
+      c.from = from; c.len = to - from; c.dur = c.len; c.beat = i;
+      return c;
+    } catch (e) { return null; }
+  };
+  const clipPacks = {}, clipBufs = {};
+  function clipPack(name) {
+    if (clipPacks[name]) return clipPacks[name];
+    return (clipPacks[name] = new Promise(res => {
+      const have = () => !!(window.WW_CLIPS && window.WW_CLIPS[name]);
+      if (have()) return res(true);
+      try {
+        const V = clipIdx(), el = document.createElement("script");
+        // the version mark keeps a browser from using an old copy after new recordings (the real website; the page on claude.ai
+        // loads its files by their plain names, as its 3D models do)
+        el.src = "voice/" + name + ".js" + (window.WORD_TOWER_CONFIG && V && V.v ? "?v=" + V.v : ""); el.async = true;
+        el.onload = () => res(have()); el.onerror = () => { delete clipPacks[name]; res(false); };
+        document.head.appendChild(el);
+      } catch (e) { delete clipPacks[name]; res(false); }
+    }));
+  }
+  // in the background: every file of set a, then set b, one at a time
+  (function clipWarm() {
+    try {
+      const start = () => {
+        const V = clipIdx(); if (!V || !V.a) return;
+        const names = [];
+        ["a", "b", "o", "s"].forEach(set => { let top = -1; Object.keys(V[set] || {}).forEach(k => { top = Math.max(top, V[set][k][0]); }); for (let i = 0; i <= top; i++) names.push(set + "-" + i); });
+        let i = 0; const next = () => { if (i < names.length) clipPack(names[i++]).then(() => setTimeout(next, 150)); };
+        next();
+      };
+      if (document.readyState === "complete") setTimeout(start, 1500); else window.addEventListener("load", () => setTimeout(start, 1500));
+    } catch (e) {}
+  })();
+  let clipCtx = null, clipSeq = 0, clipCur = null;
+  function clipContext() {
+    if (clipCtx) return clipCtx;
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null;
+    try { clipCtx = new AC(); } catch (e) { clipCtx = null; }
+    return clipCtx;
+  }
+  function clipBuffer(clip) {
+    const id = clip.pack + "/" + clip.key + "/" + clip.at;
+    if (clipBufs[id]) return clipBufs[id];
+    return (clipBufs[id] = clipPack(clip.pack).then(ok => {
+      const e = ok && window.WW_CLIPS[clip.pack][clip.key], b64 = e && e[clip.at], ctx = clipContext();
+      if (!b64 || !ctx) return null;
+      const bin = atob(b64), bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return new Promise(res => { try { const p = ctx.decodeAudioData(bytes.buffer, b => res(b), () => res(null)); if (p && p.catch) p.catch(() => res(null)); } catch (x) { res(null); } });
+    }).then(b => { if (!b) delete clipBufs[id]; return b; }, () => { delete clipBufs[id]; return null; }));
+  }
+  W.clipStop = function () {
+    clipSeq++; const c = clipCur; clipCur = null;
+    if (c) { try { if (c.src) { c.src.onended = null; c.src.stop(); } } catch (e) {} c.end(false); }
+  };
+  W.clipSay = function (clip, o) {
+    o = o || {};
+    // one voice at a time: whoever speaks now is stopped (the device's voice, the page reader, another recording)
+    try { W.devStop(); } catch (e) {}
+    W.clipStop();
+    const mine = ++clipSeq, t0 = Date.now(); let done = false, tEnd = 0, tStart = 0;
+    const me = { src: null, end: null };
+    const end = ok => { if (done) return; done = true; clearTimeout(tEnd); clearTimeout(tStart); if (clipCur === me) clipCur = null; try { if (o.onend) o.onend(!!ok); } catch (e) {} };
+    me.end = end; clipCur = me;
+    const fail = why => {
+      if (done || mine !== clipSeq) return;
+      devNote({ ok: false, clip: true, why, voice: "recorded " + clip.set, word: clip.key, ms: Date.now() - t0 });
+      if (typeof o.onfail === "function") { done = true; clearTimeout(tEnd); clearTimeout(tStart); if (clipCur === me) clipCur = null; try { o.onfail(why); } catch (e) {} }
+      else end(false);
+    };
+    tStart = setTimeout(() => fail("nostart"), 9000);   // the file did not come (a slow line gets its time), or the sound engine never woke up
+    clipBuffer(clip).then(buf => {
+      if (mine !== clipSeq || done) return;
+      const ctx = clipContext(); if (!buf || !ctx) return fail(buf ? "noengine" : "nofile");
+      const go = () => {
+        if (mine !== clipSeq || done) return;
+        if (ctx.state !== "running") return fail("asleep");
+        try {
+          const src = ctx.createBufferSource(), g = ctx.createGain(); g.gain.value = 1;
+          src.buffer = buf; src.connect(g); g.connect(ctx.destination);
+          src.onended = () => { if (mine === clipSeq) end(true); };
+          me.src = src;
+          let secs = buf.duration;
+          if (clip.len) {   // a piece of the recording (one beat): soft at both ends, so the cut is not heard as a click
+            const from = Math.min(Math.max(0, clip.from || 0), Math.max(0, buf.duration - 0.05)); secs = Math.min(clip.len, buf.duration - from);
+            const now = ctx.currentTime;
+            try { g.gain.setValueAtTime(0, now); g.gain.linearRampToValueAtTime(1, now + 0.012); g.gain.setValueAtTime(1, now + Math.max(0.02, secs - 0.03)); g.gain.linearRampToValueAtTime(0, now + secs); } catch (x) {}
+            src.start(0, from, secs);
+          } else src.start();
+          clearTimeout(tStart);
+          devNote({ ok: true, clip: true, voice: "recorded " + clip.set, ms: Date.now() - t0 });
+          tEnd = setTimeout(() => end(true), secs * 1000 + 600);   // no end event: the turn still ends
+          try { if (o.onstart) o.onstart(); } catch (e) {}
+        } catch (e) { fail("throw"); }
+      };
+      if (ctx.state === "running") return go();
+      let p; try { p = ctx.resume(); } catch (e) {}
+      if (p && p.then) p.then(go, () => fail("asleep")); else setTimeout(go, 60);
+    });
+    return () => { if (mine === clipSeq && !done) W.clipStop(); };
   };
   // ---- one voice, the word first ----------------------------------------------------------------------------------
   // Everything spoken shares one voice: a word he must hear (W.speak, W.speakChunks, the school words) and Orbit's line.
@@ -280,10 +429,20 @@
   const READER_PART = {}; "ing ed er est ly tion sion ture ment ness ful less ous".split(" ").forEach(x => { READER_PART[x] = "-" + x; });
   W.readerText = t => READER_PART[t] || t;
   // o.slow: for words he has no picture or sentence for (the school list): clearly slower, not dragged out.
+  W.lastWord = "";   // the last word said (a beat tapped afterwards belongs to it: W.speakChunks)
   W.speak = function (word, o) {
     const slow = !!(o && o.slow);
     try {
       const f = W.voice().rate, text = W.key(word);
+      // the recording first; the page reader or the device's voice only for a word without one, or when it cannot play
+      const clip = !(o && o.noClip) && W.clipFor(text, 0, slow || f < 1);
+      if (clip) {
+        W.lastWord = text;
+        const id = W.wordBegin(900 + clip.dur * 1000);
+        W.clipSay(clip, { onend: () => W.wordEnd(id), onfail: () => { W.wordEnd(id); W.speak(word, { slow, noClip: true }); } });
+        return true;
+      }
+      W.lastWord = text;
       if (reader && noVoice()) {
         const id = W.wordBegin(9000);
         W.read(W.readerText(text), { rate: (slow ? 0.75 : 0.88) * f }).then(() => W.wordEnd(id));
@@ -297,9 +456,25 @@
   };
   try { if ("speechSynthesis" in window) speechSynthesis.getVoices(); } catch (e) {}
   // Say the chunks one by one, slowly, so he hears the beats.
-  W.speakChunks = function (chunks) {
+  // With recordings: a beat is never recorded by itself (a voice says "ny" or "tion" alone in odd ways). All the beats of a
+  // word: the whole word, slowly. One beat: that piece of the word said last (the page's word), cut from its slow
+  // recording (W.clipBeat); where the word has no beat times, the whole word slowly. The page lights the beat he tapped.
+  W.speakChunks = function (chunks, o) {
     try {
       const f = W.voice().rate, parts = W.cleanChunks(chunks).split("-").filter(Boolean);
+      if (!(o && o.noClip)) {
+        // o.word: the word the beat belongs to (the callers that know it say so); o.i: which of its beats
+        const whole = parts.join(""), last = W.key((o && o.word) || W.lastWord || "");
+        let clip = null;
+        if (parts.length === 1 && last && last !== W.key(whole) && last.indexOf(W.key(whole)) >= 0) clip = W.clipBeat(last, whole, o && o.i) || W.clipFor(last, 0, true);
+        if (!clip) clip = W.clipFor(whole, 0, true);
+        if (clip) {
+          if (parts.length > 1) W.lastWord = W.key(whole);
+          const id = W.wordBegin(900 + clip.dur * 1000);
+          W.clipSay(clip, { onend: () => W.wordEnd(id), onfail: () => { W.wordEnd(id); W.speakChunks(chunks, { noClip: true }); } });
+          return true;
+        }
+      }
       if (reader && noVoice()) {
         const id = W.wordBegin(12000);
         W.read(parts.map((x, i) => (i > 0 && i === parts.length - 1 ? W.readerText(x) : x)).join(". ") + ".", { rate: f }).then(() => W.wordEnd(id));
