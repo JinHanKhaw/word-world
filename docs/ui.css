@@ -563,20 +563,45 @@ body[data-hd-open="build"] #w3open:not([data-spot="build"]){opacity:.6;filter:sa
 .gate .hd-teach{margin:calc(var(--u)*4) 0 0;font-size:calc(var(--u)*12.5);font-weight:400}
 .gate .pg-foot{justify-content:flex-end}
 
+/* today's parts at a glance (hdToday in 90-boot): small, under his name, only over the outpost */
+.hd-today{position:absolute;top:calc(var(--u)*64);left:calc(var(--u)*20);z-index:4;border-radius:calc(var(--u)*14);padding:calc(var(--u)*9) calc(var(--u)*14) calc(var(--u)*10) calc(var(--u)*12);pointer-events:none;min-width:calc(var(--u)*128)}
+.hd-today[hidden]{display:none}
+.hd-today .hd-th{margin:0 0 calc(var(--u)*5);font-size:calc(var(--u)*12.5);font-weight:700;letter-spacing:.14em;text-transform:uppercase;opacity:.75}
+.hd-today ol{list-style:none;margin:0;padding:0;display:grid;gap:calc(var(--u)*5)}
+.hd-today li{display:flex;align-items:center;gap:calc(var(--u)*8);font-size:calc(var(--u)*14);font-weight:600;line-height:1.15}
+.hd-today li i{flex:none;width:calc(var(--u)*17);height:calc(var(--u)*17);border-radius:50%;border:calc(var(--u)*1.6) solid currentColor;display:grid;place-items:center;opacity:.55}
+.hd-today li i .ic{font-size:calc(var(--u)*11);stroke-width:3}
+.hd-today .hd-done{opacity:.7}
+.hd-today .hd-done i{background:#3f7a4a;border-color:#3f7a4a;color:#fff;opacity:1}
+.hd-today .hd-now i{border-color:var(--ember,#e8691e);box-shadow:0 0 0 calc(var(--u)*3) rgba(232,105,30,.28);opacity:1}
+.hd-today .hd-now span{font-weight:800}
+.hd-today .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.hd-today .zhx{display:inline;margin:0 0 0 calc(var(--u)*5);font-size:calc(var(--u)*12.5);font-weight:500}
+.ui:has(>#questpage:not([hidden])) .hd-today,.ui:has(>#panel:not([hidden])) .hd-today,.ui:has(>#full:not([hidden])) .hd-today,.ui:has(>#gate:not([hidden])) .hd-today{display:none}
+
 /* ---- 36-sleep.css ---- */
 /* The outpost asleep (owner: sleep team). Built on the kit's .glass; this file adds the free-play pill and the night veil. */
 
-/* the free-play pill: small calm glass under the counters at the top right, whole minutes only.
+/* the free-play pill: small calm glass under the counters at the top right, minutes and seconds ("Free play 9:59").
    (Not near the dock: the "Open" button and the building bar's "Done" live there.) */
 .sl-pill{position:absolute;right:calc(var(--u)*16);top:calc(var(--u)*60);z-index:2;display:flex;align-items:center;gap:calc(var(--u)*8);height:calc(var(--u)*34);padding:0 calc(var(--u)*16) 0 calc(var(--u)*12);font-family:var(--f-body);font-size:calc(var(--u)*14);letter-spacing:.02em;white-space:nowrap;pointer-events:none;transition:opacity .6s ease}
 .sl-pill[hidden]{display:none}
 .sl-pill .ic{width:calc(var(--u)*20);height:calc(var(--u)*20);fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;color:var(--glow)}
 /* with 中文 on, its Chinese line follows the English on the same line, as on his plate (it showed the Chinese alone before) */
 .sl-pill .zhx{display:inline;margin:0 0 0 calc(var(--u)*8);font-size:calc(var(--u)*13.5)}
-/* near the end the sun icon turns to dusk; nothing flashes, nothing counts seconds */
+/* the time: digits of one width, a fixed width, so the pill never jumps while the seconds change */
+.sl-pill .sl-time{display:inline-block;min-width:4ch;margin-left:calc(var(--u)*4);text-align:right;font-size:inherit;font-weight:700;font-variant-numeric:tabular-nums lining-nums;font-feature-settings:"tnum" 1,"lnum" 1}
+.sl-pill .sl-time.w5{min-width:5ch}
+/* near the end the sun icon turns to dusk; nothing flashes. In the last minute the time stays as bright and as large as before;
+   only the glass gets a dusk rim, so he sees the end coming without a warning colour */
 .sl-pill.sl-low .ic{color:#b9c4ff}
-/* over the shop and plot page it keeps the same place */
-.sl-pill.sl-onpage{position:fixed;top:calc(var(--u)*60);right:calc(var(--u)*16)}
+.sl-pill.sl-last{box-shadow:0 0 0 calc(var(--u)*2) rgba(185,196,255,.55),0 calc(var(--u)*4) calc(var(--u)*14) rgba(0,0,0,.25)}
+/* on the shop and plot page it sits in the page's head row, beside "Back to the outpost": a quiet chip on the paper */
+.sl-pill.sl-onpage{position:static;height:calc(var(--u)*32);padding:0 calc(var(--u)*12) 0 calc(var(--u)*10);background:rgba(255,253,246,.7);color:var(--ink);border:calc(var(--u)*1.2) solid var(--rule);box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;font-size:calc(var(--u)*14)}
+.sl-pill.sl-onpage .ic{color:var(--ember)}
+.sl-pill.sl-onpage .zhx{color:var(--ink-3)}
+.sl-pill.sl-onpage.sl-low .ic{color:#5a63a8}
+.sl-pill.sl-onpage.sl-last{box-shadow:0 0 0 calc(var(--u)*2) rgba(90,99,168,.35)}
 
 /* the night: a dusk-blue veil over the world (3D canvas or still picture), under the place tags and the interface */
 .sl-night{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:0;transition:opacity .4s ease;
@@ -695,10 +720,16 @@ body[data-hd-open="build"] #w3open:not([data-spot="build"]){opacity:.6;filter:sa
 .ht-tab:hover{color:var(--ink)}
 .ht-tab.on{background:var(--paper);color:var(--ink);border-color:var(--ink-3);border-bottom-color:var(--paper);box-shadow:inset 0 calc(var(--u)*3) 0 var(--ember);cursor:default}
 .ht-tab:focus-visible,.ht-card:focus-visible,.ht-page:focus-visible{outline:calc(var(--u)*2) solid var(--glow);outline-offset:calc(var(--u)*3)}
-.ht-tab .zhx{display:inline;margin-left:calc(var(--u)*6);font-size:.8em}
+.ht-tab .zhx{display:inline;margin-left:calc(var(--u)*6);font-size:calc(var(--u)*12.5)}
+/* every Chinese line in the hut and on its story page: never under calc(var(--u)*12.5) (the kit's .zhx is .94em, which goes under it on
+   12.5u-13u English lines) */
+.ht-hut .zhx,.ht-storypage .zhx{font-size:max(.94em,calc(var(--u)*12.5))}
 
 /* the three counts */
 .ht-counts{display:grid;grid-template-columns:repeat(3,1fr);gap:calc(var(--u)*12);margin:calc(var(--u)*16) 0 0}
+.ht-counts.n0{display:none}
+.ht-counts.n2{grid-template-columns:repeat(2,1fr)}
+.ht-counts.n1{grid-template-columns:minmax(0,1fr);max-width:33%}
 .ht-count{display:flex;align-items:center;gap:calc(var(--u)*11);padding:calc(var(--u)*9) calc(var(--u)*15);border:calc(var(--u)*1.2) solid var(--rule);border-radius:calc(var(--u)*7);background:rgba(255,253,246,.55)}
 .ht-count b{font-family:var(--f-body);font-weight:700;font-size:calc(var(--u)*30);line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
 .ht-count span{font-size:calc(var(--u)*14.5);line-height:1.2;color:var(--ink-2);font-weight:600}
@@ -787,6 +818,7 @@ body[data-hd-open="build"] #w3open:not([data-spot="build"]){opacity:.6;filter:sa
 .ht-n{font-family:var(--f-body);font-weight:600;font-size:.86em;letter-spacing:0}
 #modal.ht-modal{background:radial-gradient(120% 90% at 50% 45%,rgba(30,12,30,.30),rgba(24,10,26,.62))}
 #panel .page:has(.ht-hut){max-height:calc(100vh - calc(var(--u)*190))}
+.ht-page .ht-ptitle .zhx{display:block;margin-top:calc(var(--u)*2);font-size:calc(var(--u)*13);letter-spacing:0}
 
 /* ---- 70-build.css ---- */
 /* My place (part 70-build): the plot as a plan in his journal, and the shop of paper price tags. Prefix: bd- */
@@ -909,7 +941,8 @@ body[data-hd-open="build"] #w3open:not([data-spot="build"]){opacity:.6;filter:sa
 .bd-tag .buy[hidden]{display:none}
 .bd-need:empty{display:none}
 .bd-pack .bd-own{white-space:nowrap}
-.bd-pack .bd-own .zhx{display:inline;margin:0 0 0 calc(var(--u)*4)}
+/* "You have 300" with its Chinese on one line ran out of the tag at 1024 x 640 (个 cut, tester 2): the Chinese goes under it */
+.bd-pack .bd-own .zhx{display:block;margin:calc(var(--u)*1) 0 0}
 .bd-tag .buy[hidden]+.bd-need{margin-top:auto;min-height:0}
 .bd-tag .buy .zhx{display:inline;margin:0 0 0 calc(var(--u)*4)}
 .bd-need{min-height:calc(var(--u)*28);margin:calc(var(--u)*4) 0 0;font-size:calc(var(--u)*12.5);font-weight:700;color:var(--rust);line-height:1.25}
@@ -970,6 +1003,12 @@ body[data-hd-open="build"] #w3open:not([data-spot="build"]){opacity:.6;filter:sa
 #shop:has(.bd-prizes) .bd-mats{margin-top:calc(var(--u)*4)}
 /* a small window or 中文 on: the page scrolls rather than cut the last row */
 #buildpage .page:has(#shopTab:not([hidden])){overflow-y:auto;scrollbar-width:thin}
+
+/* tester 2, 25 November, at 1024 x 640: on this page the strip "Today" (90-boot hdToday) lay over the page's top left
+   corner; it belongs to the walking view only (as over the map, the hut and the story), so it rests while this page is open */
+.ui:has(#buildpage:not([hidden])) .hd-today{display:none}
+/* every Chinese line on this page: never under calc(var(--u)*12.5) (the kit's .zhx is .94em of a 12.5u-13u English line) */
+#buildpage .zhx{font-size:max(.94em,calc(var(--u)*12.5))}
 
 /* ---- 72-build3d.css ---- */
 /* Building on the whole island (part 72-build3d): the glass bar at the bottom. Prefix: b3- */
@@ -1304,6 +1343,9 @@ mark.lv-cmark.lv-cspace{display:inline-block;min-width:calc(var(--u)*11)}
 .sc-page .pg-foot .btn{padding:0 calc(var(--u)*15);gap:calc(var(--u)*8)}
 .sc-page .pg-foot{gap:calc(var(--u)*10)}
 
+/* every Chinese line on the school pages: never under calc(var(--u)*12.5) (the kit's .zhx is .94em of a 12.5u-13u English line; tester 2) */
+.sc-page .zhx{font-size:max(.94em,calc(var(--u)*12.5))}
+
 /* ---- 83-pairs.css ---- */
 /* "Which word did you hear?" (src/js/83-pairs.js): the sound button, two big word buttons, one feedback line. Prefix pr-. */
 .pr-play{display:flex;flex-direction:column;align-items:center;gap:calc(var(--u)*16);margin:calc(var(--u)*16) 0 calc(var(--u)*2)}
@@ -1473,3 +1515,12 @@ body.rd-on:not(.rd-morn) #guide .gd-say,body.rd-on:not(.rd-morn) #guide .say{max
 /* tester shortcuts in the menu (the test version only; part 88-tester) */
 .menulist .ts-head{margin:calc(var(--u)*8) 0 calc(var(--u)*2);padding:calc(var(--u)*8) calc(var(--u)*12) calc(var(--u)*2);border-top:calc(var(--u)*1) solid var(--glass-line);font-family:var(--f-display);font-size:calc(var(--u)*12.5);letter-spacing:.12em;text-transform:uppercase;color:var(--glow)}
 .menulist{max-height:calc(100vh - calc(var(--u)*80));overflow:auto}
+
+/* the tester's "Go to level" row */
+.ts-level{display:flex;align-items:center;gap:calc(var(--u)*8);padding:calc(var(--u)*6) calc(var(--u)*12) calc(var(--u)*8)}
+.ts-level .ts-lv{display:flex;align-items:center;gap:calc(var(--u)*8);font-size:calc(var(--u)*14);font-weight:600;flex:1;white-space:nowrap}
+.ts-level input{width:calc(var(--u)*58);height:calc(var(--u)*36);font:inherit;font-size:calc(var(--u)*15);text-align:center;border-radius:calc(var(--u)*8);border:calc(var(--u)*1.4) solid rgba(255,255,255,.45);background:rgba(255,255,255,.14);color:inherit}
+.ts-level .ts-go{width:auto;min-width:calc(var(--u)*54);justify-content:center}
+
+/* the mark of the test world on the real website (88-tester.js) */
+.ts-world{position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:60;padding:calc(var(--u)*4) calc(var(--u)*14) calc(var(--u)*5);font-size:calc(var(--u)*12.5);font-weight:700;letter-spacing:.02em;background:#b84a10;color:#fff7ec;border-radius:0 0 calc(var(--u)*9) calc(var(--u)*9);pointer-events:none;white-space:nowrap}

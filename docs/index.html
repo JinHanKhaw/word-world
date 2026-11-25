@@ -4,27 +4,27 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Word World</title>
-<link rel="stylesheet" href="fonts.css?v=202611241402">
-<link rel="stylesheet" href="ui.css?v=202611241402">
+<link rel="stylesheet" href="fonts.css?v=202611251430">
+<link rel="stylesheet" href="ui.css?v=202611251430">
 <!-- Backend. On claude.ai these two files stand in for the database (progress stays in this browser).
      On the real site, load supabase-js and config.js here instead. -->
-<script src="bank.js?v=202611241402"></script>
-<script src="probes.js?v=202611241402"></script>
-<script src="rude.js?v=202611241402"></script>
-<script src="vendor/supabase.js?v=202611241402"></script>
-<script src="config.js?v=202611241402"></script>
-<script src="common.js?v=202611241402"></script>
-<script src="zh.js?v=202611241402"></script>
-<script src="audio.js?v=202611241402"></script>
-<script src="patterns.js?v=202611241402"></script>
-<script src="pool.js?v=202611241402"></script>
-<script src="first.js?v=202611241402"></script>
-<script src="picker.js?v=202611241402"></script>
-<script src="img/words/pics.js?v=202611241402"></script>
-<script src="img/school/pics.js?v=202611241402"></script>
-<script src="story.js?v=202611241402"></script>
-<script src="pairs.js?v=202611241402"></script>
-<script src="voice.js?v=202611241402"></script>
+<script src="bank.js?v=202611251430"></script>
+<script src="probes.js?v=202611251430"></script>
+<script src="rude.js?v=202611251430"></script>
+<script src="vendor/supabase.js?v=202611251430"></script>
+<script src="config.js?v=202611251430"></script>
+<script src="common.js?v=202611251430"></script>
+<script src="zh.js?v=202611251430"></script>
+<script src="audio.js?v=202611251430"></script>
+<script src="patterns.js?v=202611251430"></script>
+<script src="pool.js?v=202611251430"></script>
+<script src="first.js?v=202611251430"></script>
+<script src="picker.js?v=202611251430"></script>
+<script src="img/words/pics.js?v=202611251430"></script>
+<script src="img/school/pics.js?v=202611251430"></script>
+<script src="story.js?v=202611251430"></script>
+<script src="pairs.js?v=202611251430"></script>
+<script src="voice.js?v=202611251430"></script>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -77,6 +77,8 @@
       <details class="menu" id="menu" hidden><summary class="rbtn glass" aria-label="Menu"><svg class="ic" aria-hidden="true"><use href="#i-menu"/></svg></summary><div class="menulist glass" id="menuList"></div></details>
     </div>
   </header>
+  <!-- today's parts at a glance: done, now, still to come (90-boot hdToday; asked for on 25 November) -->
+  <aside class="hd-today glass" id="hdToday" aria-label="Today" hidden></aside>
   <div id="banner" class="banner" hidden></div>
 
   <!-- the door: pairing code or PIN (part: 90-boot) -->
@@ -132,17 +134,17 @@
   <div id="full" class="modal full" hidden><div class="journal"><div class="cover"></div><article class="page paper modal-card"><button type="button" class="pgclose" id="fullClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button><div id="fullBody"></div></article></div></div>
 </div>
 
-<script src="vendor/three.min.js?v=202611241402"></script>
-<script src="vendor/GLTFLoader.js?v=202611241402"></script>
-<script src="models/hero.js?v=202611241402"></script>
-<script src="models/heroidle.js?v=202611241402"></script>
-<script src="models/tower.js?v=202611241402"></script>
-<script src="models/pod.js?v=202611241402"></script>
-<script src="models/tree.js?v=202611241402"></script>
-<script src="models/watchfire.js?v=202611241402"></script><!-- night watch (raid team): the watch-fire he owns -->
-<script src="world3d.js?v=202611241402"></script>
-<script src="orbit3d.js?v=202611241402"></script>
-<script src="raid3d.js?v=202611241402"></script><!-- night watch (raid team): the island test as a watch at the gate -->
+<script src="vendor/three.min.js?v=202611251430"></script>
+<script src="vendor/GLTFLoader.js?v=202611251430"></script>
+<script src="models/hero.js?v=202611251430"></script>
+<script src="models/heroidle.js?v=202611251430"></script>
+<script src="models/tower.js?v=202611251430"></script>
+<script src="models/pod.js?v=202611251430"></script>
+<script src="models/tree.js?v=202611251430"></script>
+<script src="models/watchfire.js?v=202611251430"></script><!-- night watch (raid team): the watch-fire he owns -->
+<script src="world3d.js?v=202611251430"></script>
+<script src="orbit3d.js?v=202611251430"></script>
+<script src="raid3d.js?v=202611251430"></script><!-- night watch (raid team): the island test as a watch at the gate -->
 <script>
 (function () {
   const W = window.WT, $ = id => document.getElementById(id);
@@ -599,10 +601,20 @@
     [/^[^.]+\. Every letter is right\.$/, "Every letter is right."],
     [/^.+ is right\. Next one\.$/, "Right. Next one."],
     [/^Right\. .+, every letter\.$/, "Right. Every letter."],
-    [/^Level \d+ is done\. .+ in your hut\.$/, "The level is done."]
+    [/^Level \d+ is done\. .+ in your hut\.$/, "The level is done."],
+    // the island test and the school words (25 November): the line without its word or its count
+    [/^.+ hits\. The Murk rolls home\.$/, "It hits. The Murk rolls home."],
+    [/^.+ hits it aside\. Back tomorrow\.$/, "It hits it aside. Back tomorrow."],
+    [/^.+ hits\. It comes back tomorrow\.$/, "It hits. It comes back tomorrow."],
+    [/^Good throw\. \S+ sent home\.$/, "Good throw."],
+    [/^\S+ words? ready for school\. Well done!$/, "Ready for school. Well done!"],
+    [/^\S+ of \S+\. Well done!$/, "Well done!"]
   ];
   function gdSpoken(text) {
-    const t = String(text == null ? "" : text).replace(/^Hi, [^.]{1,40}\./, "Hi.");
+    let t = String(text == null ? "" : text).replace(/^Hi, [^.]{0,40}\./, "Hi.");
+    // the day's greeting shows its counts as words ("Old words: three."); its recordings are named with digits
+    // ("Hi. Old words: 3. New words: 2."). 25 November: without this line no greeting with a count ever found its recording.
+    if (/^Hi\. /.test(t)) t = t.replace(/(words: )([a-z]+)(?=\.)/g, (m, a, w) => { const i = GD_NUM.indexOf(w); return i >= 0 ? a + i : m; });
     for (const [re, say] of GD_SPOKEN) if (re.test(t)) return say;
     return t;
   }
@@ -644,6 +656,7 @@
       begin();
       let stop = null;
       stop = W.devSay([{ text, rate: 0.92 }], {
+        noClip: true,   // the recording was tried first (gdSayNow): here the device's own voice speaks
         onstart: () => { if (tok === gdToken) gdTalk(true); },
         onend: () => { if (tok === gdToken && gdUtter === stop) { gdUtter = null; gdTalk(false, tok); } }
       });
@@ -910,7 +923,7 @@
   const GD_VOICE_TEST = "Umbrella. Take your umbrella. Tap each beat.";
   // A short click first (the game's own sound), then the line (the device's voice): so "I hear the click but no voice"
   // and "I hear nothing at all" can be told apart. Afterwards the bubble says what to do when it stayed silent.
-  let gdVtT = 0;
+  let gdVtT = 0, gdVtDev = 0;
   function gdVoiceTest() {
     gdVoicePrefs();
     try { if (W.sfx) W.sfx("pop"); } catch (e) {}
@@ -920,6 +933,16 @@
     const said = rec ? W.speak("umbrella") : speakLine(GD_VOICE_TEST, "");
     clearTimeout(gdVtT); gdVtT = setTimeout(() => { try { gdShow({ key: "voice_test2", en: "No sound? Turn the sound up.", zh: "没有声音？把音量调大。" }, false); } catch (e) {} }, 7000);
     try { logEvent("voice_test", { voice: (W.voicePrefs && W.voicePrefs.name) || "", rate: (W.voicePrefs && W.voicePrefs.rate) || "normal" }); } catch (e) {}
+    // With recordings the laptop's own voice is still needed for a word the tutor typed herself. The test tries it too,
+    // after the recorded word, and keeps what happened ("voice_test_device": ok true or false), so that a laptop whose own
+    // voice never starts is known on the first day (25 November).
+    if (rec && W.devSay) {
+      clearTimeout(gdVtDev);
+      gdVtDev = setTimeout(() => {
+        let heard = false;
+        try { W.devSay([{ text: "Voice test.", rate: 0.9 }], { noClip: true, onstart: () => { heard = true; }, onend: () => { try { logEvent("voice_test_device", { ok: heard }); } catch (e) {} } }); } catch (e) {}
+      }, 2400);
+    }
     const menu = document.getElementById("menu"); if (menu) menu.open = false;
     return said;
   }
@@ -947,6 +970,7 @@
   function gdHutCount() { try { return words.filter(w => w.level > 0 || w.introduced_on).length; } catch (e) { return 0; } }
 
   let gdHold = 0, gdHoldT = 0; const GD_HINTS = { mail_first: 1, mail_new: 1, map_ready: 1, no_level: 1 };
+  const GD_WAIT_TEXT = /^Now (do your school words|read today's story)\b/;
   const GD_IMPL = {
     // A hint that arrives while the day's greeting is still being said waits its turn (added by core).
     say(key, vars) {
@@ -956,7 +980,17 @@
       if (key in GD_LEAD) gdLead(GD_LEAD[key]);   // the hints that send him somewhere: Orbit flies ahead
       return gdShow(L, true);
     },
-    text(en, zh) { return gdShow({ key: "", en: String(en || ""), zh: zh ? String(zh) : "" }, true); },
+    // The world's two "what next" lines wait for the day's greeting like the hints above (they used to cut it), and are
+    // dropped if he has left the walking view by then.
+    text(en, zh) {
+      const wait = gdHold - Date.now();
+      if (wait > 0 && GD_WAIT_TEXT.test(String(en || ""))) {
+        clearTimeout(gdHoldT);
+        gdHoldT = setTimeout(() => { const ww = document.getElementById("worldwrap"); if (!ww || !ww.hidden) GD_IMPL.text(en, zh); }, wait + 60);
+        return true;
+      }
+      return gdShow({ key: "", en: String(en || ""), zh: zh ? String(zh) : "" }, true);
+    },
     // shown in the bubble, not said: for a page whose own text is being read aloud (the sentence he copies)
     show(en, zh) { return gdShow({ key: "", en: String(en || ""), zh: zh ? String(zh) : "" }, false); },
     step(name, vars) {
@@ -1785,7 +1819,7 @@
   window.addEventListener("resize", () => { if (!$("worldwrap").hidden) { sizeCanvas(); drawWorld(); } });
 
   if (ZH) ZH.add({
-    "Mail": "信箱", "Map": "地图", "Hut": "小屋", "Build": "建造", "School": "学校单词", "Old words": "旧单词", "New words": "新单词",
+    "Today": "今天", "Story": "故事", "School words": "学校单词", "Mail": "信箱", "Map": "地图", "Hut": "小屋", "Build": "建造", "School": "学校单词", "Old words": "旧单词", "New words": "新单词",
     "of 5 days this week": "本周目标 5 天", "days this week": "天（本周）",
     "Open your mailbox first": "先打开你的信箱", "You have mail!": "你有信！",
     "Your map is ready. Go to the map table.": "你的地图准备好了。去地图桌。",
@@ -1833,10 +1867,11 @@
   // today, or when no level waits today. Then Orbit says good night, a dusk veil and stars come over the world, and the
   // shop and building rest until tomorrow. Learning never closes: the hut, the mailbox, the map, levels and school words stay open
   // at night. (Before today's task is done, only the place of the next part opens: hdShut in 30-world.js.)
-  // Nothing he built or bought is touched. The clock shows whole minutes only, never seconds.
+  // Nothing he built or bought is touched. The pill counts down in minutes and seconds ("Free play 9:59"; a tester asked for
+  // it, 25 November), one change a second while the page is seen; with the tab hidden nothing ticks (the clock stops there anyway).
   const SL_SAVE_EVERY = 15;                      // seconds between saves of the clock to today's session row
   const SL_WARN_AT = 120;                        // Orbit says "two more minutes" here
-  let slSess = null, slUsed = 0, slSaved = 0, slLast = 0, slWarned = false, slNightOn = false, slPillText = "", slBusy = false;
+  let slSess = null, slUsed = 0, slSaved = 0, slLast = 0, slWarned = false, slNightOn = false, slPillText = "", slBusy = false, slTimer = 0;
 
   const slLimit = () => { const s = Number(window.__playSeconds); return s > 0 ? s : ((student && Number(student.play_minutes)) || 10) * 60; };
   const slAsleep = () => !!(todaySession && todaySession.asleep_at);
@@ -1861,7 +1896,10 @@
     [SL_TWO]: "自由活动还有两分钟。",
     [SL_NIGHT]: "太阳下山了。晚安！你的地方很安全。明天再来吧。"
   };
-  if (ZH) ZH.add(SL_ZH, [[/^Free play: (\d+) min$/, "自由活动：$1 分钟"]]);
+  // The pill: "Free play" with the time in a <small> beside it (the Chinese line keys on "Free play" alone, so it is made
+  // once and stays while the seconds change: "Free play 9:59 自由活动").
+  SL_ZH["Free play"] = "自由活动";
+  if (ZH) ZH.add(SL_ZH);
 
   // The hook core calls first in openSpot(name). True means: stop here, Orbit has said why.
   function sleepGate(name) {
@@ -1878,8 +1916,8 @@
 
   // ---- the pill near the dock and the night veil (both made here, so no other file changes) ----
   const slPill = document.createElement("div");
-  slPill.className = "sl-pill glass nozh"; slPill.id = "slPill"; slPill.hidden = true; slPill.setAttribute("role", "status");
-  slPill.innerHTML = '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 17.5h17"/><path d="M7 17.5a5 5 0 0 1 10 0"/><path d="M12 6.5v2.2M5.6 9.6l1.5 1.5M18.4 9.6l-1.5 1.5"/></svg><span class="zhk" id="slPillText"></span>';
+  slPill.className = "sl-pill glass nozh"; slPill.id = "slPill"; slPill.hidden = true; slPill.setAttribute("role", "timer");
+  slPill.innerHTML = '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 17.5h17"/><path d="M7 17.5a5 5 0 0 1 10 0"/><path d="M12 6.5v2.2M5.6 9.6l1.5 1.5M18.4 9.6l-1.5 1.5"/></svg><span class="zhk" id="slPillText">Free play <small class="sl-time" id="slPillTime"></small></span>';
   { const app = $("app"); if (app) app.appendChild(slPill); }
   const slVeil = document.createElement("div");
   slVeil.className = "sl-night"; slVeil.id = "slNight"; slVeil.hidden = true; slVeil.setAttribute("aria-hidden", "true");
@@ -1895,14 +1933,27 @@
     else { slVeil.classList.remove("on"); slVeil.hidden = true; }
     document.body.classList.toggle("sl-asleep", on);
   }
+  // Minutes and seconds left: 9:59 ... 0:01. Rounded, not cut: the clock moves by about one second a tick from a whole
+  // number, so a tick a few milliseconds early or late shows the same second as it should (no 9:58 twice, no 9:57 skipped).
+  const slClock = left => { const s = Math.max(1, Math.round(left)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
   function slRenderPill() {
     const show = !!student && !!todaySession && slOpen() && !slAsleep() && slPlaying() && ritualDone();   // only where the clock runs
     if (slPill.hidden === show) slPill.hidden = !show;
-    slPill.classList.toggle("sl-onpage", slShown("buildpage"));
+    // On the shop and plot page the pill sits in the page's own head row, beside "Back to the outpost" (at 1024 x 640 the
+    // glass under the counters lay over the page's corner); back in the world it returns under the counters.
+    const onPage = slShown("buildpage"), head = onPage && $("bBack") && $("bBack").parentElement, home = $("app");
+    if (onPage && head && slPill.parentElement !== head) head.insertBefore(slPill, $("bBack"));
+    else if (!onPage && home && slPill.parentElement !== home) home.appendChild(slPill);
+    slPill.classList.toggle("sl-onpage", onPage);
     slPill.classList.toggle("sl-low", slLeft() <= SL_WARN_AT);
+    slPill.classList.toggle("sl-last", slLeft() <= 60);
     if (!show) return;
-    const t = "Free play: " + Math.max(1, Math.ceil(slLeft() / 60)) + " min";
-    if (t !== slPillText) { slPillText = t; $("slPillText").textContent = t; }
+    const t = slClock(slLeft()), tm = $("slPillTime");
+    if (t !== slPillText) {
+      slPillText = t;
+      if (tm.firstChild) tm.firstChild.nodeValue = t; else tm.textContent = t;
+      tm.classList.toggle("w5", slLimit() >= 600);        // room for 10:00 from the start, so the pill does not narrow at 9:59
+    }
   }
 
   // ---- the clock ----
@@ -1957,9 +2008,17 @@
     const mo = new MutationObserver(() => { slWatch(); slRenderPill(); });
     ["buildpage", "b3bar", "worldwrap"].forEach(id => { const e = $(id); if (e) mo.observe(e, { attributes: true, attributeFilter: ["hidden"] }); });
   }
-  document.addEventListener("visibilitychange", () => { slLast = 0; if (document.visibilityState === "hidden") slSave(true); });
+  // One tick a second while the page is seen; none while the tab is hidden (the clock does not run there, and a hidden
+  // page is not woken every second). Back in view: one tick at once, then every second again.
+  function slRun() {
+    const want = document.visibilityState !== "hidden";
+    if (want && !slTimer) { slTimer = setInterval(slTick, 1000); slTick(); }
+    else if (!want && slTimer) { clearInterval(slTimer); slTimer = 0; }
+  }
+  document.addEventListener("visibilitychange", () => { slLast = 0; if (document.visibilityState === "hidden") slSave(true); slRun(); });
   window.addEventListener("pagehide", () => slSave(true));
-  setInterval(slTick, 1000);
+  window.__slTicking = () => !!slTimer;               // for checks: is the second hand running?
+  slRun();
   // ---- the quest page: the sea chart. One painted chart holds all 50 levels on 5 islands (approved sample: chart.fragment.html) ----
   // renderPath() fills #pathWrap. The level markers keep the old hooks next to their own classes:
   // class "stone" + the day state ("done", "open", "locked", "empty") + "test" on every 10th level, and data-day="N".
@@ -2197,9 +2256,10 @@
   }
   function htWords() {
     const list = words.filter(INTRO), c = spellCounts();
-    const count = (n, label, cls, icon) => '<div class="ht-count' + (cls ? " " + cls : "") + '">' + (icon ? ICON(icon) : "") + "<b>" + n + '</b><span class="zhk">' + label + "</span></div>";
+    // a count that reads 0 is not shown at all (the rule: he never sees a score that can read 0)
+    const count = (n, label, cls, icon) => n <= 0 ? "" : '<div class="ht-count' + (cls ? " " + cls : "") + '">' + (icon ? ICON(icon) : "") + "<b>" + n + '</b><span class="zhk">' + label + "</span></div>";
     return '<div class="ht-pane">' +
-      '<div class="ht-counts">' + count(c.can, "Words I can spell now", "ht-can") + count(c.learning, "Still learning", "") + count(c.stars, "Star words", "ht-stars", "star") + "</div>" +
+      '<div class="ht-counts n' + [c.can, c.learning, c.stars].filter(x => x > 0).length + '">' + count(c.can, "Words I can spell now", "ht-can") + count(c.learning, "Still learning", "") + count(c.stars, "Star words", "ht-stars", "star") + "</div>" +
       (c.can === 0 && list.length ? '<p class="hint ht-zero">Spell a word again tomorrow and it moves up.</p>' : "") +
       (list.length ? '<p class="do ht-tip"><b>Tap</b> a card to turn it over.</p><div class="ht-album">' + list.map(htCard).join("") + "</div>"
         : '<p class="do ht-tip">No words yet. Finish your first level and they come here.</p>') + "</div>";
@@ -2209,7 +2269,7 @@
     if (!ns.length) return '<div class="ht-pane"><p class="do ht-tip">No story pages yet.</p></div>';
     const open = ns.filter(n => dayDone(n));
     return '<div class="ht-pane"><p class="do ht-tip">' + (open.length ? "<b>Tap</b> a page to read it." : "Finish level 1 to open the first page.") + '</p><ol class="ht-pages">' + ns.map(n => dayDone(n)
-      ? '<li><button type="button" class="ht-page" data-n="' + n + '"><span class="ht-num">' + n + '</span><span class="ht-ptitle nozh">' + storyNums(W.esc(S[n].title || "Page " + n)) + "</span>" + ICON("book") + "</button></li>"
+      ? '<li><button type="button" class="ht-page" data-n="' + n + '"><span class="ht-num">' + n + '</span><span class="ht-ptitle zhk">' + storyNums(W.esc(S[n].title || "Page " + n)) + "</span>" + ICON("book") + "</button></li>"
       : '<li><div class="ht-page closed"><span class="ht-num">' + ICON("lock") + '</span><span class="ht-ptitle zhk">Page ' + n + '</span><small class="zhk">Finish level ' + n + " to open it.</small></div></li>").join("") + "</ol></div>";
   }
   function openHut(tab) {
@@ -2253,6 +2313,16 @@
   // (site/story.js). A page belongs to its level by number only: it never uses, marks or waits for the level's words.
   const STORY_ZONE_ZH = { "Sunny Island": "阳光岛", "Jungle": "丛林", "Under the Sea": "海底", "Ice Cave": "冰洞", "Sky Castle": "天空城堡" };
   const STORY_PER_ZONE = 10;
+  // The page titles in standard Chinese (site/story.js has none; tester 2, 25 November: the title is a line he reads, on the
+  // page and in "My story", so it gets its Chinese line when 中文 is on). The names stay as they are.
+  const STORY_TITLE_ZH = {
+    "Ben and Orbit": "Ben 和 Orbit", "A box on the sand": "沙滩上的箱子", "A blue kite": "一只蓝色的风筝", "The kite flies": "风筝飞起来了",
+    "In a tree": "在树上", "Under the tree": "在树下", "Big yellow eyes": "黄色的大眼睛", "Hello, Murk": "你好，Murk", "A mango": "一个芒果",
+    "Home in the trees": "树上的家", "A long walk": "走了很远的路", "A pink shell": "一个粉色的贝壳", "Coconut juice": "椰子汁",
+    "Birds in the trees": "树上的鸟", "Hello, monkey": "你好，猴子", "A small lamp": "一盏小灯", "Ten Murks": "十个 Murk",
+    "The Murk family": "Murk 一家", "Goodbye, Murk": "再见，Murk", "Good night, Ben": "晚安，Ben"
+  };
+  if (ZH) ZH.add(STORY_TITLE_ZH);
   // The platform's reader, for frames where the browser has no voice (as W.speak does in common.js).
   let storyTts = null;
   try { if (window.claude && window.claude.use) window.claude.use("tts").then(t => { storyTts = t || null; storyVoiceCheck(); }).catch(() => {}); } catch (e) {}
@@ -2286,8 +2356,12 @@
 
   // The reader: one sentence after the other, the one being read is marked.
   let storyRun = 0;
+  // The reading holds ONE word ticket from its start to its end (the lead's audit, 25 November): a line of Orbit that comes
+  // meanwhile waits for the end instead of cutting a sentence (whose onend(false) then stopped the whole reading).
+  let storyWid = 0;
   function storyStopReading() {
     storyRun++;
+    if (storyWid) { const id = storyWid; storyWid = 0; try { if (W.wordEnd) W.wordEnd(id); } catch (e) {} }
     try { if (W.devStop) W.devStop(); else if ("speechSynthesis" in window) speechSynthesis.cancel(); } catch (e) {}
     try { if (W.clipStop) W.clipStop(); } catch (e) {}
     document.querySelectorAll(".ht-s.now").forEach(s => s.classList.remove("now"));
@@ -2296,12 +2370,14 @@
   function storyRead(spans) {
     storyStopReading(); const run = storyRun, b = $("htHear");
     b.classList.add("on"); b.innerHTML = ICON("pause") + "Stop reading";
+    storyWid = W.wordBegin ? W.wordBegin(3000) : 0;
     const vs = storyVoices(), v = vs.find(x => /^en(-|_)GB/i.test(x.lang)) || vs.find(x => /^en/i.test(x.lang));
     const mark = i => spans.forEach((s, k) => s.classList.toggle("now", k === i));
     const step = i => {
       if (run !== storyRun) return;
       if (i >= spans.length) { storyStopReading(); return; }
-      mark(i); const text = storyPlain(spans[i].innerHTML), next = () => { if (run === storyRun) setTimeout(() => step(i + 1), 250); };
+      mark(i); const text = storyPlain(spans[i].innerHTML), next = () => { if (run === storyRun) { if (storyWid && W.wordHold) W.wordHold(storyWid, 2500); setTimeout(() => step(i + 1), 250); } };
+      if (storyWid && W.wordHold) W.wordHold(storyWid, 9500 + 120 * text.length);   // this sentence keeps the floor (its own end comes first)
       const other = () => {
         try {
           if (vs.length) {
@@ -2314,7 +2390,7 @@
       try {
         // the sentence's recording first (24 November: the story's sentences are recorded in the voice of the words)
         const rec = W.clipFor ? W.clipFor(text, 0, false) : null;
-        if (rec) W.clipSay(rec, { onend: ok => { if (ok) next(); else if (run === storyRun) storyStopReading(); }, onfail: () => { if (run === storyRun) other(); } });
+        if (rec) W.clipSay(rec, { ticket: storyWid, onend: ok => { if (ok) next(); else if (run === storyRun) storyStopReading(); }, onfail: () => { if (run === storyRun) other(); } });
         else other();
       } catch (e) { storyStopReading(); }
     };
@@ -2679,7 +2755,7 @@
   }
   function saveBuild() {
     $("bSaved").textContent = "";
-    clearTimeout(saveTimer); saveTimer = setTimeout(async () => { const { error } = await sb.from("students").update({ build: student.build }).eq("id", student.id); $("bSaved").innerHTML = error ? "" : ICON("check") + "<span>Saved</span>"; if (error) banner("No internet? Your build was not saved."); else logEvent("build_saved", { bricks: placedOf("brick"), things: buildCells().length - placedOf("brick") }); }, 600);
+    clearTimeout(saveTimer); saveTimer = setTimeout(async () => { const { error } = await sb.from("students").update({ build: student.build }).eq("id", student.id); $("bSaved").innerHTML = error ? "" : ICON("check") + '<span class="zhk">Saved</span>'; if (error) banner("No internet? Your build was not saved."); else logEvent("build_saved", { bricks: placedOf("brick"), things: buildCells().length - placedOf("brick") }); }, 600);
   }
   // "Clear all" asks once more before it clears; the second tap must come within a few seconds.
   function bdClearReset() { const x = $("bClear"); clearTimeout(clearTimer); x.dataset.sure = ""; x.classList.remove("bd-sure"); x.innerHTML = ICON("trash") + "<span>Clear all</span>"; x.disabled = !buildCells().length; }
@@ -2922,7 +2998,13 @@
   // Practice: the same level again, nothing saved. Between parts he can stop; "Stop here" on every page leaves at once,
   // and startQuest rebuilds what is left from saved data.
   const qb = $("questBody");
-  function qp(html) { $("pathWrap").hidden = true; qb.innerHTML = html; }
+  // Every page of a level with "Stop here" in its head gets the button's work here (25 November: pages drawn after an answer,
+  // such as the copy line, had a button that did nothing, because only renderQ gave it its work). A page with a stop of its
+  // own (the pair game) sets it after this.
+  function qp(html) {
+    $("pathWrap").hidden = true; qb.innerHTML = html;
+    const pb = $("pauseBtn"); if (pb && !pb.onclick) pb.onclick = () => { pauseQuest(); showPage("world"); };
+  }
   // The letters that spell each beat's vowel sound, where the rule of thumb in the kit gets it wrong ("." = letters in between).
   Object.assign(VOWEL_FIX, {
     aeroplane: ["ae", "o", "a.e"],
@@ -3031,6 +3113,14 @@
     const pairs = fresh.length && !isTest(day) && pairsWanted() ? [{ type: "pairs", step: "pairs", part: "new" }] : [];
     q.items.splice(reviews.length, 0, ...training, ...quick.items, ...pairs);   // training hook; then the quick check and the pair game
     q.quickPrev = quick.prev;
+    // what this level will say: its words, their sentences and the island's never-taught words are asked for now (site/common.js)
+    try {
+      if (W.clipNeed) {
+        const need = []; q.items.forEach(x => { if (x.w && x.w.word) { need.push(x.w.word); if (x.w.sentence_en) need.push(String(x.w.sentence_en).trim()); } if (x.news) x.news.forEach(w => { need.push(w.word); if (w.sentence_en) need.push(String(w.sentence_en).trim()); }); });
+        if (probe) probeList(probe).forEach(p => need.push(p.word));
+        W.clipNeed(need);
+      }
+    } catch (e) {}
     const sentDone = sentGet().done;   // sentences of this level already behind him (a stop and a new start): not asked twice
     if (sentDone.length) q.items = q.items.filter(x => !(x.step === "sentence" && x.w && sentDone.indexOf(x.w.id) >= 0));
     q.stages = lvStages(behind);
@@ -3588,7 +3678,7 @@
     try {
       // the sentence's recording first (site/voice.js); the device's voice or the page reader only where it has none
       const clip = W.clipFor ? W.clipFor(text, 0, false) : null;
-      if (clip && !sayLine.noClip) { W.clipSay(clip, { onend: end, onfail: () => { sayLine.noClip = true; try { sayLine(text); } finally { sayLine.noClip = false; } end(); } }); return true; }
+      if (clip && !sayLine.noClip) { W.clipSay(clip, { ticket: wid, onend: end, onfail: () => { sayLine.noClip = true; try { sayLine(text); } finally { sayLine.noClip = false; } end(); } }); return true; }
       const vs = "speechSynthesis" in window ? speechSynthesis.getVoices() : [];
       if (vs.length) { W.devSay([{ text, rate: 0.85 }], { onend: end, noClip: true }); return true; }
       if (lvTts && lvTts.speak) { const p = W.read ? W.read(text) : lvTts.speak(text); if (p && p.then) p.then(end, end); return true; }
@@ -4248,7 +4338,7 @@
   const scPause = ms => new Promise(res => setTimeout(res, ms));
   const SC_SAID = window.WW_SC_SAID = [];   // what was said and at what speed, for checks: "word@0.5"
   // Say one text at a rate. Resolves when it has been said (or after a fair estimate when the voice does not tell).
-  function scSay(text, rate) {
+  function scSay(text, rate, noClip) {
     const said = String(text);
     SC_SAID.push(said + "@" + rate); if (SC_SAID.length > 300) SC_SAID.shift();
     return new Promise(res => {
@@ -4267,7 +4357,9 @@
           return;
         }
         if (!("speechSynthesis" in window)) return;
-        W.devSay([{ text: said, rate }], { onend: () => { min = true; spoke = true; fin(); } });
+        // noClip: a beat of a word without a recording goes to the device's voice only (a beat such as "plane" or "ten"
+        // must never play another recorded WORD)
+        W.devSay([{ text: said, rate }], Object.assign({ onend: () => { min = true; spoke = true; fin(); } }, noClip ? { noClip: true } : {}));
       } catch (e) {}
     });
   }
@@ -4299,21 +4391,50 @@
       else if (hold && W.wordEnd) W.wordEnd(hold);
     });
   }
-  // "Slowly": beat by beat when the game has the beats, else the whole word once more at the slowest speed.
+  // One recording of the page (a piece of the word, or the whole word slowly), holding the word's ticket while it plays so
+  // Orbit waits; the promise ends when it ends, fails, or after its time at most.
+  let scClipOn = false;
+  function scPlayClip(clip) {
+    return new Promise(res => {
+      const wid = W.wordBegin ? W.wordBegin(900 + (clip.dur || 1) * 1000) : 0;
+      let done = false;
+      const fin = () => { if (done) return; done = true; scClipOn = false; if (W.wordEnd) W.wordEnd(wid); res(); };
+      setTimeout(fin, 9500 + (clip.dur || 1) * 1000);
+      scClipOn = true;
+      try { W.clipSay(clip, { ticket: wid, onend: fin, onfail: fin }); } catch (e) { fin(); }
+    });
+  }
+  // "Slowly" (the lead's audit, 25 November): a word with a recording plays from it: beat by beat as pieces of its slow
+  // recording (W.clipBeat) when every beat has its time, else the whole word once, slowly. A word without a recording (one
+  // the tutor typed) goes beat by beat to the device's voice, never to a recording (noClip): "plane" of aeroplane must not
+  // play the recorded word "plane". No beats known: the whole word once more at the slowest speed.
   async function scSlowly(r) {
     const tok = ++scTok, bs = scBeats(r);
     try { if (W.devStop) W.devStop(); } catch (e) {}
-    logEvent("school_slowly", { word: r.word, beats: bs.length });
+    const whole = W.clipFor ? W.clipFor(r.word, 0, true) : null;
+    const pieces = whole && bs.length > 1 && W.clipBeat ? bs.map((b, i) => W.clipBeat(r.word, b.toLowerCase(), i)) : [];
+    const byPieces = pieces.length > 1 && pieces.every(Boolean);
+    logEvent("school_slowly", { word: r.word, beats: bs.length, how: whole ? (byPieces ? "pieces" : "whole") : "device" });
+    if (whole) {
+      if (!byPieces) { await scPlayClip(whole); return; }
+      for (let i = 0; i < pieces.length; i++) {
+        if (tok !== scTok || !scLive()) return;
+        await scPlayClip(pieces[i]);
+        if (i < pieces.length - 1) await scPause(SC_BEAT_GAP);
+      }
+      return;
+    }
     if (!bs.length) { await scSay(r.word, SC_RATE_SLOWEST); return; }
     for (let i = 0; i < bs.length; i++) {
       if (tok !== scTok || !scLive()) return;
-      await scSay(bs[i].toLowerCase(), SC_RATE_SLOWEST);
+      await scSay(bs[i].toLowerCase(), SC_RATE_SLOWEST, true);
       if (i < bs.length - 1) await scPause(SC_BEAT_GAP);
     }
   }
   // Leaving a page: the school word stops. (Orbit no longer stops a word that is being said, so the page does it itself.)
   function scQuiet() {
     scTok++;
+    if (scClipOn) { scClipOn = false; try { if (W.clipStop) W.clipStop(); } catch (e) {} }   // only the page's own recording
     try { if (W.devStop) W.devStop(); } catch (e) {}
     try { if (scReading && W.readStop) { scReading = false; W.readStop(); } } catch (e) {}
   }
@@ -4829,7 +4950,7 @@
     };
     try {
       const clip = W.clipFor ? W.clipFor(text, n, false) : null;   // the recording first, at its normal speed (a word said alone is clear)
-      if (clip) W.clipSay(clip, { onend: end, onfail: other }); else other();
+      if (clip) W.clipSay(clip, { ticket: id || 0, onend: end, onfail: other }); else other();
     } catch (e) { end(); }
   }
 
@@ -5369,7 +5490,7 @@
   // No picker.js: nothing happens (the level waits for the tutor, as before). No pool.js: the bank's fixed course.
   // Called by unlock() (90-boot.js) and after a finished level (80-level.js renderEnd), each marked "picker hook".
   // The order of his main words (the tutor, 23 November; site/picker.js plan): his WAITING words first (his own rows:
-  // approved, level 0, no level yet; words he did not know in the quick check; oldest first), then the week's own words (pattern
+  // approved, level 0, no level yet; words he did not know in the quick check; oldest first; one a level while her own words wait too), then the week's own words and words left over from an earlier week's list (pattern
   // weeks: window.WW_FIRST.weeks, site/first.js), then long words with the week's pattern near his band, then any long words by
   // his band. A waiting word is not added again: the same call gives it the level. Every 10th level is the island test: it gets no new words. "No new words for now" (student.pause_new,
   // the tutor's switch): nothing is added (see the old words without a lesson below).
@@ -5599,15 +5720,66 @@
       T().quests.push({ id: "ts-gift-" + Date.now(), student_id: me().id, quest_day: null, kind: "tester", completed: false, started_at: iso(0), diamonds_earned: 50 });
       go("");
     }
+    // Go to a level of his choice (25 November: "skipping to specific levels"): every level before it counts as finished on
+    // an earlier day, with the words the picker would have given it; the level itself is open today, mail read.
+    function goLevel(n) {
+      n = Math.max(1, Math.min(50, Math.round(+n) || 1));
+      if (n % PER_ZONE === 0) banner("Level " + n + " is a monster level.");
+      pickAhead(n);
+      if (!T().words.some(w => w.quest_day === n) && n % PER_ZONE !== 0) { banner("There are no words for level " + n + "."); return; }
+      // levels from n on are open again: their rows and what was learned in them go back to "not started"
+      T().quests = T().quests.filter(x => !(x.student_id === me().id && x.quest_day && x.quest_day >= n));
+      T().words.filter(w => w.quest_day && w.quest_day >= n).forEach(w => Object.assign(w, { level: 0, due: null, introduced_on: null, last_seen: null, wrong_streak: 0 }));
+      finishBefore(n); mailRead(); go("level");
+    }
+    // Inside a level: on to the next page, or to the next kind of page (quick check, pair game, meet, type, build, last
+    // round, sentences, the never-taught word, the monster's test), without answering. Nothing is saved for a skipped page.
+    function skip(part) {
+      if (!q || !q.items || q.ended || q.step === "end") { banner("Open a level first."); return; }
+      $("menu").open = false;
+      if (q.step === "part") { q.step = null; return renderQ(); }
+      const kind = x => { try { return stageOf(x); } catch (e) { return x.step; } };
+      const here = kind(cur()); let i = q.i + 1;
+      if (part) while (i < q.items.length && kind(q.items[i]) === here) i++;
+      q.tries = 0; q.tl = null; q.bub = null; q.talk = null; q.meet = null; q.busy = false; q.peek = false;
+      if (i >= q.items.length) { q.i = q.items.length; q.step = "end"; } else q.i = i;
+      renderQ();
+    }
     const list = $("menuList"), head = document.createElement("p");
     head.className = "ts-head"; head.textContent = "Tester (test version only)"; list.appendChild(head);
-    [["Go to the island test", islandTest], ["Finish today's task", finishTask], ["Give 50 diamonds", diamonds50]].forEach(([label, fn]) => {
+    [["Go to the island test", islandTest], ["Finish today's task", finishTask], ["Give 50 diamonds", diamonds50],
+      ["In a level: skip this page", () => skip(false)], ["In a level: skip to next part", () => skip(true)]].forEach(([label, fn]) => {
       const b = document.createElement("button"); b.type = "button"; b.className = "ts-item"; b.textContent = label;
       b.onclick = () => { try { fn(); } catch (e) { console.warn(e); banner("That shortcut did not work."); } };
       list.appendChild(b);
     });
+    // "Go to level": a number and a button, in the menu
+    { const row = document.createElement("form"); row.className = "ts-level"; row.autocomplete = "off";
+      row.innerHTML = '<label class="ts-lv">Go to level <input type="number" min="1" max="50" value="5" id="tsLevel" aria-label="Level"></label><button type="submit" class="ts-item ts-go">Go</button>';
+      row.onsubmit = e => { e.preventDefault(); try { goLevel(row.querySelector("#tsLevel").value); } catch (x) { console.warn(x); banner("That shortcut did not work."); } };
+      row.addEventListener("click", e => e.stopPropagation());
+      list.appendChild(row); }
+    // On the real website this stand-in runs as the TEST WORLD (opened from the door's "Tester" tab after the teacher's login
+    // was checked; the address says ?test=1): every page says so, and the menu has the way out.
+    let testWorld = false; try { testWorld = /[?&]test=1(&|$)/.test(location.search); } catch (e) {}
+    if (testWorld) {
+      const tag = document.createElement("div"); tag.className = "ts-world"; tag.id = "tsWorld"; tag.textContent = "Test world. Nothing is saved for him."; document.body.appendChild(tag);
+      const b = document.createElement("button"); b.type = "button"; b.className = "ts-item"; b.textContent = "Leave the test world";
+      b.onclick = () => { try { sessionStorage.removeItem("ww.test.ok"); sessionStorage.removeItem("wt.pin.ok"); } catch (e) {} location.href = location.pathname; };
+      list.appendChild(b);
+    }
     // After the reload: once he is in (the door is gone and today's session exists), start what was asked for.
     let flag = ""; try { flag = sessionStorage.getItem("ww.tester.go") || ""; sessionStorage.removeItem("ww.tester.go"); } catch (e) {}
+    if (flag === "level") {
+      let tries = 0; const t = setInterval(async () => {
+        if (++tries > 100) { clearInterval(t); return; }
+        if (!student || !todaySession || !$("gate").hidden) return;
+        clearInterval(t);
+        const d = openDay(); if (!d) return;
+        if (!$("modal").hidden) closeModal();
+        showPage("quest"); await startQuest(d);
+      }, 300);
+    }
     if (flag === "test") {
       let tries = 0; const t = setInterval(async () => {
         if (++tries > 100) { clearInterval(t); return; }
@@ -5698,7 +5870,23 @@
   // The lock follows the task: the 3D world stops taps on the ground and the arrow keys (WW3D.walkLock); the plate, the dock,
   // the place tags and Enter by a place still walk him to each part. Building is shut by sleepGate (36-sleep slOpen).
   let hdLocked = false;
+  // Today at a glance (25 November): one short row for each part of today's task, from hdPlan(): a tick when it is done,
+  // a ring on the part that is next, plain for what is still to come. Small, in the corner under his name, only over the
+  // outpost (not over a page). It shows what the locks already enforce; it changes nothing.
+  function hdToday() {
+    const el = $("hdToday"); if (!el) return;
+    let pl = null; try { pl = student && todaySession ? hdPlan() : null; } catch (e) { pl = null; }
+    if (!pl || !pl.parts.length || pl.wait) { el.hidden = true; return; }
+    const nextKey = pl.next ? pl.next.key : "";
+    el.innerHTML = '<p class="hd-th zhk">Today</p><ol>' + pl.parts.map(p => {
+      const st = p.done ? "done" : p.key === nextKey ? "now" : "todo";
+      return '<li class="hd-' + st + '"><i aria-hidden="true">' + (p.done ? ICON("check") : "") + '</i><span class="zhk">' + W.esc(p.label) + "</span>" +
+        '<span class="sr">' + (p.done ? "done" : p.key === nextKey ? "next" : "later") + "</span></li>";
+    }).join("") + "</ol>";
+    el.hidden = false;
+  }
   function hdLock() {
+    try { hdToday(); } catch (e) {}
     const on = !!student && !!todaySession && !hdTaskDone();
     if (on !== hdLocked) { hdLocked = on; document.body.classList.toggle("hd-locked", on); }
     const w = window.WW3D; if (w && w.walkLock) w.walkLock(on);
@@ -5800,7 +5988,9 @@
     if (!session) { const r = await sb.auth.signInAnonymously(); if (r.error) return hdTrouble("Can't connect", "Check the internet, then tap Try again.", "For the teacher: anonymous sign-in is off in Supabase, or there is no internet. See deploy/README.md step M2."); session = r.data.session; }
     const { data, error } = await sb.from("students").select("*").eq("paired_uid", session.user.id).maybeSingle();
     if (error) { hdTrouble("Can't load", "Tap Try again. If it still does not work, ask your teacher.", "For the teacher: " + error.message); $("gate").querySelector(".hd-teach").classList.add("nozh"); return; }
-    if (!data) return renderPair();
+    // door hook (91-door.js): a device that is not his yet gets the front door with "Student" and "Teacher"; without that
+    // part, the old page for the 6-letter code. doorOpen({ boot, renderPair, hdDoor }) draws it into #gate.
+    if (!data) return typeof doorOpen === "function" ? doorOpen({ boot, renderPair, hdDoor }) : renderPair();
     student = data;
     let ok = false; try { ok = sessionStorage.getItem("wt.pin.ok") === student.id; } catch (x) {}
     ok ? unlock() : renderPin();

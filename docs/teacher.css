@@ -404,3 +404,10 @@ ul.ln-ws{display:grid;gap:0}
   .ln-lh .muted{margin-left:0;flex-basis:100%}
   .ln-word{font-size:21px}
 }
+/* a word the game has no recording of (25 November): his laptop's own voice says it */
+.ln-norec{display:inline-block;padding:0 10px;border-radius:999px;font-size:14px;font-weight:700;line-height:1.75;white-space:nowrap;border:1px dashed var(--ink-3);color:var(--ink-2)}
+/* the school list table fits its box (25 November: the delete button was cut off at 1280 and 1024 px wide) */
+.sc-words td.lt{min-width:120px}
+.sc-words td.zhc{width:140px}
+.sc-words .sc-zh{width:130px}
+@media (max-width:1180px){ .sc-grid{grid-template-columns:minmax(0,1fr)} }

@@ -12,9 +12,11 @@
       The band used is the whole-number part.
    2. The words, in this order (the tutor's decisions, 23 November: pattern weeks; long words get a lesson):
         a. his waiting words (o.waiting): words he did not know in the quick check, already his, oldest first; any length;
+           while her own words (b) are waiting too, a level of two takes one waiting word and one of hers (25 November);
         b. the week's own words: a week is 5 levels (10 main words) counted from level 1; a level with the island test (every
            10th) does not count, so week 1 = levels 1 to 5, week 2 = levels 6 to 9 and 11. The next word of that week's list
-           (o.weeks, window.WW_FIRST.weeks) that is not his yet and not picked before; any length;
+           (o.weeks, window.WW_FIRST.weeks) that is not his yet and not picked before; any length; then words of an earlier
+           week's list that did not get a level in their week;
         c. long words (3 beats or more, or 7 letters or more) with one of the week's features (pool col 16; "plain": a long word
            with no feature but "long"), nearest his band, at most PATTERN_REACH bands away;
         d. none left there: any long word by his band. Short words never get a lesson here: they go through the quick check.
@@ -203,11 +205,18 @@
     const byKey = {}; (o.pool || []).forEach(r => { byKey[key(r[0])] = r; });
     const wk = weekOf(o.level, o.weeks);
     const lead = [], has = w => lead.some(x => key(x.word) === key(w));
+    // her own words: this week's list, then words of an earlier week's list that did not get their level in time (25 November:
+    // a week of waiting words pushed "aeroplane" and "February" past the end of week 1, and they never came)
+    const hers = [], seen = new Set();
+    const herAdd = (x, carried) => { const r = byKey[key(x)]; if (r && !taken.has(key(x)) && !seen.has(key(x))) { seen.add(key(x)); hers.push(Object.assign(rowOf(r), { from: "week" }, carried ? { carried: true } : {})); } };
+    if (wk && wk.listed) (wk.week.words || []).forEach(x => herAdd(x, false));
+    if (wk) for (let i = 0; i < Math.min(wk.index, (o.weeks || []).length); i++) ((o.weeks[i] || {}).words || []).forEach(x => herAdd(x, true));
+    // waiting words first; while her own words are waiting too, a level of two takes one of each, so neither crowds out the
+    // other (25 November: a player who missed most quick-check words got only waiting words, and none of her words, for weeks)
+    const waitMax = hers.length && need > 1 ? need - 1 : need;
+    (o.waiting || []).forEach(w => { if (lead.length < waitMax && w && w.word && !has(w.word)) lead.push(Object.assign({}, w, { from: "waiting" })); });
+    hers.forEach(w => { if (lead.length < need && !has(w.word)) lead.push(w); });
     (o.waiting || []).forEach(w => { if (lead.length < need && w && w.word && !has(w.word)) lead.push(Object.assign({}, w, { from: "waiting" })); });
-    if (wk && wk.listed) (wk.week.words || []).forEach(x => {
-      const r = byKey[key(x)];
-      if (lead.length < need && r && !taken.has(key(x)) && !has(x)) lead.push(Object.assign(rowOf(r), { from: "week" }));
-    });
     const slips = on ? slipCodes(o) : [];
     let words = lead.slice(), spare = [], wide = false, off = !on;
     const more = (from, extra) => {
@@ -224,7 +233,9 @@
     else if (wide) reason += " Band " + B.band + " had too few long words left, so a nearby band helped.";
     const n = f => words.filter(w => w.from === f).length;
     if (on && wk && n("pattern")) reason = "This week's pattern: " + wk.week.name + ". " + reason;
-    if (n("week")) reason = (n("week") === 1 ? "One word" : n("week") + " words") + " from the tutor's list for this week (" + wk.week.name + "). " + reason;
+    const nNow = words.filter(w => w.from === "week" && !w.carried).length, nOld = words.filter(w => w.carried).length;
+    if (nOld) reason = (nOld === 1 ? "One word" : nOld + " words") + " from the tutor's list of an earlier week. " + reason;
+    if (nNow) reason = (nNow === 1 ? "One word" : nNow + " words") + " from the tutor's list for this week (" + wk.week.name + "). " + reason;
     if (n("waiting")) reason = (n("waiting") === 1 ? "One word" : n("waiting") + " words") + " from the quick check first. " + reason;
     return { level: o.level, band: B.band, value: B.value, steps: B.steps, words, spare: spare.slice(0, 6), reason, off, slips, week: wk };
   }
@@ -350,7 +361,13 @@
       ok("1. a waiting word first (short or long), as it is, not a new copy", po.words.length === 2 && po.words[0].word === "fin" && po.words[0].from === "waiting" && po.words[0].id === "x1", po.words.map(w => w.word + ":" + w.from));
       ok("2. then the next word of the week's own list", po.words[1].word === "police" && po.words[1].from === "week", po.words.map(w => w.word + ":" + w.from));
       const pw2 = plan({ student: "s1", level: 4, quests: [], pool: POOL, bank: BANK, mine: mine.concat(["fin", "swan"]), waiting: wait, weeks: WEEKS });
-      ok("two waiting words: both, oldest first; the week's words wait", pw2.words.map(w => w.word).join() === "fin,swan", pw2.words.map(w => w.word));
+      ok("two waiting words and her week's words: one of each (the oldest waiting word first), so neither crowds out the other", pw2.words.map(w => w.word + ":" + w.from).join() === "fin:waiting,police:week", pw2.words.map(w => w.word + ":" + w.from));
+      const pw3 = plan({ student: "s1", level: 4, quests: [], pool: POOL, bank: BANK, mine: mine.concat(["fin", "swan", "police", "different"]), waiting: wait, weeks: WEEKS });
+      ok("her week's list used up: two waiting words, oldest first", pw3.words.map(w => w.word).join() === "fin,swan", pw3.words.map(w => w.word));
+      const pw4 = plan({ student: "s1", level: 4, quests: [], pool: POOL, bank: BANK, mine: mine.concat(["fin", "swan"]), waiting: wait, weeks: WEEKS, have: ["kayak"], need: 1 });
+      ok("one place left on the level: the oldest waiting word", pw4.words.map(w => w.word).join() === "fin", pw4.words.map(w => w.word));
+      const pc = plan({ student: "s1", level: 6, quests: [], pool: POOL, bank: BANK, mine: mine.concat(["police", "remember", "important"]), weeks: WEEKS });
+      ok("a word of an earlier week's list that never got its level comes in a later week (before pattern words)", pc.words[0].word === "different" && pc.words[0].from === "week" && pc.words[0].carried && /an earlier week/.test(pc.reason), pc.words.map(w => w.word + ":" + w.from) + " " + pc.reason);
       const pf = plan({ student: "s1", level: 6, quests: [], pool: POOL, bank: BANK, mine: mine.concat(["remember"]), weeks: WEEKS });
       ok("the week's list: a word he has is left out; level 6 takes week 2's words", pf.words[0].word === "important" && pf.words[0].from === "week", pf.words.map(w => w.word + ":" + w.from));
       const p11 = plan({ student: "s1", level: 11, quests: [], pool: POOL, bank: BANK, mine, weeks: WEEKS });

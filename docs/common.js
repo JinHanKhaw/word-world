@@ -128,6 +128,19 @@
   let devSeq = 0, devCur = null, devKeep = [], devFailNotes = 0, devSilent = 0;
   const devOkSeen = {};
   W.devOk = () => { try { return "speechSynthesis" in window && typeof SpeechSynthesisUtterance !== "undefined"; } catch (e) { return false; } };
+  // Some browsers let the device's voice speak only after it was first asked from inside a tap or a key press (25 November:
+  // a word without a recording stayed silent when its page opened, and spoke on the first click). So his first tap asks for
+  // a silent nothing; what the game says later by itself is then allowed.
+  (function devUnlock() {
+    let done = false;
+    const go = () => {
+      if (done) return; done = true;
+      try { if (W.devOk() && !speechSynthesis.speaking && !speechSynthesis.pending) { const u = new SpeechSynthesisUtterance(" "); u.volume = 0; speechSynthesis.speak(u); } } catch (e) {}
+      // the recordings' sound engine too: some browsers wake it only inside a tap or a key press (25 November)
+      try { if (W.clipsOn && W.clipsOn()) { const c = clipContext(); if (c && c.state !== "running" && c.resume) { const p = c.resume(); if (p && p.catch) p.catch(() => {}); } } } catch (e) {}
+    };
+    try { ["pointerdown", "keydown", "touchend"].forEach(ev => window.addEventListener(ev, go, { capture: true, passive: true })); } catch (e) {}
+  })();
   W.onSpeech = null;
   W.lastSpeech = null;   // { ok, voice, at }: the last start or failure (the voice test reads it)
   function devNote(d) {
@@ -158,7 +171,7 @@
     // cannot play, the same call goes on with the device's voice (o.noClip)
     if (list.length === 1 && !o.noClip) {
       const r1 = list[0].rate || o.rate || 1, clip = W.clipFor(list[0].text, o.voice || 0, r1 < 0.7 || W.voice().rate < 1);
-      if (clip) return W.clipSay(clip, { onstart: o.onstart, onend: o.onend, onfail: () => W.devSay(parts, Object.assign({}, o, { noClip: true })) });
+      if (clip) return W.clipSay(clip, { ticket: o.ticket, onstart: o.onstart, onend: o.onend, onfail: () => W.devSay(parts, Object.assign({}, o, { noClip: true })) });
     }
     W.clipStop();   // one voice at a time: a recording still playing is over when the device's voice begins
     let done = false, tStart = 0, tEnd = 0, cur = -1;   // cur: the try whose events count (-1 between two tries)
@@ -293,6 +306,11 @@
       if (document.readyState === "complete") setTimeout(start, 1500); else window.addEventListener("load", () => setTimeout(start, 1500));
     } catch (e) {}
   })();
+  // W.clipNeed(texts): these texts will be said soon (a level's words and sentences): their files are asked for now, so the
+  // first saying does not wait for a download.
+  W.clipNeed = function (texts) {
+    try { (texts || []).forEach(t => { [0, 1].forEach(n => { const c = W.clipFor(t, n, false); if (c) clipPack(c.pack); }); }); } catch (e) {}
+  };
   let clipCtx = null, clipSeq = 0, clipCur = null;
   function clipContext() {
     if (clipCtx) return clipCtx;
@@ -330,6 +348,9 @@
       else end(false);
     };
     tStart = setTimeout(() => fail("nostart"), 9000);   // the file did not come (a slow line gets its time), or the sound engine never woke up
+    // o.ticket: the caller's ticket from W.wordBegin. A word keeps the floor while its file is still coming, and from its
+    // start for as long as it lasts (25 November: a word whose file had not loaded yet was overtaken by Orbit's line and never said).
+    if (o.ticket && W.wordHold) W.wordHold(o.ticket, 9500);
     clipBuffer(clip).then(buf => {
       if (mine !== clipSeq || done) return;
       const ctx = clipContext(); if (!buf || !ctx) return fail(buf ? "noengine" : "nofile");
@@ -349,6 +370,7 @@
             src.start(0, from, secs);
           } else src.start();
           clearTimeout(tStart);
+          if (o.ticket && W.wordHold) W.wordHold(o.ticket, secs * 1000 + 900);
           devNote({ ok: true, clip: true, voice: "recorded " + clip.set, ms: Date.now() - t0 });
           tEnd = setTimeout(() => end(true), secs * 1000 + 600);   // no end event: the turn still ends
           try { if (o.onstart) o.onstart(); } catch (e) {}
@@ -380,6 +402,8 @@
     wordT = setTimeout(() => W.wordEnd(id), Math.max(1200, est || 0));
     return id;
   };
+  // The word with this ticket still has the floor for ms more (its recording is loading, or has just started).
+  W.wordHold = function (id, ms) { if (wordOn !== id) return; clearTimeout(wordT); wordT = setTimeout(() => W.wordEnd(id), Math.max(300, ms || 0)); };
   W.wordEnd = function (id) {
     if (wordOn !== id) return;
     wordOn = 0; clearTimeout(wordT);
@@ -439,7 +463,7 @@
       if (clip) {
         W.lastWord = text;
         const id = W.wordBegin(900 + clip.dur * 1000);
-        W.clipSay(clip, { onend: () => W.wordEnd(id), onfail: () => { W.wordEnd(id); W.speak(word, { slow, noClip: true }); } });
+        W.clipSay(clip, { ticket: id, onend: () => W.wordEnd(id), onfail: () => { W.wordEnd(id); W.speak(word, { slow, noClip: true }); } });
         return true;
       }
       W.lastWord = text;
@@ -450,7 +474,7 @@
       }
       if (!("speechSynthesis" in window)) return false;
       const id = W.wordBegin(1200 + 300 * text.length);
-      W.devSay([{ text, rate: slow ? 0.62 : 0.8 }], { onend: () => W.wordEnd(id) });
+      W.devSay([{ text, rate: slow ? 0.62 : 0.8 }], { noClip: true, onend: () => W.wordEnd(id) });   // noClip: no recording, or it could not play (never the same recording a second time)
       return true;
     } catch (e) { return false; }
   };
@@ -471,7 +495,7 @@
         if (clip) {
           if (parts.length > 1) W.lastWord = W.key(whole);
           const id = W.wordBegin(900 + clip.dur * 1000);
-          W.clipSay(clip, { onend: () => W.wordEnd(id), onfail: () => { W.wordEnd(id); W.speakChunks(chunks, { noClip: true }); } });
+          W.clipSay(clip, { ticket: id, onend: () => W.wordEnd(id), onfail: () => { W.wordEnd(id); W.speakChunks(chunks, { noClip: true }); } });
           return true;
         }
       }
@@ -482,7 +506,7 @@
       }
       if (!("speechSynthesis" in window)) return false;
       const id = W.wordBegin(1500 + 900 * parts.length);
-      W.devSay(parts.map(p => ({ text: p, rate: 0.6 })), { onend: () => W.wordEnd(id) });
+      W.devSay(parts.map(p => ({ text: p, rate: 0.6 })), { noClip: true, onend: () => W.wordEnd(id) });
       return true;
     } catch (e) { return false; }
   };

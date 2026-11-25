@@ -151,7 +151,9 @@
       '<div class="row"><button type="submit">Create</button></div><p class="err" id="serr"></p></form></section>';
     $("sf").onsubmit = async e => {
       e.preventDefault();
-      const { error } = await sb.from("students").insert({ teacher_id: me.id, name: $("sn").value.trim() || "Student", pin: $("sp").value.trim() || "1234" });
+      const pin = $("sp").value.trim() || "1234";
+      if (!/^\d{4}$/.test(pin)) { $("serr").textContent = "The PIN must be 4 numbers, for example 2468."; return; }
+      const { error } = await sb.from("students").insert({ teacher_id: me.id, name: $("sn").value.trim() || "Student", pin });
       if (error) { $("serr").textContent = error.message; return; }
       await loadAll(); go("settings");
     };
@@ -204,16 +206,20 @@
   // game tried the next voice at once, so he still heard the word) and the first time a voice did start (ok: true).
   function speechFacts(E, t) {
     const sp = E.filter(x => x.type === "speech" && x.detail && ld(x.created_at) === t);
-    const fails = sp.filter(x => x.detail.ok === false && !x.detail.again);
-    const last = sp[sp.length - 1] || null;
-    return { fails: fails.length, laterOk: !!(last && last.detail.ok === true) };
+    // since 24 November most of what he hears is a recording (detail.clip); the laptop's own voice only says what has none
+    const dev = sp.filter(x => !x.detail.clip), clip = sp.filter(x => x.detail.clip);
+    const fails = dev.filter(x => x.detail.ok === false && !x.detail.again), clipFails = clip.filter(x => x.detail.ok === false);
+    const last = dev[dev.length - 1] || null, lastClip = clip[clip.length - 1] || null;
+    return { fails: fails.length, laterOk: !!(last && last.detail.ok === true), clipFails: clipFails.length, clipLaterOk: !!(lastClip && lastClip.detail.ok === true) };
   }
+  const timesWord = n => n === 1 ? "once" : n === 2 ? "twice" : n + " times";
   function speechNotice(E, t) {
     const S = speechFacts(E, t);
-    if (!S.fails) return "";
+    if (!S.fails && !S.clipFails) return "";
     return '<section class="box notice" id="speechNote"><h2>Sound on his laptop</h2>' +
-      "<p>His laptop could not say the words " + (S.fails === 1 ? "once" : S.fails + " times") + " today. Check that the sound is on." + (S.laterOk ? " It worked again later today." : "") + "</p>" +
-      '<p class="lead">If it keeps happening, <button type="button" class="link" data-go="settings">choose another voice in Settings</button>.</p></section>';
+      (S.clipFails ? "<p>A recorded word or line did not play " + timesWord(S.clipFails) + " today. Check that the sound is on and the internet works." + (S.clipLaterOk ? " The recordings played again later today." : "") + "</p>" : "") +
+      (S.fails ? "<p>His laptop’s own voice did not start " + timesWord(S.fails) + " today. It says only what has no recording, such as words you added yourself. The recorded words do not need it." + (S.laterOk ? " It worked again later today." : "") + "</p>" +
+        '<p class="lead">If it keeps happening, <button type="button" class="link" data-go="settings">choose another voice in Settings</button>.</p>' : "") + "</section>";
   }
   // The words of the last 7 days that were not right the first time he wrote them, newest problems first.
   function toPractise(A) {
@@ -359,6 +365,7 @@
   const schoolPic = word => { const SP = window.WW_SCHOOL_PICS || {}, low = asTyped(word).toLowerCase(); return SP[low] || SP[W.key(word)] || (PICS[W.plain(word)] ? "img/words/" + W.plain(word) + ".jpg" : ""); };
   const zhClean = z => { const t = String(z == null ? "" : z).replace(/\s+/g, " ").trim(); return CJK.test(t) && t.length <= 16 ? t : ""; };
   function renderSchool() {
+    if (!recWords) recLoad().then(ok => { if (ok && tab === "school" && !view.querySelector("#scText:focus") && !($("scText") && $("scText").value)) renderSchool(); });
     const t = W.today(), L = lists(), cur = currentList();
     const nextWed = (() => { let k = W.addDays(t, 1); while (new Date(k + "T00:00:00").getDay() !== 3) k = W.addDays(k, 1); return k; })();
     const listHtml = l => {
@@ -368,10 +375,10 @@
         '<p class="lead">' + cap(listDrillLine(l.rows)) + "." + (test ? " Practice dictation at home: <b>" + test.score + " of " + test.total + "</b> right on " + day3(test.taken_on) + " (he marked it himself)" + (test.missed && test.missed.length ? ". To practise again: " + test.missed.map(esc).join(", ") : "") + "." : "") + "</p>" +
         '<div class="row sc-tools"><label class="inl">Dictation date <input type="date" class="sc-date" value="' + l.date + '"></label><button type="button" class="ghost mini sc-move">Change the date</button><button type="button" class="ghost mini red sc-dellist">Delete this list</button></div>' +
         '<div class="row sc-zhbar"><span class="sc-fillslot"></span><button type="button" class="mini sc-zhsave" disabled>Save the Chinese</button><span class="muted sc-zhmsg"></span></div>' +
-        '<div class="scroll"><table class="sc-words"><tr><th>Word</th><th>Chinese</th><th>Times practised</th><th>Right the first time</th><th>Last time</th><th></th></tr>' + l.rows.map(r => '<tr data-id="' + r.id + '"><td class="w">' + esc(r.word) + (schoolPic(r.word) ? "" : ' <span class="sc-nopic">no picture yet</span>') + '</td><td class="zhc"><input type="text" class="sc-zh" lang="zh" value="' + esc(r.meaning_zh || "") + '" aria-label="Chinese for ' + esc(r.word) + '"></td><td class="nb" data-l="Times practised">' + (r.tries || 0) + '</td><td class="nb" data-l="Right the first time">' + (r.right || 0) + "</td><td class=\"lt\">" + (r.last_seen ? (r.last_right === false ? '<span class="ny">not yet</span>' : r.last_right ? '<span class="good">right</span>' : "") + " " + day3(ld(r.last_seen)) : '<span class="muted">not practised yet</span>') + '</td><td class="acts"><button type="button" class="mini ghost sc-edit">Change</button><button type="button" class="mini ghost sc-del" aria-label="Delete ' + esc(r.word) + '">' + ICON("x") + "</button></td></tr>").join("") + "</table></div></section>";
+        '<div class="scroll"><table class="sc-words"><tr><th>Word</th><th>Chinese</th><th>Times practised</th><th>Right the first time</th><th>Last time</th><th></th></tr>' + l.rows.map(r => '<tr data-id="' + r.id + '"><td class="w">' + esc(r.word) + (schoolPic(r.word) ? "" : ' <span class="sc-nopic">no picture yet</span>') + (noRec(r.word) ? ' <span class="sc-nopic">no recording</span>' : "") + '</td><td class="zhc"><input type="text" class="sc-zh" lang="zh" value="' + esc(r.meaning_zh || "") + '" aria-label="Chinese for ' + esc(r.word) + '"></td><td class="nb" data-l="Times practised">' + (r.tries || 0) + '</td><td class="nb" data-l="Right the first time">' + (r.right || 0) + "</td><td class=\"lt\">" + (r.last_seen ? (r.last_right === false ? '<span class="ny">not yet</span>' : r.last_right ? '<span class="good">right</span>' : "") + " " + day3(ld(r.last_seen)) : '<span class="muted">not practised yet</span>') + '</td><td class="acts"><button type="button" class="mini ghost sc-edit">Change</button><button type="button" class="mini ghost sc-del" aria-label="Delete ' + esc(r.word) + '">' + ICON("x") + "</button></td></tr>").join("") + "</table></div></section>";
     };
     view.innerHTML = '<div class="sc-grid"><section class="box"><div class="bh"><h2>Add the week\'s school words</h2></div>' +
-      '<p class="lead">Paste the school\'s list: one word a line, or with commas. Words stay exactly as you type them (February, don\'t). You can put the Chinese after a word (because 因为); he sees it when he learns the word.</p><p class="lead">In the game he practises 5 of these words a day, and the day before the dictation he does a practice dictation on paper.</p>' +
+      '<p class="lead">Paste the school\'s list: one word a line, or with commas. Words stay exactly as you type them (February, don\'t). You can put the Chinese after a word (because 因为); he sees it when he learns the word.</p><p class="lead">In the game he practises 5 of these words a day, and the day before the dictation he does a practice dictation on paper.</p><p class="lead">A word marked “no recording” is not in the game\'s recorded words. His laptop\'s own voice says it, and on some laptops that voice is silent: then he sees the word but does not hear it.</p>' +
       '<textarea id="scText" rows="9" placeholder="February 二月&#10;don\'t&#10;Wednesday&#10;because"></textarea>' +
       '<div class="row"><label class="f inl">Dictation date <input type="date" id="scDate" value="' + (cur ? cur.date : nextWed) + '"></label><button type="button" id="scAdd">Add to the list</button></div><p class="err" id="scErr"></p><p class="ok" id="scOk"></p></section>' +
       '<div class="sc-lists">' + (L.length ? L.slice().reverse().filter(l => l.date >= W.addDays(t, -21)).map(listHtml).join("") : '<section class="box"><p class="lead">No school list yet. Paste the first one on the left.</p></section>') + '<div id="srSlot"></div></div></div>';
@@ -529,7 +536,9 @@
     if (f.lv.length) L.push("· 完成了" + (f.lv.length > 1 ? "第 " + f.lv[0] + " 到第 " + f.lv[f.lv.length - 1] + " 关" : "第 " + f.lv[0] + " 关") + "。");
     if (f.fresh.length) L.push("· 学了 " + f.fresh.length + " 个新单词：" + f.fresh.map(w => w.word + (w.meaning_zh ? "（" + w.meaning_zh.split(/[；;]/)[0] + "）" : "")).join("、") + "。");
     if (f.can) L.push("· 现在能凭记忆拼写的单词一共有 " + f.can + " 个。"); else if (f.fresh.length) L.push("· 新学的单词第二天再拼对一次，就会算进“能凭记忆拼写”的单词里。");
-    if (f.test) L.push("· 为学校听写做的练习：" + f.test.total + " 个词写对了 " + f.test.score + " 个（他自己对照批改的）。");
+    // never a count of 0 in what his mother reads (25 November)
+    if (f.test && f.test.score > 0) L.push("· 为学校听写做的练习：" + f.test.total + " 个词写对了 " + f.test.score + " 个（他自己对照批改的）。");
+    else if (f.test && f.test.total > 0) L.push("· 他为学校听写在家做了一次练习（" + f.test.total + " 个词）。");
     if (f.sent) L.push("· 他用新单词 " + f.sent.detail.word + " 自己写了一句话：“" + f.sent.detail.sentence + "”");
     else if (f.firstRight) L.push("· 这一周，单词第一次拼就拼对的有 " + f.firstRight + " 次。");
     if (f.island) L.push("· 他用拼写挣来的钻石买了砖块，在游戏的小岛上搭了自己的建筑（见图）。");
@@ -581,6 +590,7 @@
       g.strokeStyle = "#d5c19c"; g.lineWidth = 1.5; g.strokeRect(pad - 8, y - 8, iw + 16, ih + 16);
     }
     // the stamp: days this week
+    if (!f.played) { try { return c.toDataURL("image/png"); } catch (e) { return ""; } }   // no stamp that reads 0 days
     g.save(); g.translate(Wd - 150, H - 140); g.rotate(-0.17);
     if (isl) { g.fillStyle = "rgba(251,244,228,.88)"; g.beginPath(); g.arc(0, 0, 66, 0, Math.PI * 2); g.fill(); }   // the stamp sits on the corner of the picture
     g.strokeStyle = "#b84a10"; g.fillStyle = "#b84a10"; g.globalAlpha = .85;
@@ -651,6 +661,24 @@
   const memoSet = (id, v) => { try { const m = memoAll(); if (v) m[id] = v; else delete m[id]; localStorage.setItem(memoKey(), JSON.stringify(m)); } catch (e) {} };
   let lineAE = { A: [], E: [] }, lineItems = [], lineModelNow = null;
 
+  // ---- the recorded voice (24 November): the game says its own words from recordings (site/voice.js). A word without one
+  // (her own words, school words outside the game's list) is said by his laptop's own voice, which is silent on some laptops.
+  // The index is read as text: loading voice.js as a script would make common.js fetch every recording in the background.
+  let recWords = null, recP = null;
+  const recKey = t => String(t || "").toLowerCase().replace(/[.!?,;:]+$/, "").trim().replace(/[^a-z0-9]+/g, "_");
+  function recLoad() {
+    if (recP) return recP;
+    const keys = R => [].concat(...["a", "b", "s", "o"].map(k => Object.keys(R[k] || {})));   // the sets W.clipFor looks in
+    if (window.WW_REC && window.WW_REC.a) { recWords = new Set(keys(window.WW_REC)); return (recP = Promise.resolve(true)); }
+    return (recP = (typeof fetch === "function" ? fetch("voice.js").then(r => r.ok ? r.text() : "").then(t => {
+      const i = t.indexOf("=", t.indexOf("WW_REC")), j = t.lastIndexOf("}");
+      if (i < 0 || j < i) return false;
+      const R = JSON.parse(t.slice(i + 1, j + 1)); if (!R.a) return false; recWords = new Set(keys(R)); return true;
+    }) : Promise.resolve(false)).catch(() => false));
+  }
+  const noRec = w => !!recWords && !recWords.has(recKey(w));   // false while it is not known
+  const NOREC_TAG = '<span class="ln-norec" title="The game has no recording of this word. His laptop\'s own voice says it; on some laptops that voice is silent.">No recording</span>';
+
   // where a word comes from, in plain words
   function sourceOf(word, row, from) {
     const F = FIRSTW(), k = W.key(word), ev = lineAE.E.filter(e => e.type === "picked" && e.detail && Array.isArray(e.detail.words));
@@ -659,7 +687,10 @@
     if (inList(F.school, word)) return "School spelling test";
     if (inList(F.report, word)) return "Your assessment report";
     const pr = poolRow(word), byGame = ev.some(e => e.detail.words.some(x => W.key(x) === k));
-    if (!pr || (row && !byGame)) return "Your own word";
+    // a row this page made from one of the game's choices (paused, edited, moved) carries the pool's question; her own
+    // word typed in "Add your own word" never has one (25 November: a paused Cambridge word was shown as "Your own word")
+    const fromGame = !!(row && pr && row.dialogue_q && row.dialogue_q === pr[7]);
+    if (!pr || (row && !byGame && !fromGame)) return "Your own word";
     if (pr[15]) return "Cambridge list";
     if (pr[19]) return "From your notes";
     return "Word list";
@@ -768,7 +799,7 @@
 
   function renderWords() { renderWordsAsync(); }
   async function renderWordsAsync() {
-    const [a, e] = await Promise.all([
+    const [, a, e] = await Promise.all([recLoad(),
       safe(sb.from("attempts").select("*").eq("student_id", student.id).in("kind", ["new", "review", "test", "probe"])),
       safe(sb.from("events").select("*").eq("student_id", student.id).in("type", ["rescue", "picked"]))
     ]);
@@ -790,7 +821,7 @@
     }).join("") + (extra.length ? '<li><div class="lv-h"><b>Words he goes over again, without a level</b></div><ul class="wl">' + extra.map(wordLine).join("") + "</ul></li>" : "") + "</ol>"
       : '<p class="lead">No level finished yet. The words of each level he finishes show here, with the day.</p>';
     const how = on
-      ? "One spelling pattern a week. Each level gets 2 new words, in this order: first the words he did not know in the quick check, then your own words for the week's pattern, then long words with that pattern, chosen by how he did: when he gets most words right the first time, the next words are a little harder; when many are not yet right, they are a little easier. Long words get a lesson; short words get a quick check first."
+      ? "One spelling pattern a week. Each level gets 2 new words. First come the words he did not know in the quick check and your own words for the week's pattern: one of each while both are waiting. Your words that did not fit in their week come the week after. Then long words with that pattern, chosen by how he did: when he gets most words right the first time, the next words are a little harder; when many are not yet right, they are a little easier. Long words get a lesson; short words get a quick check first."
       : "The game takes the next 2 words of a fixed list, in order, for each level, after the words he did not know in the quick check and your own words for the week. In Settings you can let the game choose his words by how he did.";
     view.innerHTML = '<div class="words">' +
       '<section class="box"><div class="bh"><h2>How the game chooses his words</h2></div><p>' + how + '</p><p class="lead" id="wBand"></p>' +
@@ -814,7 +845,7 @@
       (paused ? '<p class="ln-pausednote">' + ICON("calendar") + "<span>No new words for now is on. He sees: “No new words today. Old words only.” Switch it off to go on with level " + first + ".</span></p>" : "") +
       (wt.length ? '<div class="ln-wait"><b>He did not know these yet. They get a lesson next:</b> ' + wt.map(w => '<span class="ln-chip">' + esc(w.word) + (w.meaning_zh ? ' <span class="zh" lang="zh-CN">' + esc(w.meaning_zh) + "</span>" : "") + "</span>").join(" ") + "</div>" : "") +
       '<div class="ln-bar"><button type="button" id="lnAddBtn">' + ICON("pencil") + 'Add your own word</button>' +
-      '<p class="ln-key"><span class="ln-st set">Set</span> the word is set for that level. <span class="ln-st plan">The game’s choice for now</span> it can change with how he does. <b>Pause</b> takes a word out; it waits in “Words set aside”.</p></div>' +
+      '<p class="ln-key"><span class="ln-st set">Set</span> the word is set for that level. <span class="ln-st plan">The game’s choice for now</span> it can change with how he does. <b>Pause</b> takes a word out; it waits in “Words set aside”.' + (recWords ? ' <span class="ln-norec">No recording</span> the game has no recording of it: his laptop’s own voice says it, and on some laptops that voice is silent.' : "") + '</p></div>' +
       '<div id="lnAdd" hidden></div>';
     if (first > LEVELS) return head + '<p class="lead">He has finished every level.</p>';
     // weeks (pattern weeks; an island test sits in the week around it); without the week data, groups of ten levels
@@ -856,7 +887,7 @@
     return '<li class="ln-w ' + (it.row ? "set" : "plan") + '" data-i="' + i + '">' + picHtml(w) +
       '<div class="ln-wt"><div class="ln-top"><b class="ln-word">' + esc(w.word) + "</b>" + (w.meaning_zh ? '<span class="zh" lang="zh-CN">' + esc(w.meaning_zh) + "</span>" : "") + "</div>" +
       (w.sentence_en ? '<div class="ln-sen">' + esc(w.sentence_en) + "</div>" : "") +
-      '<div class="ln-tags"><span class="ln-src">' + esc(src) + '</span><span class="ln-st ' + (it.row ? "set\">Set" : "plan\">The game’s choice for now") + "</span></div></div>" +
+      '<div class="ln-tags"><span class="ln-src">' + esc(src) + '</span><span class="ln-st ' + (it.row ? "set\">Set" : "plan\">The game’s choice for now") + "</span>" + (noRec(w.word) ? NOREC_TAG : "") + "</div></div>" +
       '<div class="ln-acts"><button type="button" class="ghost mini" data-ln-edit="' + i + '">Edit</button><button type="button" class="ghost mini" data-ln-pause="' + i + '">Pause</button></div>' +
       '<div class="ln-ed" hidden></div></li>';
   }
@@ -873,7 +904,7 @@
   // the small form for her own word (and the same fields to edit a coming word)
   function wordForm(o) {
     return '<form class="form ln-form" id="' + o.id + '" autocomplete="off">' +
-      '<label class="f">The word' + '<span class="fh">As he should write it: February, don\'t.</span><input type="text" name="word" value="' + esc(o.word || "") + '"' + (o.lockWord ? " readonly" : "") + "></label>" +
+      '<label class="f">The word' + '<span class="fh">As he should write it: February, don\'t. A word that is not in the game\'s word list has no recording: his laptop\'s own voice says it.</span><input type="text" name="word" value="' + esc(o.word || "") + '"' + (o.lockWord ? " readonly" : "") + "></label>" +
       '<label class="f">Its Chinese meaning<span class="fh">Short, for him to read.</span><input type="text" name="zh" lang="zh-CN" value="' + esc(o.zh || "") + '"></label>' +
       '<label class="f wide">An English sentence with the word<span class="fh">One short sentence (' + SENT_WORDS + ' words at most) that holds the word. He copies it in the game.</span><input type="text" name="sen" value="' + esc(o.sen || "") + '"></label>' +
       (o.level ? '<label class="f">Level<span class="fh">His next level is ' + nextLevel() + '.</span><input type="number" name="level" min="1" max="' + LEVELS + '" value="' + o.level + '"></label>' : "") +
@@ -1123,7 +1154,7 @@
     };
   }
 
-  // ---------- everything the game recorded on one day (Settings, folded) ----------
+  // ---------- everything the game saved on one day (Settings, folded) ----------
   // The game's own names for what happened, in plain words. A name not listed here is shown with its underscores as spaces.
   const EVENT_WORDS = {
     quest_start: "Started a level", quest_complete: "Finished a level", quest_pause: "Stopped between two parts", part_done: "Finished a part of the level",
@@ -1136,7 +1167,7 @@
   };
   const KIND_WORDS = { new: "new word", review: "word from before", retry: "second go", test: "island test", mixed: "mixed round", training: "extra practice",
     school: "school list word", school_retry: "school list word, second go", school_test: "practice dictation", probe: "word never taught", sentence: "sentence" };
-  const eventName = e => e.type === "speech" ? (e.detail && e.detail.ok === false ? "His laptop's voice did not start" : "His laptop's voice worked") : EVENT_WORDS[e.type] || e.type.replace(/_/g, " ");
+  const eventName = e => e.type === "speech" ? (e.detail && e.detail.clip ? (e.detail.ok === false ? "A recording did not play" : "The recordings played") : e.detail && e.detail.ok === false ? "His laptop's own voice did not start" : "His laptop's own voice worked") : EVENT_WORDS[e.type] || e.type.replace(/_/g, " ");
   async function renderLog(day) {
     day = day || W.today();
     const body = $("logBody"); if (!body) return;
@@ -1168,7 +1199,7 @@
       '<p class="intro">The things you set once. Each part says what it does.</p>' +
       laptopCard() + detailsCard() + voiceCard() +
       '<section class="box" id="pkBox"><div class="bh"><h2>Choosing his new words</h2></div><p class="lead">Loading…</p></section>' +
-      '<details class="box fold" id="logBox"' + (openFolds.logBox ? " open" : "") + '><summary><span class="sum-t">Everything the game recorded</span><span class="sum-s">A list of everything the game recorded. You will rarely need it.</span></summary><div id="logBody"><p class="lead">Loading…</p></div></details>' +
+      '<details class="box fold" id="logBox"' + (openFolds.logBox ? " open" : "") + '><summary><span class="sum-t">Everything the game saved</span><span class="sum-s">A list of everything he did in the game, day by day. You will rarely need it.</span></summary><div id="logBody"><p class="lead">Loading…</p></div></details>' +
       "</div>";
     view.querySelector("#logBox").ontoggle = e => { openFolds.logBox = e.target.open; };
     wireVoice();
@@ -1176,6 +1207,9 @@
     $("stf").onsubmit = async e => {
       e.preventDefault();
       const n = (id, d, lo, hi) => { const x = Math.round(+$(id).value); return isFinite(x) && $(id).value !== "" ? Math.max(lo, Math.min(hi, x)) : d; };
+      // the PIN door in the game takes 4 numbers only: anything else would lock him out (25 November: "12a4" was saved)
+      $("sok").textContent = ""; $("sok").className = "ok";
+      if (!/^\d{4}$/.test($("s_pin").value.trim())) { $("sok").className = "err"; $("sok").textContent = "The PIN must be 4 numbers, for example 2468. Nothing was saved."; $("s_pin").focus(); return; }
       const { error } = await sb.from("students").update({ name: $("s_name").value.trim(), pin: $("s_pin").value.trim(), teacher_name: $("s_tn").value.trim() || "WordWizard", new_per_day: n("s_new", 2, 1, 5), start_date: $("s_start").value || W.today(),
         review_cap: n("s_cap", W.REVIEW_CAP, 1, 30), play_minutes: n("s_play", 10, 0, 60) }).eq("id", student.id);
       if (error) banner(error.message); else { $("sok").textContent = "Saved."; await loadAll(); }
@@ -1223,12 +1257,13 @@
     const rows = opt("", "Let the game choose (a British voice if there is one)", "", false) +
       vs.map(v => opt(v.name, v.name, esc(LANGS[v.lang] || v.lang || ""), true)).join("") +
       (cur && !curNet && !vs.some(v => v.name === cur) ? opt(cur, cur, "not in the list his laptop sent last", true) : "");
-    return '<section class="box voice"><div class="bh"><h2>The voice that reads to him</h2></div>' +
-      '<p class="lead">His laptop reads the words and the guide aloud. Choose the clearest voice. Only voices that work on his laptop itself are shown: other voices would send the words over the internet.</p>' +
+    return '<section class="box voice"><div class="bh"><h2>His laptop’s own voice</h2></div>' +
+      '<p>The game’s words, its sentences and Orbit’s lines are recordings in a British voice. They sound the same on every laptop. The choices below do not change them.</p>' +
+      '<p class="lead">His laptop’s own voice says only what has no recording: words you add yourself and school words that are not in the game’s word list, and some example sentences. Choose the clearest voice for those. Only voices that work on his laptop itself are shown: other voices would send the words over the internet. On some laptops this voice does not work; then he sees those words but does not hear them.</p>' +
       (all.length ? "" : '<p class="needs">The list appears after he has opened the game once on his laptop.</p>') +
       (curNet ? '<p class="needs">The voice chosen now (' + esc(cur) + ") works over the internet. Please choose one of the voices below.</p>" : "") +
       '<ul class="vlist">' + rows + "</ul>" + '<p class="lead" id="vmsg"></p>' +
-      '<h3>Speed</h3><div class="row vrate">' +
+      '<h3>Speed of his laptop’s voice</h3><div class="row vrate">' +
       ["normal", "slower"].map(r => '<label class="inl"><input type="radio" name="vrate" value="' + r + '"' + (r === rate ? " checked" : "") + "> " + (r === "normal" ? "Normal" : "Slower") + "</label>").join("") +
       '<span class="ok" id="vok"></span></div></section>';
   }
@@ -1245,7 +1280,7 @@
       const name = b.dataset.listen, msg = $("vmsg"); msg.textContent = "";
       let v = null;
       try { v = "speechSynthesis" in window ? (window.speechSynthesis.getVoices() || []).find(x => x.name === name) || null : null; } catch (e) { v = null; }
-      if (!v) { msg.textContent = "This voice is on his laptop, not on this computer. He can press Voice test in the game's menu."; return; }
+      if (!v) { msg.textContent = "This voice is on his laptop, not on this computer, so it cannot be played here."; return; }
       try {
         window.speechSynthesis.cancel();
         const u = new window.SpeechSynthesisUtterance(VOICE_SAMPLE); u.voice = v; u.lang = v.lang || "en-GB";
@@ -1277,7 +1312,7 @@
     const n = picked.reduce((s, x) => s + ((x.detail.words || []).length), 0);
     box.innerHTML = '<div class="bh"><h2>Choosing his new words</h2><span class="grow"></span>' +
       '<span class="sw-l">' + (on ? "Chosen by how he did" : "Fixed list") + '</span><button type="button" class="' + (on ? "" : "ghost ") + 'mini sw" id="pkSwitch" aria-pressed="' + on + '">' + (on ? "On" : "Off") + "</button></div>" +
-      "<p>Each level gets 2 new words, in this order: the words he did not know in the quick check, then your own words for the week's spelling pattern, then long words with that pattern, chosen by how he did. One pattern a week; long words get a lesson, and short words get a quick check first.</p>" +
+      (on ? "<p>Each level gets 2 new words. First the words he did not know in the quick check and your own words for the week's spelling pattern, one of each while both are waiting. Then long words with that pattern, chosen by how he did. One pattern a week; long words get a lesson, and short words get a quick check first.</p>" : "") +
       '<p class="lead">' + (on ? "On: from level 4, the game chooses his next words itself, mostly from the Cambridge English word lists for children, by how he did. Press to switch it off." : "Off: after the quick check words and your own words, each level gets the next words of a fixed list, in order. Press to let the game choose by how he did.") + "</p>" +
       (P ? now : '<p class="lead">This part of the game is not on this page.</p>') +
       '<details class="inner"><summary>Words the game chose so far (' + n + ")</summary>" +
