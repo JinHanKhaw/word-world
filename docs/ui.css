@@ -568,6 +568,8 @@ body[data-hd-open="build"] #w3open:not([data-spot="build"]){opacity:.6;filter:sa
 .hd-today[hidden]{display:none}
 .hd-today .hd-th{margin:0 0 calc(var(--u)*5);font-size:calc(var(--u)*12.5);font-weight:700;letter-spacing:.14em;text-transform:uppercase;opacity:.75}
 .hd-today ol{list-style:none;margin:0;padding:0;display:grid;gap:calc(var(--u)*5)}
+/* after the first level: one quiet line that a second level waits in the mailbox (his choice; 26 November) */
+.hd-today .hd-more{margin:calc(var(--u)*8) 0 0;padding-top:calc(var(--u)*7);border-top:calc(var(--u)*1) solid currentColor;border-top-color:color-mix(in srgb,currentColor 25%,transparent);font-size:calc(var(--u)*13);font-weight:600;line-height:1.25;max-width:calc(var(--u)*150);opacity:.9}
 .hd-today li{display:flex;align-items:center;gap:calc(var(--u)*8);font-size:calc(var(--u)*14);font-weight:600;line-height:1.15}
 .hd-today li i{flex:none;width:calc(var(--u)*17);height:calc(var(--u)*17);border-radius:50%;border:calc(var(--u)*1.6) solid currentColor;display:grid;place-items:center;opacity:.55}
 .hd-today li i .ic{font-size:calc(var(--u)*11);stroke-width:3}
@@ -1213,7 +1215,7 @@ mark.lv-cmark.lv-cspace{display:inline-block;min-width:calc(var(--u)*11)}
 .btn.lv-slow{min-height:calc(var(--u)*38);gap:calc(var(--u)*7);font-size:calc(var(--u)*15.5)}
 .btn.lv-slow .ic{font-size:calc(var(--u)*18)}
 .lv-pbzh{margin:0;font-family:var(--f-zh);font-size:calc(var(--u)*30);line-height:1.2;color:var(--ink)}
-/* the stamp between parts: a long part name ("old words", "orbit's training") stays inside the circle (it ran over the ring) */
+/* the stamp between parts: a long part name ("old words", "quick check") stays inside the circle (it ran over the ring) */
 .lv-center .stamp.lv-ok>span:first-child{max-width:calc(var(--u)*72);letter-spacing:.06em;line-height:1.05}
 
 /* the first Hint press on a page without the word's Chinese meaning: the meaning, large, over the letter lines */
@@ -1226,14 +1228,12 @@ mark.lv-cmark.lv-cspace{display:inline-block;min-width:calc(var(--u)*11)}
 .lv-qk .kind{margin:0}
 .lv-cue.lv-qkcue{margin:calc(var(--u)*8) 0 calc(var(--u)*2);gap:calc(var(--u)*30)}
 .lv-cue.lv-qkcue .paint.lv-pic{width:calc(var(--u)*120)}
-.lv-cue.lv-qkcue .lv-zbig,.lv-cue.lv-agcue .lv-zbig{margin:0}
+.lv-cue.lv-qkcue .lv-zbig{margin:0}
 .lv-qkshow{margin:calc(var(--u)*4) 0 0}
 .lv-qkshow .lv-rword{margin:calc(var(--u)*2) 0 0}
 /* the quick check's Hint button looks as on every typing page; its tap area is 56 high (44 px also in a 1024 x 640 window) */
 .lv-qk~.lv-hintrow .lv-hintbtn::before{content:"";position:absolute;left:0;right:0;top:50%;height:calc(var(--u)*56);margin-top:calc(var(--u)*-28)}
 .lv-center .do.lv-qksum{margin:calc(var(--u)*4) 0 calc(var(--u)*2)}
-/* "One more time": the Chinese meaning and the sound button side by side */
-.lv-cue.lv-agcue{margin:calc(var(--u)*14) 0 calc(var(--u)*4)}
 
 /* ---- 82-school.css ---- */
 /* ============ school words at the watchtower (owner: school team; prefix sc-) ============ */
@@ -1379,18 +1379,7 @@ mark.lv-cmark.lv-cspace{display:inline-block;min-width:calc(var(--u)*11)}
 .pr-end #prGo{min-height:calc(var(--u)*58);padding:0 calc(var(--u)*30)}
 
 /* ---- 84-training.css ---- */
-/* Orbit's training: the tip page. The word pages use the level's own classes. Owner: patterns team. */
-/* the tip: a pinned note with Orbit's face where the kit puts the icon */
-.note.tr-tip{margin:calc(var(--u)*16) 0 0;padding:calc(var(--u)*14) calc(var(--u)*18) calc(var(--u)*15) calc(var(--u)*74);min-height:calc(var(--u)*76)}
-.note.tr-tip .tr-face{position:absolute;left:calc(var(--u)*14);top:calc(var(--u)*14);width:calc(var(--u)*46);height:calc(var(--u)*46);border-radius:50%;object-fit:cover;box-shadow:0 0 0 calc(var(--u)*2) #fffaf0,0 0 0 calc(var(--u)*3.4) var(--ember-lo),0 calc(var(--u)*2) calc(var(--u)*6) rgba(90,60,30,.3)}
-.note.tr-tip .tr-en{font-size:calc(var(--u)*21);font-weight:600;line-height:1.35;color:var(--ink)}
-.note.tr-tip .zh{font-size:calc(var(--u)*17);margin-top:calc(var(--u)*4)}
-/* one example word: the letters to look at in ember, underlined; a faint bar between beats */
-.tr-look{display:flex;align-items:baseline;justify-content:center;gap:calc(var(--u)*18);margin:calc(var(--u)*22) 0 calc(var(--u)*6)}
-.tr-look .cap{font-family:var(--f-display);font-size:calc(var(--u)*12.5);letter-spacing:.16em;text-transform:uppercase;color:var(--ember-lo)}
-.tr-ex{margin:0;font-family:var(--f-body);font-size:calc(var(--u)*52);font-weight:600;letter-spacing:.02em;line-height:1.1;color:var(--ink)}
-.tr-ex .tr-mark{font-style:normal;color:var(--ember);border-bottom:calc(var(--u)*3) solid var(--ember);padding:0 calc(var(--u)*1)}
-.tr-ex .tr-cut{display:inline-block;width:calc(var(--u)*3);height:.7em;margin:0 calc(var(--u)*9);border-radius:calc(var(--u)*2);background:var(--ink-3);opacity:.45;vertical-align:-.02em}
+/* (removed) the tip page before the quick check: see src/js/84-training.js. */
 
 /* ---- 86-raid.css ---- */
 /* The night watch (owner: raid team, prefix rd-). Built on the kit's .glass, .paper, .btn, .sound, .answer and the level's

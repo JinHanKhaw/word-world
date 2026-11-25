@@ -800,13 +800,15 @@
 
   function renderWords() { renderWordsAsync(); }
   async function renderWordsAsync() {
-    const [, a, e] = await Promise.all([recLoad(),
+    const [, a, e, ma] = await Promise.all([recLoad(),
       safe(sb.from("attempts").select("*").eq("student_id", student.id).in("kind", ["new", "review", "test", "probe"])),
-      safe(sb.from("events").select("*").eq("student_id", student.id).in("type", ["rescue", "picked"]))
+      safe(sb.from("events").select("*").eq("student_id", student.id).in("type", ["rescue", "picked"])),
+      safe(sb.from("attempts").select("*").eq("student_id", student.id).in("kind", ["new", "review", "test", "mixed"]))   // the monster game's misses
     ]);
     await loadAll();
     if (tab !== "words") return;
     lineAE = { A: (a && a.data) || [], E: (e && e.data) || [] };
+    owA = (ma && ma.data) || [];
     drawWords();
   }
   function drawWords() {
@@ -829,11 +831,15 @@
       "<p>Each new word comes back after 1, 4 and 14 days, so he practises it again. When he spells it right each time, he knows it well. Every 10th level is a short spelling test of the island's words. His school spelling list comes on top: he practises 5 of those words a day.</p></section>" +
       '<section class="box ln" id="line">' + lineHtml(first) + "</section>" +
       '<section class="box ln-tray" id="tray">' + trayHtml() + "</section>" +
+      '<section class="box ow" id="oldW">' + oldWordsHtml() + "</section>" +
+      '<section class="box mg" id="monster">' + monsterHtml() + "</section>" +
+      '<section class="box rmode" id="rmWords">' + modeHtml("rmw") + "</section>" +
       '<section class="box"><div class="bh"><h2>Words he has learned</h2></div><p class="lead">The 2 words of each level he finished, newest first, with the day he finished it. <b>Repeat…</b> sets when a word is asked again and how many more times.</p>' + doneHtml + "</section>" +
       '<details class="box fold" id="wEdit"' + (openFolds.wEdit ? " open" : "") + '><summary><span class="sum-t">Add or change words yourself</span><span class="sum-s">All his words in one table, with every detail of a word. You rarely need this: the line above does the everyday changes.</span></summary>' + wordTools() + "</details></div>";
     view.querySelector("#wEdit").ontoggle = ev => { openFolds.wEdit = ev.target.open; };
     view.querySelectorAll("details.ln-week").forEach(x => { x.ontoggle = () => { openFolds["wk" + x.dataset.wk] = x.open; }; });
     wireLine(); wireTray(); wireRepeat(); wireWordTools(); wireCommon();
+    wireOld(); wireMonster(); wireMode($("rmWords"), "rmw", () => drawOld());
     bandLine();
   }
   function lineHtml(first) {
@@ -1051,6 +1057,238 @@
       show();
     });
   }
+  // ---------- old words, the monster game, which words come back (the tutor, 25 November) ----------
+  // The page cannot call the game's code, so the game's rules are written here once more, line for line, and nowhere else on
+  // this page: src/js/00-core.js dayState / openDay (two levels a day), CHECK_CAP, checksToday, dueReviews; 80-level.js
+  // startQuest (a word in the monster game is asked there, not as an old word), islandTutor, islandMisses, islandChoice.
+  // tests/test-teacher-words.js loads the game and this page on the same stand-in data and compares the lists they give.
+  let owA = [];      // his tries of the kinds the monster game counts (new, review, test, mixed), loaded with the Words tab
+  let owMsg = "";    // the one line under the old words after a change: what the game does with it
+  let mgEdit = null; // her list for the monster game while she changes it (an array of words), or null
+  const gWords = () => words.filter(w => w.approved);   // the game loads only the words he can see
+  const gDayWords = d => gWords().filter(w => w.quest_day === d);
+  const gMaxDay = () => Math.max(LEVELS, gWords().reduce((m, w) => Math.max(m, w.quest_day || 0), 0));
+  const gDoneOn = d => { const r = questRow(d); return r && r.finished_at ? W.dkey(new Date(r.finished_at)) : null; };
+  const gDoneToday = t => quests.filter(x => x.completed && x.finished_at && W.dkey(new Date(x.finished_at)) === t).length;
+  function gDayState(d, t) {
+    if (dayDone(d)) return "done";
+    if (d === 1 ? (student.start_date || t) > t : !(dayDone(d - 1) && (gDoneOn(d - 1) < t || gDoneToday(t) < 2))) return "locked";
+    if (student.pause_new && !questRow(d)) return "paused";
+    return gDayWords(d).length || isTest(d) ? "open" : "empty";
+  }
+  const gOpenDay = t => { for (let d = 1; d <= gMaxDay(); d++) if (gDayState(d, t) === "open") return d; return null; };
+  const gCap = () => student.review_cap || W.REVIEW_CAP;
+  const gChecksToday = t => { const d = gOpenDay(t), r = d ? questRow(d) : null; return r && !r.completed && r.started_at && W.dkey(new Date(r.started_at)) === t ? (r.reviews_right || 0) + (r.reviews_wrong || 0) : 0; };
+  const gDueAll = t => gWords().filter(w => w.level > 0 && w.level < W.DIAMOND && w.due && w.due <= t && w.last_seen !== t)
+    .sort((a, b) => a.level !== b.level ? a.level - b.level : (a.due < b.due ? -1 : 1));
+  const gDue = t => gDueAll(t).slice(0, Math.max(0, gCap() - gChecksToday(t)));
+  const ISLAND_N = 10;
+  function gIslandMap() { let m = student.island_words; if (typeof m === "string") { try { m = JSON.parse(m); } catch (e) { m = null; } } return m && typeof m === "object" && !Array.isArray(m) ? m : {}; }
+  function gIslandTutor(level) {
+    const list = gIslandMap()[String(level)];
+    if (!Array.isArray(list) || !list.length) return [];
+    const out = [];
+    list.forEach(x => { const w = gWords().find(v => W.key(v.word) === W.key(x)); if (w && w.level > 0 && out.indexOf(w) < 0 && out.length < ISLAND_N) out.push(w); });
+    return out;
+  }
+  function gMisses() {   // word id -> { n, last }: his first tries that were not right
+    const by = {}, seen = new Set();
+    owA.slice().sort((a, b) => String(a.created_at || "") < String(b.created_at || "") ? -1 : 1).forEach(a => {
+      if (!a.word_id) return;
+      if (a.kind === "mixed") { const k = a.quest_id + "|" + a.word_id + "|" + a.step; if (seen.has(k)) return; seen.add(k); }
+      if (a.correct !== false) return;
+      const e = by[a.word_id] || (by[a.word_id] = { n: 0, last: "" }); e.n++; if (String(a.created_at || "") > e.last) e.last = String(a.created_at || "");
+    });
+    return by;
+  }
+  function gIslandSystem(t) {
+    const by = gMisses(), open = w => w.level > 0 && w.level < W.DIAMOND && w.last_seen !== t;
+    return gWords().filter(w => open(w) && by[w.id] && by[w.id].n > 0)
+      .sort((a, b) => by[b.id].n - by[a.id].n || (by[a.id].last < by[b.id].last ? 1 : by[a.id].last > by[b.id].last ? -1 : 0) || a.level - b.level)
+      .slice(0, ISLAND_N);
+  }
+  const gIsland = (level, t) => { const mine = gIslandTutor(level); return mine.length ? { words: mine, by: "tutor" } : { words: gIslandSystem(t), by: "system" }; };
+  // His next level and the day the old words are worked out for: a level open now, today; when today's levels are done, the
+  // next one tomorrow (a level waiting for words, or paused, as if he started it now).
+  function owNext() {
+    const t = W.today(), d = gOpenDay(t);
+    if (d) return { level: d, day: t, when: "now" };
+    const tm = W.addDays(t, 1), n = nextLevel();
+    if (n <= LEVELS && gDayState(n, t) === "locked" && gOpenDay(tm) === n) return { level: n, day: tm, when: "tomorrow" };
+    return { level: n, day: t, when: n > LEVELS ? "none" : "notopen" };
+  }
+  // exactly the old words of his next level, in the game's order (a word of the monster game is asked there instead)
+  function owNextWords(N) {
+    const island = isTest(N.level) && !dayDone(N.level) ? gIsland(N.level, N.day).words : [];
+    return gDue(N.day).filter(w => island.indexOf(w) < 0);
+  }
+  const MEET = { 1: "First meeting, after 1 day", 2: "Second meeting, after 4 days", 3: "Third meeting, after 14 days" };
+  const reviewModeNow = () => student.review_mode === "once" || student.review_mode === "all" ? student.review_mode : "missed";
+  const zhOf = w => w.meaning_zh ? ' <span class="zh muted" lang="zh-CN">' + esc(w.meaning_zh) + "</span>" : "";
+  function owItem(w, inNext) {
+    const t = W.today(), lv = Math.min(Math.max(w.level, 1), W.TOP);
+    return '<li data-wid="' + w.id + '"><div class="ow-w"><b>' + esc(w.word) + "</b>" + zhOf(w) + '<span class="ow-s">' + MEET[lv] + "</span></div>" +
+      '<div class="ow-a">' +
+      (inNext ? '<span class="ow-in">In his next level</span>' : '<button type="button" class="ghost mini" data-ownow="' + w.id + '">Ask it in his next level</button>') +
+      '<label class="ow-f">Move it to <input type="date" data-owdate="' + w.id + '" value="' + esc(w.due && w.due >= t ? w.due : t) + '" min="' + t + '"></label>' +
+      '<label class="ow-f">Meeting <select data-owstep="' + w.id + '">' + [1, 2, 3].map(n => '<option value="' + n + '"' + (n === lv ? " selected" : "") + ">" + ["", "First", "Second", "Third"][n] + "</option>").join("") + "</select></label>" +
+      '<button type="button" class="ghost mini" data-owfin="' + w.id + '">Finished: do not ask again</button></div></li>';
+  }
+  function owGroupName(k, t) {
+    const n = Math.round((new Date(k + "T00:00:00") - new Date(t + "T00:00:00")) / 864e5);
+    return (n === 1 ? "Tomorrow" : "In " + n + " days") + " · " + esc(day3(k));
+  }
+  function oldWordsHtml() {
+    const t = W.today(), N = owNext(), next = N.when === "none" ? [] : owNextWords(N), mode = reviewModeNow();
+    const ladderW = gWords().filter(w => w.level > 0 && w.level < W.DIAMOND);
+    const finished = gWords().filter(w => w.level >= W.DIAMOND).sort((a, b) => W.key(a.word) < W.key(b.word) ? -1 : 1);
+    const head = '<div class="bh"><h2>Old words</h2></div><p class="lead">Words he learned before come back on set days. Each level asks at most ' + gCap() +
+      " of them: the earliest meetings and the longest waiting first.</p>";
+    let nextHtml;
+    const nTitle = N.when === "none" ? "" : "In his next level (level " + N.level + (N.when === "tomorrow" ? ", tomorrow" : "") + ")";
+    if (N.when === "none") nextHtml = "";
+    else if (next.length) nextHtml = '<h3 class="ow-h">' + nTitle + '</h3><p class="ow-note">In this order. ' + (N.when === "notopen" ? "Level " + N.level + " is not open yet; this is the list if he started it now." : N.when === "tomorrow" ? "He has played his levels for today." : "If he started a level now.") + "</p>" +
+      '<ol class="ow-list" id="owNext">' + next.map(w => owItem(w, true)).join("") + "</ol>";
+    else nextHtml = '<h3 class="ow-h">' + nTitle + '</h3><p class="ow-none" id="owNext">' + (ladderW.length ? "No old words in his next level." : mode === "missed" ? "No old words now. Words he spells right the first time are finished at once." : "No old words now.") + "</p>";
+    const later = ladderW.filter(w => next.indexOf(w) < 0);
+    const isl = N.when !== "none" && isTest(N.level) && !dayDone(N.level) ? gIsland(N.level, N.day).words : [];
+    const groups = {}, ORD = { isl: "0", wait: "1", seen: "2" };
+    later.forEach(w => {
+      const k = !w.due || w.due <= N.day ? (w.last_seen === N.day ? "seen" : isl.indexOf(w) >= 0 ? "isl" : "wait") : w.due;
+      (groups[k] = groups[k] || []).push(w);
+    });
+    const keys = Object.keys(groups).sort((a, b) => (ORD[a] || a) < (ORD[b] || b) ? -1 : 1);
+    const laterHtml = '<h3 class="ow-h">Coming back later</h3>' + (keys.length ? keys.map(k =>
+      '<div class="ow-day"><h4>' + (k === "isl" ? "Ready now, asked in the monster game of level " + N.level + " instead" : k === "wait" ? "Waiting now: more than " + gCap() + " are ready, so these come in a later level" : k === "seen" ? "He met these today: they come in his next level tomorrow" : owGroupName(k, t)) + "</h4>" +
+      '<ul class="ow-list">' + groups[k].map(w => owItem(w, false)).join("") + "</ul></div>").join("") : '<p class="ow-none">No other word is coming back.</p>');
+    const finHtml = finished.length ? '<details class="ow-fin" id="owFin"' + (openFolds.owFin ? " open" : "") + '><summary>Finished words, not asked again (' + finished.length + ')</summary><ul class="ow-list">' +
+      finished.map(w => '<li data-wid="' + w.id + '"><div class="ow-w"><b>' + esc(w.word) + "</b>" + zhOf(w) + '</div><div class="ow-a"><button type="button" class="ghost mini" data-rep="' + w.id + '">Bring it back</button></div><div class="rp-slot"></div></li>').join("") + "</ul></details>" : "";
+    return head + nextHtml + laterHtml + finHtml + '<p class="ow-msg" id="owMsg" aria-live="polite">' + esc(owMsg) + "</p>";
+  }
+  function drawOld() { const el = $("oldW"); if (!el) return; el.innerHTML = oldWordsHtml(); wireOld(); }
+  async function owSave(w, patch, say) {
+    const { error } = await sb.from("words").update(patch).eq("id", w.id);
+    if (error) { owMsg = "Not saved: " + error.message; drawOld(); return; }
+    Object.assign(w, patch); owMsg = say(); drawOld(); drawMonster();
+  }
+  function wireOld() {
+    const root = $("oldW"); if (!root) return;
+    const byId = id => words.find(x => x.id === id), t = W.today();
+    const fin = root.querySelector("#owFin"); if (fin) fin.ontoggle = () => { openFolds.owFin = fin.open; };
+    root.querySelectorAll("[data-ownow]").forEach(b => b.onclick = () => { const w = byId(b.dataset.ownow); if (w) owSave(w, { due: t }, () => {
+      const N = owNext(); if (owNextWords(N).indexOf(w) >= 0) return "Saved. The game asks “" + w.word + "” in his next level.";
+      return w.last_seen === t ? "Saved. He met “" + w.word + "” today already, so the game asks it in his first level tomorrow." : "Saved. “" + w.word + "” is ready now; " + gCap() + " other old words come first, so it comes in the level after.";
+    }); });
+    root.querySelectorAll("[data-owdate]").forEach(x => x.onchange = () => {
+      const w = byId(x.dataset.owdate), v = x.value; if (!w || !v) return;
+      if (v < t) { owMsg = "Choose a day from today on."; drawOld(); return; }
+      owSave(w, { due: v }, () => v === t ? "Saved. “" + w.word + "” is ready today." : "Saved. The game asks “" + w.word + "” in his first level on or after " + day3(v) + ".");
+    });
+    root.querySelectorAll("[data-owstep]").forEach(x => x.onchange = () => {
+      const w = byId(x.dataset.owstep), n = +x.value; if (!w || !(n >= 1 && n <= 3)) return;
+      owSave(w, w.due ? { level: n } : { level: n, due: W.addDays(t, 1) }, () => "Saved. “" + w.word + "” is on its " + ["", "first", "second", "third"][n] + " meeting. Right the first time, it moves on to the next one; if not yet, it goes back one and comes again the next day.");
+    });
+    root.querySelectorAll("[data-owfin]").forEach(b => b.onclick = () => { const w = byId(b.dataset.owfin); if (w) owSave(w, { level: W.DIAMOND, due: null }, () => "Saved. “" + w.word + "” is finished: the game does not ask it again. “Bring it back” under Finished words undoes it."); });
+    wireRepeat();
+  }
+  // ---- the monster game: the next island test (every 10th level) ----
+  const nextIsland = () => { let d = nextLevel(); while (d <= LEVELS && (!isTest(d) || dayDone(d))) d++; return d <= LEVELS ? d : null; };
+  function monsterHtml() {
+    const t = W.today(), L = nextIsland(), now = nextLevel();
+    const head = '<div class="bh"><h2>The monster game</h2></div>';
+    if (!L) return head + '<p class="lead">No island test is left.</p>';
+    const away = L - now, by = gMisses();
+    const missN = w => (by[w.id] && by[w.id].n) || 0;
+    const when = away <= 0 ? "Level " + L + " is his next level: an island test." : "Level " + L + " is the next island test, " + many(away, "level") + " from now (his next level is " + now + ").";
+    const sys = gIslandSystem(t), mine = gIslandTutor(L), saved = gIslandMap()[String(L)];
+    const savedList = Array.isArray(saved) ? saved : [];
+    const dropped = savedList.filter(x => !mine.some(w => W.key(w.word) === W.key(x)));
+    const metToday = gWords().filter(w => w.level > 0 && w.level < W.DIAMOND && w.last_seen === t && missN(w) > 0);
+    const timesN = n => n === 1 ? "missed once" : n === 2 ? "missed twice" : "missed " + n + " times";
+    const sysHtml = '<div class="mg-col"><h3>The game’s choice now</h3>' + (sys.length
+      ? '<ol class="mg-list" id="mgGame">' + sys.map(w => '<li><b>' + esc(w.word) + "</b>" + zhOf(w) + ' <span class="mg-n">' + timesN(missN(w)) + "</span></li>").join("") + "</ol>"
+      : '<p class="ow-none" id="mgGame">' + (metToday.length ? "None yet." : "He has missed no word that is still coming back.") + "</p>") +
+      (metToday.length ? '<p class="ow-note">Missed today: ' + metToday.map(w => esc(w.word)).join(", ") + ". Words he meets on a day are left out of that day’s choice, so " + (metToday.length === 1 ? "it counts" : "they count") + " from tomorrow.</p>" : "") +
+      '<p class="ow-note">The words he missed most, then the ones he missed last. Up to ' + ISLAND_N + ", never filled up with other words. Finished words and words he meets that day are left out. This changes as he plays.</p></div>";
+    let herHtml;
+    if (mgEdit) {
+      const taught = gWords().filter(w => w.level > 0).sort((a, b) => missN(b) - missN(a) || (W.key(a.word) < W.key(b.word) ? -1 : 1));
+      const on = x => mgEdit.some(y => W.key(y) === W.key(x));
+      herHtml = '<div class="mg-col mg-ed"><h3>Your own list</h3><p class="ow-note">Tick up to ' + ISLAND_N + " words he has learned, or type one. They come in the order you add them.</p>" +
+        '<ol class="mg-list" id="mgMine">' + (mgEdit.length ? mgEdit.map((x, i) => '<li><b>' + esc(x) + '</b> <button type="button" class="ghost mini" data-mgdel="' + i + '" aria-label="Take out ' + esc(x) + '">Take out</button></li>').join("") : "") + "</ol>" + (mgEdit.length ? "" : '<p class="ow-none">No word yet.</p>') +
+        '<form class="mg-type" id="mgType" autocomplete="off"><input type="text" name="w" placeholder="Type a word of his" spellcheck="false" aria-label="Type a word of his"><button type="submit" class="ghost mini">Add</button></form>' +
+        '<p class="err" id="mgErr" aria-live="polite"></p>' +
+        '<div class="mg-ticks">' + (taught.length ? taught.map(w => '<label class="mg-tick"><input type="checkbox" data-mgtick="' + esc(w.word) + '"' + (on(w.word) ? " checked" : "") + "> <b>" + esc(w.word) + "</b>" + (missN(w) ? ' <span class="mg-n">' + timesN(missN(w)) + "</span>" : "") + "</label>").join("") : '<p class="ow-none">He has not learned any word yet.</p>') + "</div>" +
+        '<div class="row"><button type="button" id="mgSave">Save my list</button><button type="button" class="ghost" id="mgCancel">Cancel</button></div></div>';
+    } else {
+      herHtml = '<div class="mg-col"><h3>Your own list</h3>' + (mine.length
+        ? '<ol class="mg-list" id="mgMine">' + mine.map(w => '<li><b>' + esc(w.word) + "</b>" + zhOf(w) + "</li>").join("") + "</ol>" +
+          (dropped.length ? '<p class="ow-note">Left out, he has not learned ' + (dropped.length === 1 ? "it" : "them") + " yet: " + dropped.map(esc).join(", ") + ".</p>" : "")
+        : '<p class="ow-none" id="mgMine">' + (savedList.length ? "None of your words has been learned yet, so the game uses its own choice." : "No list of yours for level " + L + ".") + "</p>") +
+        '<div class="row"><button type="button" class="ghost" id="mgEditBtn">' + (savedList.length ? "Change my list" : "Make my own list") + "</button>" +
+        (savedList.length ? '<button type="button" class="ghost" id="mgGameBtn">Use the game’s choice</button>' : "") + "</div></div>";
+    }
+    const use = mine.length ? mine : sys;
+    const verdict = use.length ? '<p class="mg-use" id="mgUse"><b>On level ' + L + ":</b> the monster game asks " + many(use.length, "word") + ", from " + (mine.length ? "your list" : "the game’s choice") + ".</p>"
+      : '<p class="mg-use" id="mgUse">No monster game on level ' + L + " yet: " + (metToday.length ? "the words he missed were met today; they count from tomorrow." : "he has missed no word.") + " The level still has his old words.</p>";
+    return head + '<p class="lead">' + when + " In it, a monster game asks the words he missed. You can choose them yourself.</p>" + verdict + '<div class="mg-cols">' + sysHtml + herHtml + "</div>" +
+      '<p class="ow-msg" id="mgMsg" aria-live="polite"></p>';
+  }
+  function drawMonster(msg) { const el = $("monster"); if (!el) return; el.innerHTML = monsterHtml(); wireMonster(); if (msg) $("mgMsg").textContent = msg; }
+  async function mgStore(L, list) {
+    const m = Object.assign({}, gIslandMap()); if (list && list.length) m[String(L)] = list; else delete m[String(L)];
+    const { error } = await sb.from("students").update({ island_words: m }).eq("id", student.id);
+    if (error) return error.message;
+    student.island_words = m; return "";
+  }
+  function wireMonster() {
+    const L = nextIsland(); if (!L) return;
+    const eb = $("mgEditBtn"); if (eb) eb.onclick = () => { const s = gIslandMap()[String(L)]; mgEdit = Array.isArray(s) ? s.slice(0, ISLAND_N) : []; drawMonster(); };
+    const gb = $("mgGameBtn"); if (gb) gb.onclick = async () => { const e = await mgStore(L, null); drawMonster(e ? "Not saved: " + e : "Saved. Level " + L + " uses the game’s choice."); };
+    if (!mgEdit) return;
+    const err = m => { $("mgErr").textContent = m; };
+    const add = x => {
+      const w = gWords().find(v => W.key(v.word) === W.key(x));
+      if (!w || !(w.level > 0)) { err("He has not learned “" + x + "” yet. Only words he has learned can go in."); return false; }
+      if (mgEdit.some(y => W.key(y) === W.key(w.word))) { err("“" + w.word + "” is in your list already."); return false; }
+      if (mgEdit.length >= ISLAND_N) { err("Your list has " + ISLAND_N + " words. Take one out first."); return false; }
+      mgEdit.push(w.word); return true;
+    };
+    $("mgType").onsubmit = ev => { ev.preventDefault(); const v = asTyped($("mgType").querySelector("input").value); if (!v) return; if (add(v)) drawMonster(); };
+    $("monster").querySelectorAll("[data-mgtick]").forEach(c => c.onchange = () => {
+      const x = c.dataset.mgtick;
+      if (c.checked) { if (!add(x)) { c.checked = false; return; } } else mgEdit = mgEdit.filter(y => W.key(y) !== W.key(x));
+      drawMonster();
+    });
+    $("monster").querySelectorAll("[data-mgdel]").forEach(b => b.onclick = () => { mgEdit.splice(+b.dataset.mgdel, 1); drawMonster(); });
+    $("mgCancel").onclick = () => { mgEdit = null; drawMonster(); };
+    $("mgSave").onclick = async () => {
+      const list = mgEdit.slice(); const e = await mgStore(L, list);
+      if (e) { err("Not saved: " + e); return; }
+      mgEdit = null; drawMonster(list.length ? "Saved. Level " + L + " asks your " + many(list.length, "word") + ", in your order." : "Saved. Your list is empty, so level " + L + " uses the game’s choice.");
+    };
+  }
+  // ---- which words come back: students.review_mode (also in Settings) ----
+  const MODES = [["missed", "Only words he missed", "A word he spells right the first time is finished. A word he missed comes back after 1, 4 and 14 days."],
+    ["once", "Right words come back once, the next day", "A word he spells right comes back one more time, the next day. A word he missed comes back after 1, 4 and 14 days."],
+    ["all", "Every word comes back after 1, 4 and 14 days", "Every new word comes back three times, then it is finished."]];
+  function modeHtml(id) {
+    const cur = reviewModeNow();
+    return '<div class="bh"><h2>Which words come back</h2></div><div class="rm-opts" role="radiogroup" aria-label="Which words come back">' +
+      MODES.map(([v, l, s]) => '<label class="rm' + (v === cur ? " on" : "") + '"><input type="radio" name="' + id + '" value="' + v + '"' + (v === cur ? " checked" : "") + "><span><b>" + l + '</b><span class="fh">' + s + "</span></span></label>").join("") +
+      '</div><p class="ow-note">Saved at once. Words already coming back keep their day when you change this.</p><p class="ok" data-rmok aria-live="polite"></p>';
+  }
+  function wireMode(box, id, after) {
+    if (!box) return;
+    box.querySelectorAll('input[name="' + id + '"]').forEach(r => r.onchange = async () => {
+      const v = r.value, ok = box.querySelector("[data-rmok]");
+      const { error } = await sb.from("students").update({ review_mode: v }).eq("id", student.id);
+      if (error) { ok.className = "err"; ok.textContent = "Not saved: " + error.message; return; }
+      student.review_mode = v; box.querySelectorAll(".rm").forEach(l => l.classList.toggle("on", l.querySelector("input").checked));
+      if (after) after();
+      const ok2 = box.querySelector("[data-rmok]"); if (ok2) { ok2.className = "ok"; ok2.textContent = "Saved. From now on: " + MODES.find(m => m[0] === v)[1].toLowerCase() + "."; }
+    });
+  }
   // The difficulty the word choice uses now, as one plain line under "How the game chooses his words".
   async function bandLine() {
     const P = window.WW_PICKER, el = $("wBand"); if (!P || !el || student.picker === false) return;
@@ -1198,12 +1436,12 @@
   function renderSettings() {
     view.innerHTML = '<div class="settings">' +
       '<p class="intro">The things you set once. Each part says what it does.</p>' +
-      loginCard() + detailsCard() + voiceCard() +
+      loginCard() + detailsCard() + '<section class="box rmode" id="rmSet">' + modeHtml("rms") + "</section>" + voiceCard() +
       '<section class="box" id="pkBox"><div class="bh"><h2>Choosing his new words</h2></div><p class="lead">Loading…</p></section>' +
       '<details class="box fold" id="logBox"' + (openFolds.logBox ? " open" : "") + '><summary><span class="sum-t">Everything the game saved</span><span class="sum-s">A list of everything he did in the game, day by day. You will rarely need it.</span></summary><div id="logBody"><p class="lead">Loading…</p></div></details>' +
       "</div>";
     view.querySelector("#logBox").ontoggle = e => { openFolds.logBox = e.target.open; };
-    wireVoice();
+    wireVoice(); wireMode($("rmSet"), "rms");
     $("lgf").onsubmit = async e => {
       e.preventDefault();
       const pw = $("s_pw").value.replace(PW_WS, "");
@@ -1252,7 +1490,7 @@
       '<label class="f">His name' + hint("Used on this page and in the note for his mother.") + '<input type="text" id="s_name" value="' + esc(student.name) + '"></label>' +
       '<label class="f">Your name in his game' + hint("Your letters to him come from this name.") + '<input type="text" id="s_tn" value="' + esc(student.teacher_name || "WordWizard") + '" maxlength="24"></label>' +
       '<label class="f">First day of the game' + hint("Level 1 opens on this day.") + '<input type="date" id="s_start" value="' + esc(student.start_date || W.today()) + '"></label>' +
-      '<label class="f">Words to go over again each day, at most' + hint("Words he learned before that come back that day.") + '<input type="number" id="s_cap" value="' + (student.review_cap || W.REVIEW_CAP) + '" min="1" max="30"></label>' +
+      '<label class="f">Old words in each level, at most' + hint("Words he learned before that come back in a level.") + '<input type="number" id="s_cap" value="' + (student.review_cap || W.REVIEW_CAP) + '" min="1" max="30"></label>' +
       '<label class="f">New words in each level' + hint("Used when you give levels to your own words.") + '<input type="number" id="s_new" value="' + (student.new_per_day || 2) + '" min="1" max="5"></label>' +
       '<label class="f">Free play after his words (minutes)' + hint("Time to build on his island when his words are done.") + '<input type="number" id="s_play" value="' + (student.play_minutes || 10) + '" min="0" max="60"></label>' +
       '<p class="lead wide">Each word comes back after 1, 4 and 14 days. After that he knows it well. With 2 new words a day, that makes about 6 words to go over each day.</p>' +

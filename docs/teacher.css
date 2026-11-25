@@ -411,3 +411,54 @@ ul.ln-ws{display:grid;gap:0}
 .sc-words td.zhc{width:140px}
 .sc-words .sc-zh{width:130px}
 @media (max-width:1180px){ .sc-grid{grid-template-columns:minmax(0,1fr)} }
+/* ---- old words, the monster game, which words come back (Words tab, 25 November) ---- */
+.ow-h{margin:18px 0 4px;font-size:18px}
+.ow-note{margin:2px 0 8px;color:var(--ink-2);font-size:15.5px}
+.ow-none{margin:6px 0 10px;color:var(--ink-2);font-style:italic}
+.ow-list{list-style:none;margin:0;padding:0}
+ol.ow-list{counter-reset:ow}
+.ow-list>li{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 14px;padding:10px 0;border-top:1px dotted var(--rule)}
+.ow-list>li:first-child{border-top:0}
+ol.ow-list>li::before{counter-increment:ow;content:counter(ow);flex:none;width:28px;height:28px;border-radius:50%;background:var(--paper-lo);display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:14.5px}
+.ow-w{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;flex:1 1 220px;min-width:0}
+.ow-w b{font-family:var(--f-display);font-weight:400;font-size:21px;letter-spacing:.02em}
+.ow-s{flex-basis:100%;font-size:14.5px;font-weight:700;color:var(--ink-2)}
+.ow-a{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:8px}
+.ow-a button.mini{min-height:44px}
+.ow-f{display:inline-flex;align-items:center;gap:6px;font-size:14.5px;font-weight:700;color:var(--ink-2)}
+.ow-f input,.ow-f select{min-height:44px;width:auto;font-weight:400;color:var(--ink)}
+.ow-in{font-size:14.5px;font-weight:700;color:var(--leaf);padding:0 6px}
+.ow-day h4{margin:14px 0 2px;font-size:16px;color:var(--ember-lo)}
+.ow-fin{margin-top:16px}
+.ow-fin summary{cursor:pointer;font-weight:700;min-height:44px;display:flex;align-items:center}
+.ow-msg{margin:10px 0 0;font-weight:700;color:var(--leaf)}
+.ow-msg:empty{display:none}
+.mg-use{padding:8px 12px;border-left:3px solid var(--ember);background:rgba(232,105,30,.07);border-radius:0 4px 4px 0}
+.mg-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px 28px}
+.mg-col h3{margin:12px 0 4px;font-size:18px}
+.mg-list{margin:0 0 6px;padding-left:26px}
+.mg-list li{padding:4px 0;display:list-item}
+.mg-list li b{font-size:18px}
+.mg-list li button.mini{min-height:44px;margin-left:8px}
+.mg-n{font-size:14.5px;color:var(--ink-2)}
+.mg-type{display:flex;gap:8px;margin:6px 0}
+.mg-type input{flex:1;min-width:0;min-height:44px}
+.mg-type button.mini{min-height:44px}
+.mg-ticks{display:flex;flex-wrap:wrap;gap:4px 16px;margin:4px 0 10px;max-height:320px;overflow:auto;padding:4px 2px}
+.mg-tick{display:inline-flex;align-items:center;gap:6px;min-height:44px;cursor:pointer}
+.mg-tick input,.rm input{accent-color:var(--ember-lo);width:20px;height:20px;flex:none}
+.rm-opts{display:grid;gap:8px}
+.rm{display:flex;gap:12px;align-items:flex-start;padding:10px 14px;border:1px solid var(--rule);border-radius:6px;cursor:pointer;min-height:44px}
+.rm input{margin-top:3px}
+.rm.on{border-color:var(--ember);background:#fdf0de}
+.rm .fh{display:block;font-size:15px;color:var(--ink-2)}
+@media (max-width:760px){ .mg-cols{grid-template-columns:minmax(0,1fr)} .ow-a{justify-content:flex-start} }
+#monster .row button,#rmWords .row button{min-height:44px}
+@media (max-width:640px){
+  .ow-a{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;width:100%}
+  .ow-a button.mini{width:100%;justify-content:center;text-align:center}
+  .ow-f{flex-direction:column;align-items:stretch;gap:2px}
+  .ow-f input,.ow-f select{width:100%}
+  .ow-a .ow-in{grid-column:1/-1;padding:0}
+}
+@media (max-width:640px){ .ow-a .ow-f{order:1} }
