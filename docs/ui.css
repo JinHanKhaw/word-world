@@ -1524,3 +1524,62 @@ body.rd-on:not(.rd-morn) #guide .gd-say,body.rd-on:not(.rd-morn) #guide .say{max
 
 /* the mark of the test world on the real website (88-tester.js) */
 .ts-world{position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:60;padding:calc(var(--u)*4) calc(var(--u)*14) calc(var(--u)*5);font-size:calc(var(--u)*12.5);font-weight:700;letter-spacing:.02em;background:#b84a10;color:#fff7ec;border-radius:0 0 calc(var(--u)*9) calc(var(--u)*9);pointer-events:none;white-space:nowrap}
+
+/* ---- 91-door.css ---- */
+/* ============ the front door (91-door.js): "Student" and "Teacher" tabs on the door's paper page ============ */
+/* paper tabs standing on the head rule, as on the build page (70-build.css); room for a third tab ("Tester") */
+.dr-tabs{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:calc(var(--u)*6);margin:calc(var(--u)*16) 0 0;padding:0 calc(var(--u)*4);border-bottom:calc(var(--u)*1.2) solid var(--rule)}
+.dr-tab{position:relative;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;column-gap:calc(var(--u)*8);min-height:max(44px,calc(var(--u)*52));margin-bottom:calc(var(--u)*-1.2);padding:calc(var(--u)*6) calc(var(--u)*12);border:calc(var(--u)*1.2) solid var(--rule);border-bottom:0;border-radius:calc(var(--u)*9) calc(var(--u)*9) 0 0;background:linear-gradient(180deg,#e9d6ae,#e2cda2);color:var(--ink-3);font-family:var(--f-display);font-size:calc(var(--u)*18);letter-spacing:.05em;cursor:pointer;box-shadow:inset 0 calc(var(--u)*-6) calc(var(--u)*8) calc(var(--u)*-6) rgba(120,80,40,.25);transition:color .15s,background .15s}
+.dr-tab[hidden]{display:none}
+.dr-tab .ic{font-size:calc(var(--u)*19)}
+.dr-tab:hover{color:var(--ink)}
+.dr-tab.on{background:linear-gradient(180deg,var(--paper-hi),var(--paper));color:var(--ink);border-color:var(--ink-3);box-shadow:none;z-index:1}
+.dr-tab.on::before{content:"";position:absolute;left:calc(var(--u)*14);right:calc(var(--u)*14);top:calc(var(--u)*-1.2);height:calc(var(--u)*3);border-radius:0 0 calc(var(--u)*3) calc(var(--u)*3);background:var(--ember)}
+.dr-tab.on::after{content:"";position:absolute;left:0;right:0;bottom:calc(var(--u)*-2);height:calc(var(--u)*3);background:var(--paper)}
+.dr-tab:focus-visible{outline:calc(var(--u)*2) solid var(--glow);outline-offset:calc(var(--u)*2)}
+.dr-tab .zhx{flex-basis:100%;margin:0;font-size:calc(var(--u)*14);line-height:1.2;text-align:center}
+
+.dr-pan[hidden]{display:none}
+.dr-pan>.do{margin:calc(var(--u)*14) 0 0}
+/* name and PIN, one under the other; "Enter" under them on the right */
+.dr-form{flex-direction:column;align-items:stretch;gap:calc(var(--u)*10);margin-top:calc(var(--u)*6)}
+.dr-field{display:block}
+.dr-lbl{margin:0;font-size:calc(var(--u)*14);letter-spacing:.12em}
+.dr-lbl .zhx{display:inline;margin:0 0 0 calc(var(--u)*8);font-size:calc(var(--u)*14)}
+.dr-form .line input{height:max(44px,calc(var(--u)*48));font-size:calc(var(--u)*28)}
+.dr-form>.btn{align-self:flex-end;min-height:max(44px,calc(var(--u)*46));min-width:max(44px,calc(var(--u)*120))}
+#gate .dr-pan .fb{margin-top:calc(var(--u)*6)}
+.dr-foot{margin-top:calc(var(--u)*20)}
+.dr-foot .btn{min-height:max(44px,calc(var(--u)*50))}
+.dr-foot .btn .zhx{display:inline;margin:0 0 0 calc(var(--u)*4)}
+
+/* the quiet way to the old code page (and back): small, under the form, still a full-size tap area */
+.gate .dr-spare{margin:calc(var(--u)*2) 0 0;text-align:center}
+.dr-link{display:inline-flex;align-items:center;justify-content:center;flex-wrap:wrap;column-gap:calc(var(--u)*8);min-height:44px;min-width:44px;padding:0 calc(var(--u)*12);border:0;background:none;font-family:var(--f-body);font-size:calc(var(--u)*14);font-weight:600;color:var(--ink-3);text-decoration:underline;text-decoration-thickness:calc(var(--u)*1);text-underline-offset:calc(var(--u)*3);cursor:pointer}
+.dr-link:hover{color:var(--ink)}
+.dr-link:focus-visible{outline:calc(var(--u)*2) solid var(--glow);outline-offset:calc(var(--u)*2);border-radius:calc(var(--u)*4)}
+.dr-link .zhx{display:inline;margin:0;font-size:calc(var(--u)*14);text-decoration:none}
+
+/* the 中文 switch on the door's head (hdDoor draws it calc(var(--u)*27) high): its tap area reaches 44 px without looking bigger */
+#gate:has(.dr-door,.dr-back) #doorZh{position:relative}
+#gate:has(.dr-door,.dr-back) #doorZh::after{content:"";position:absolute;left:50%;top:50%;width:max(100%,44px);height:max(100%,44px);transform:translate(-50%,-50%)}
+#gate:has(.dr-door,.dr-back) #doorZh{flex:none;white-space:nowrap}   /* a long title (the code page at 1024 x 640) squeezed it onto two lines */
+#gate:has(.dr-door,.dr-back) .eyebrow .zhx{font-size:calc(var(--u)*12.5)}            /* "单词世界" under the eyebrow: not under calc(var(--u)*12.5) */
+
+/* the look check's fixes (qa/door-shots.js) */
+.dr-foot a.btn{text-decoration:none}
+#gate .dr-pan .fb{display:block}                                        /* the Chinese line under the message, not squeezed beside it */
+#gate .dr-pan .fb .zhx{margin-top:calc(var(--u)*2)}
+.dr-form>.btn .zhx,.dr-foot .btn .zhx{color:inherit;opacity:.88}        /* the Chinese on the orange button: readable */
+/* the old code page, opened from the door: its field and its button reach 44 px on a small window too */
+#gate:has(.dr-back) .hd-code input{height:max(44px,calc(var(--u)*52))}
+#gate:has(.dr-back) #pf .btn{min-height:max(44px,calc(var(--u)*46))}
+#gate:has(.dr-back) #pf .btn .zhx{color:inherit;opacity:.88}
+
+/* round two (the security review): the second line after a miss, the teacher's own login, the Tester panel */
+#gate .dr-still{margin:calc(var(--u)*2) 0 0;font-size:calc(var(--u)*14)}
+#gate .dr-still[hidden],.dr-tstgo[hidden]{display:none}
+#gate .dr-own{margin:calc(var(--u)*14) 0 0}
+#gate .dr-own+.dr-own{margin-top:calc(var(--u)*6)}
+#gate #drTstErr{margin-top:calc(var(--u)*8)}
+.dr-tstgo .dr-foot{margin-top:calc(var(--u)*6)}

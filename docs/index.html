@@ -4,27 +4,27 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Word World</title>
-<link rel="stylesheet" href="fonts.css?v=202611251430">
-<link rel="stylesheet" href="ui.css?v=202611251430">
+<link rel="stylesheet" href="fonts.css?v=202611251452">
+<link rel="stylesheet" href="ui.css?v=202611251452">
 <!-- Backend. On claude.ai these two files stand in for the database (progress stays in this browser).
      On the real site, load supabase-js and config.js here instead. -->
-<script src="bank.js?v=202611251430"></script>
-<script src="probes.js?v=202611251430"></script>
-<script src="rude.js?v=202611251430"></script>
-<script src="vendor/supabase.js?v=202611251430"></script>
-<script src="config.js?v=202611251430"></script>
-<script src="common.js?v=202611251430"></script>
-<script src="zh.js?v=202611251430"></script>
-<script src="audio.js?v=202611251430"></script>
-<script src="patterns.js?v=202611251430"></script>
-<script src="pool.js?v=202611251430"></script>
-<script src="first.js?v=202611251430"></script>
-<script src="picker.js?v=202611251430"></script>
-<script src="img/words/pics.js?v=202611251430"></script>
-<script src="img/school/pics.js?v=202611251430"></script>
-<script src="story.js?v=202611251430"></script>
-<script src="pairs.js?v=202611251430"></script>
-<script src="voice.js?v=202611251430"></script>
+<script src="bank.js?v=202611251452"></script>
+<script src="probes.js?v=202611251452"></script>
+<script src="rude.js?v=202611251452"></script>
+<script src="vendor/supabase.js?v=202611251452"></script>
+<script src="config.js?v=202611251452"></script>
+<script src="common.js?v=202611251452"></script>
+<script src="zh.js?v=202611251452"></script>
+<script src="audio.js?v=202611251452"></script>
+<script src="patterns.js?v=202611251452"></script>
+<script src="pool.js?v=202611251452"></script>
+<script src="first.js?v=202611251452"></script>
+<script src="picker.js?v=202611251452"></script>
+<script src="img/words/pics.js?v=202611251452"></script>
+<script src="img/school/pics.js?v=202611251452"></script>
+<script src="story.js?v=202611251452"></script>
+<script src="pairs.js?v=202611251452"></script>
+<script src="voice.js?v=202611251452"></script>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -134,17 +134,17 @@
   <div id="full" class="modal full" hidden><div class="journal"><div class="cover"></div><article class="page paper modal-card"><button type="button" class="pgclose" id="fullClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button><div id="fullBody"></div></article></div></div>
 </div>
 
-<script src="vendor/three.min.js?v=202611251430"></script>
-<script src="vendor/GLTFLoader.js?v=202611251430"></script>
-<script src="models/hero.js?v=202611251430"></script>
-<script src="models/heroidle.js?v=202611251430"></script>
-<script src="models/tower.js?v=202611251430"></script>
-<script src="models/pod.js?v=202611251430"></script>
-<script src="models/tree.js?v=202611251430"></script>
-<script src="models/watchfire.js?v=202611251430"></script><!-- night watch (raid team): the watch-fire he owns -->
-<script src="world3d.js?v=202611251430"></script>
-<script src="orbit3d.js?v=202611251430"></script>
-<script src="raid3d.js?v=202611251430"></script><!-- night watch (raid team): the island test as a watch at the gate -->
+<script src="vendor/three.min.js?v=202611251452"></script>
+<script src="vendor/GLTFLoader.js?v=202611251452"></script>
+<script src="models/hero.js?v=202611251452"></script>
+<script src="models/heroidle.js?v=202611251452"></script>
+<script src="models/tower.js?v=202611251452"></script>
+<script src="models/pod.js?v=202611251452"></script>
+<script src="models/tree.js?v=202611251452"></script>
+<script src="models/watchfire.js?v=202611251452"></script><!-- night watch (raid team): the watch-fire he owns -->
+<script src="world3d.js?v=202611251452"></script>
+<script src="orbit3d.js?v=202611251452"></script>
+<script src="raid3d.js?v=202611251452"></script><!-- night watch (raid team): the island test as a watch at the gate -->
 <script>
 (function () {
   const W = window.WT, $ = id => document.getElementById(id);
@@ -1102,7 +1102,9 @@
     const letters = fresh.length ? fresh.slice() : (!ritual && letter ? [letter] : []);
     const d = openDay(), todays = d ? dayWords(d).filter(w => w.level === 0) : [];
     const cards = todays.map(w => ({ w, turned: cardOpened(w), heard: cardOpened(w) })), n = streak();
-    mail = { cards, i: Math.min(startAt || 0, Math.max(0, cards.length - 1)), ritual, day: d, letter };
+    // with no card asked for, the first card not done yet (loop test, 25 November: a reload on card 2 opened card 1 again)
+    const open1 = startAt == null ? cards.findIndex(c => !cardDone(c.w)) : startAt;
+    mail = { cards, i: Math.min(Math.max(0, open1), Math.max(0, cards.length - 1)), ritual, day: d, letter };
     const wk = Math.min(5, weekDays());
     showModal('<div class="ml-stage">' +
       '<div class="caption glass ml-cap">' + ICON("mail") + '<span class="zhk">' + (cards.length ? "Today's magic words" : "Mailbox") + "</span>" + (cards.length ? '<small class="zhk" id="ml-capn"></small>' : "") + "</div>" +
@@ -3058,7 +3060,14 @@
     try { const m = JSON.parse(localStorage.getItem(roundKey()) || "null"), ids = fresh.map(w => w.id).sort().join(",");
       return m && m.ids === ids && fresh.length ? Math.min(ROUNDS.indexOf("type"), m.done || 0) : 0; } catch (e) { return 0; }
   }
+  // "Build it" keeps its place too (loop test, 25 November): after "Type it" the words are no longer new (level 1), so a stop
+  // on "Build it" brought him back at the last round and both words lost their Build it. Kept for this level, today.
+  const buildKey = () => "ww.build." + (student ? student.id : "") + "." + today();
+  function buildDone(questId) { try { const m = JSON.parse(localStorage.getItem(buildKey()) || "null"); return !!(m && m.quest === questId); } catch (e) { return false; } }
   function roundFinished(turn, nextTurn) {   // called when he leaves a turn of the new words
+    if (q && !q.practice && turn && turn.part === "new" && turn.step === "build" && !(nextTurn && nextTurn.step === "build") && q.row && q.row.id) {
+      try { localStorage.setItem(buildKey(), JSON.stringify({ quest: q.row.id })); } catch (e) {}
+    }
     if (!q || q.practice || !turn || turn.part !== "new" || turn.round == null || turn.round >= ROUNDS.indexOf("type")) return;
     if (nextTurn && nextTurn.part === "new" && nextTurn.round === turn.round) return;      // the other word of this round is still to come
     try { const ids = dayWords(q.day).filter(w => w.level === 0).map(w => w.id).sort().join(",");
@@ -3066,9 +3075,14 @@
   }
   // The new words' turns: every round has one turn per word; the mixed round is planned when he gets there.
   // probe: an island number (1 to 5) adds the one new-rule word at the very end, after the sentences (never in practice or an island test).
-  function newTurns(fresh, scored, practice, probe) {
-    const t = [], from = practice ? 0 : roundsDone(fresh);
+  // questId: the level's row; words typed today in it (scored) still get their "Build it" when it is not behind him yet.
+  function newTurns(fresh, scored, practice, probe, questId) {
+    const t = [], from = practice ? 0 : roundsDone(fresh), bi = ROUNDS.indexOf("build");
     ROUNDS.forEach((st, r) => { if (r >= from) fresh.forEach(w => t.push({ w, type: "new", step: st, part: "new", round: r })); });
+    if (!practice && questId && scored.length && !buildDone(questId)) {
+      const at = t.findIndex(x => x.round > bi), add = scored.map(w => ({ w, type: "new", step: "build", part: "new", round: bi }));
+      t.splice(at < 0 ? t.length : at, 0, ...add);
+    }
     const all = fresh.concat(scored);
     if (all.length) t.push({ type: "new", step: "mixplan", part: "new", round: ROUNDS.length, news: all });
     if (!practice) all.forEach(w => t.push({ w, type: "new", step: "sentence", part: "new", round: ROUNDS.length + 1 }));
@@ -3103,11 +3117,12 @@
     const skip = new Set(due.map(w => w.id).concat(testWords.map(w => w.id), Array.from(met)));
     // the new-rule word: at most one a level (not again after a stop), never in an island test; student.probes === false turns it off
     let probe = !isTest(day) && student.probes !== false && probeList(zoneOf(day) + 1).length ? zoneOf(day) + 1 : 0;
-    if (probe) { try { const r = await sb.from("attempts").select("*").eq("quest_id", row.id).eq("kind", "probe"); if ((r.data || []).length) probe = 0; } catch (e) {} }
+    let probeSeen = [];
+    if (probe) { try { const r = await sb.from("attempts").select("*").eq("student_id", student.id).eq("kind", "probe"); const rows = r.data || []; if (rows.some(a => a.quest_id === row.id)) probe = 0; probeSeen = rows.map(a => W.key(a.word || "")).filter(Boolean); } catch (e) {} }
     const training = typeof trainingTurns === "function" ? await trainingTurns(day, due, fresh.concat(scored), skip) : [];   // training hook
     const quick = await quickTurns(day, fresh);   // the quick check: four short words before the main words, once a day
     const behind = await stagesBehind(row.id);   // the trail: steps of this level already behind him before this start
-    q = { day, row, items: reviews.concat(newTurns(fresh, scored, false, probe), test), i: 0, results: {}, tries: 0, startedAt: Date.now(), mixSkip: skip, mixPaid: met, mixAtt };
+    q = { day, row, items: reviews.concat(newTurns(fresh, scored, false, probe, row.id), test), i: 0, results: {}, tries: 0, startedAt: Date.now(), mixSkip: skip, mixPaid: met, mixAtt, probeSeen };
     // pairs hook (83-pairs.js). Asked only now that the level exists: pairsReady() looks at the level (practice, island test),
     // and asked before it, it always said no (found in the lead's play-through, 23 November).
     const pairs = fresh.length && !isTest(day) && pairsWanted() ? [{ type: "pairs", step: "pairs", part: "new" }] : [];
@@ -3123,7 +3138,8 @@
     } catch (e) {}
     const sentDone = sentGet().done;   // sentences of this level already behind him (a stop and a new start): not asked twice
     if (sentDone.length) q.items = q.items.filter(x => !(x.step === "sentence" && x.w && sentDone.indexOf(x.w.id) >= 0));
-    q.stages = lvStages(behind);
+    q.stages = lvStages(behind.concat(stagesKept(row.id)));   // the same dots as before a stop (the pair game leaves no tries)
+    stagesKeep();
     if (!q.items.length) { q.step = "end"; return renderQ(); }
     logEvent("quest_start", { day, reviews: due.length, new: fresh.length, test: testWords.length, quick: quick.items.length });
     $("qTitle").innerHTML = "Level " + day + (isTest(day) ? " <small>island test</small>" : "");
@@ -3228,9 +3244,14 @@
     const of = { review: "review", game: "review", training: "training", quick: "quick", "new": "type", mixed: "mix", sentence: "sentence", probe: "probe", test: "test", again: "again" };
     try { const r = await sb.from("attempts").select("*").eq("quest_id", questId); return (r.data || []).map(a => of[a.kind]).filter(Boolean); } catch (e) { return []; }
   }
+  // The level's dots, kept on the device for today, so a stop and a new start show the same number of dots (loop test,
+  // 25 November: "Step 2 of 8" on the pair game became "Step 2 of 7" after a stop, because the pair game saves no tries).
+  const stagesKey = () => "ww.stages." + (student ? student.id : "") + "." + today();
+  function stagesKept(questId) { try { const m = JSON.parse(localStorage.getItem(stagesKey()) || "null"); return m && m.quest === questId && Array.isArray(m.stages) ? m.stages : []; } catch (e) { return []; } }
+  function stagesKeep() { if (!q || q.practice || !q.row || !q.row.id || !q.stages) return; try { localStorage.setItem(stagesKey(), JSON.stringify({ quest: q.row.id, stages: q.stages })); } catch (e) {} }
   function lvTrail(it) {
     if (!q.stages) q.stages = lvStages();
-    if (q.stages.indexOf(stageOf(it)) < 0) q.stages = lvStages(q.stages);
+    if (q.stages.indexOf(stageOf(it)) < 0) { q.stages = lvStages(q.stages); stagesKeep(); }
     const n = q.stages.length, at = q.stages.indexOf(stageOf(it));
     return '<ol class="trail" aria-label="Step ' + (at + 1) + " of " + n + '">' +
       Array.from({ length: n }, (_, i) => '<li class="' + (i < at ? "done" : i === at ? "now" : "") + '"></li>').join("") + "</ol>";
@@ -3807,11 +3828,18 @@
   // He hears it and types it, ONE try; then the spelling is shown in beats either way. +1 diamond when right; no ladder.
   const probeList = isl => ((window.WW_PROBES || {})[isl] || []).filter(p => p && p.word && !words.some(w => W.key(w.word) === W.key(p.word)));
   const probeKey = () => "ww.probes." + (student ? student.id : "");
+  // Loop test, 25 November: (1) a word without a recording is not said at all on a laptop whose own voice is silent, and the
+  // page opened with no word heard: a word that has a recording comes first; (2) the words used were known only to this
+  // device, so another browser (or cleared storage) asked the same word again: his saved probe tries count too (q.probeSeen).
   function pickProbe(isl) {
     const list = probeList(isl); if (!list.length) return null;
     let used = {}; try { used = JSON.parse(localStorage.getItem(probeKey()) || "{}") || {}; } catch (e) {}
-    const done = new Set((used[isl] || []).map(W.key));
-    return list.find(p => !done.has(W.key(p.word))) || list[0];   // all used: start over
+    const done = new Set((used[isl] || []).map(W.key).concat(q && q.probeSeen ? q.probeSeen : []));
+    const heard = p => { try { return !W.clipsOn || !W.clipsOn() || !!(W.clipFor(p.word, 0) || W.clipFor(p.word, 1)); } catch (e) { return true; } };
+    // a new word with a recording; else a recorded one again (the one used longest ago); else a new one; all used: start over
+    const recd = list.filter(heard), order = recd.slice().sort((a, b) => lastUse(a) - lastUse(b));
+    function lastUse(p) { const u = (used[isl] || []).map(W.key); const i = u.lastIndexOf(W.key(p.word)); return i; }
+    return recd.find(p => !done.has(W.key(p.word))) || order[0] || list.find(p => !done.has(W.key(p.word))) || list[0];
   }
   function probeUsed(isl, word) {
     try {
@@ -3947,7 +3975,8 @@
     const f = $("fb");
     if (right) {
       W.sfx("right"); $("ansLine").classList.add("good"); f.className = "fb good"; f.innerHTML = ICON("check") + (known ? "Yes. You know it." : "Yes. You will learn it soon.");
-      Guide.right(w.word, known ? "memory" : "retry");
+      // right after a Hint: a waiting word for a later lesson, not "back tomorrow" (Orbit's retry line said so; loop test 25 November)
+      if (known) Guide.right(w.word, "memory"); else Guide.show("Yes. You will learn it soon.", "对。你很快就会学到它。");
       later(nextStep, 1400);
       return;
     }
@@ -5990,7 +6019,9 @@
     if (error) { hdTrouble("Can't load", "Tap Try again. If it still does not work, ask your teacher.", "For the teacher: " + error.message); $("gate").querySelector(".hd-teach").classList.add("nozh"); return; }
     // door hook (91-door.js): a device that is not his yet gets the front door with "Student" and "Teacher"; without that
     // part, the old page for the 6-letter code. doorOpen({ boot, renderPair, hdDoor }) draws it into #gate.
-    if (!data) return typeof doorOpen === "function" ? doorOpen({ boot, renderPair, hdDoor }) : renderPair();
+    // the door (91-door.js) lives outside this scope: it gets the database client and, when the test account is built in
+    // (89-testacct.js), the way into it
+    if (!data) return typeof doorOpen === "function" ? doorOpen({ boot, renderPair, hdDoor, sb, testerEnter: typeof testerEnter === "function" ? testerEnter : undefined }) : renderPair();
     student = data;
     let ok = false; try { ok = sessionStorage.getItem("wt.pin.ok") === student.id; } catch (x) {}
     ok ? unlock() : renderPin();
@@ -6013,6 +6044,178 @@
   }, [[/^Hi (.+)!$/, "你好，$1！"]]);
   boot();
 })();
+  // ============ the front door (91-door.js) ============
+  // The owners' decision (25 November): a device that is not his yet no longer asks first for the tutor's 6-letter code.
+  // It shows tabs side by side: "Student" and "Teacher", and "Tester" when the game offers a test account
+  // (ctx.testerEnter, from 89-testacct.js) or a later part defines doorTester(panel, ctx).
+  //  - Student: his NAME and his PIN, one button "Enter". The database function student_login (deploy/schema.sql) checks
+  //    both; right, this device becomes his device and he is in at once (no second PIN page: wt.pin.ok is set, as renderPin
+  //    does). Not right: "Not yet. Check your name and PIN." and under it "Still shut? Ask your teacher.": the database
+  //    gives the same empty answer when another laptop holds him (a new laptop needs the tutor's "Disconnect his laptop"
+  //    first), so the page cannot and must not tell the two apart. Too many tries: "Too many tries. Wait a little."
+  //    Under the form a quiet "I have a code" opens the old code page (renderPair), with a way back.
+  //  - When this browser holds a login that is NOT the game's anonymous one (the tutor signed in on this laptop), the
+  //    database refuses the door to it (a tutor's login must never become his laptop). The Student panel then offers no
+  //    fields and no code: "You are signed in as the teacher." "Log out on the teacher page first." and the teacher link.
+  //    The page learns it from the saved sign-in (auth.getSession(): user.is_anonymous; a login without that field but with
+  //    an e-mail counts as not anonymous).
+  //  - Teacher: one link styled as a button to teacher.html (its own e-mail and password login).
+  //  - Tester: "For the adults who test the game." and "Open the test account": await ctx.testerEnter(). It signs nothing
+  //    in by itself: with the tutor's session it opens the test account and starts the game (the door's work is over:
+  //    true, "ok", or the door gone); "teacher": "Sign in on the teacher page first." with the link; anything else or an
+  //    error: "Can't open it. Try again."
+  // A device that IS his already never comes here: boot() shows the old "Hi <name>! Type your PIN." page.
+  //
+  // How it is wired: 90-boot.js boot() calls doorOpen({ boot, renderPair, hdDoor, sb, testerEnter }) when this function
+  // exists. 90-boot.js closes the game's shared function scope ("})();" on its last line), so this part runs AFTER that
+  // scope: $, ICON and logEvent of the other parts are not reachable here. doorOpen is a plain function of the page, and
+  // this part keeps its own small helpers. The database client is ctx.sb; only when a boot() without it calls, a client of
+  // its own (doorDb), which reads the same saved sign-in and never refreshes it itself.
+  function doorOpen(ctx) { return window.WW_DOOR.open(ctx || {}); }
+  (function () {
+    const W = window.WT, ZH = window.WT_ZH, $ = id => document.getElementById(id);
+    const ICON = name => '<svg class="ic" aria-hidden="true"><use href="#i-' + name + '"/></svg>';
+    const T = {
+      title: "Welcome!", student: "Student", teacher: "Teacher", tester: "Tester",
+      stuDo: "Type your name and your PIN.", name: "Name", pin: "PIN", enter: "Enter", code: "I have a code",
+      bad: "Not yet. Check your name and PIN.", still: "Still shut? Ask your teacher.", many: "Too many tries. Wait a little.",
+      net: "Can't connect. Tap Enter again.",
+      asTeacher: "You are signed in as the teacher.", logOut: "Log out on the teacher page first.",
+      teaDo: "Teachers sign in on their own page.", teaGo: "Open the teacher page", back: "Back to name and PIN",
+      tstDo: "For the adults who test the game.", tstGo: "Open the test account", tstTeacher: "Sign in on the teacher page first.",
+      tstFail: "Can't open it. Try again."
+    };
+    let client = null;
+    // The database client: the game's own (ctx.sb). Fallback for a boot() that does not pass it: a second client of the
+    // same project; it reads the same saved sign-in and never refreshes it on a timer, so the two never race to renew it.
+    function doorDb(ctx) {
+      if (ctx.sb) return ctx.sb;
+      if (client) return client;
+      const cfg = window.WORD_TOWER_CONFIG || {};
+      if (!window.supabase || !cfg.SUPABASE_URL) return (client = W.client());
+      client = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: false, detectSessionInUrl: false } });
+      return client;
+    }
+    // Is the saved sign-in somebody's own login (the tutor's e-mail), not the game's anonymous one?
+    async function ownLogin(ctx) {
+      try {
+        const db = doorDb(ctx); if (!db || !db.auth || !db.auth.getSession) return false;
+        const r = await db.auth.getSession(), u = r && r.data && r.data.session && r.data.session.user;
+        if (!u) return false;
+        return u.is_anonymous === false || (u.is_anonymous == null && !!u.email);
+      } catch (e) { return false; }
+    }
+    const esc = s => (W && W.esc ? W.esc(s) : String(s));
+    let tab = "student", busy = false, own = false;
+    const TABS = () => [["student", "pencil"], ["teacher", "book"], ["tester", "flag"]];
+    const testerOn = ctx => typeof ctx.testerEnter === "function" || typeof window.doorTester === "function";
+    const teacherLink = id => '<div class="pg-foot dr-foot"><a class="btn primary zhk" id="' + id + '" href="teacher.html">' + esc(T.teaGo) + "</a></div>";
+    async function open(ctx) {
+      busy = false; window.WW_DOOR.ctx = ctx;   // the last door drawn (tests and the tester part may open it again with more)
+      own = await ownLogin(ctx);
+      if (tab === "tester" && !testerOn(ctx)) tab = "student";
+      const tabs = TABS().map(([k, ic]) => '<button type="button" role="tab" class="dr-tab' + (k === tab ? " on" : "") + '" id="drTab-' + k + '" data-tab="' + k + '"' +
+        ' aria-controls="drPan-' + k + '" aria-selected="' + (k === tab) + '" tabindex="' + (k === tab ? 0 : -1) + '"' + (k === "tester" && !testerOn(ctx) ? " hidden" : "") + ">" +
+        ICON(ic) + "<span>" + esc(T[k]) + "</span></button>").join("");
+      const form = '<p class="do">' + esc(T.stuDo) + "</p>" +
+        '<form id="drStu" class="answer hd-entry dr-form" autocomplete="off" novalidate>' +
+        '<div class="dr-field"><span class="kind dr-lbl" id="drNameL">' + esc(T.name) + '</span><label class="line">' + ICON("pencil") +
+        '<input type="text" id="drName" maxlength="40" autocomplete="off" autocapitalize="words" spellcheck="false" aria-labelledby="drNameL"></label></div>' +
+        '<div class="dr-field"><span class="kind dr-lbl" id="drPinL">' + esc(T.pin) + '</span><label class="line hd-pin">' + ICON("lock") +
+        '<input type="password" inputmode="numeric" id="drPin" maxlength="12" autocomplete="off" aria-labelledby="drPinL"></label></div>' +
+        '<button type="submit" class="btn primary" id="drEnter">' + esc(T.enter) + "</button></form>" +
+        '<p class="fb bad" id="drErr" aria-live="polite"></p><p class="hint dr-still" id="drStill" hidden>' + esc(T.still) + "</p>" +
+        '<p class="hint dr-spare"><button type="button" class="dr-link" id="drCode">' + esc(T.code) + "</button></p>";
+      const asTeacher = '<p class="do dr-own" id="drOwn">' + esc(T.asTeacher) + '</p><p class="do dr-own">' + esc(T.logOut) + "</p>" + teacherLink("drOwnGo");
+      const stu = '<div class="dr-pan" role="tabpanel" id="drPan-student" aria-labelledby="drTab-student"' + (tab === "student" ? "" : " hidden") + ">" + (own ? asTeacher : form) + "</div>";
+      const tea = '<div class="dr-pan" role="tabpanel" id="drPan-teacher" aria-labelledby="drTab-teacher"' + (tab === "teacher" ? "" : " hidden") + ">" +
+        '<p class="do">' + esc(T.teaDo) + "</p>" + teacherLink("drTeacher") + "</div>";
+      const tst = '<div class="dr-pan" role="tabpanel" id="drPan-tester" aria-labelledby="drTab-tester"' + (tab === "tester" ? "" : " hidden") + ">" +
+        (typeof ctx.testerEnter === "function" ? '<p class="do">' + esc(T.tstDo) + '</p><div class="pg-foot dr-foot"><button type="button" class="btn primary" id="drTester">' + esc(T.tstGo) + "</button></div>" +
+          '<p class="fb bad" id="drTstErr" aria-live="polite"></p><div class="dr-tstgo" id="drTstGo" hidden>' + teacherLink("drTstTeacher") + "</div>" : "") + "</div>";
+      ctx.hdDoor(T.title, "", '<div class="dr-door"><div class="dr-tabs" role="tablist" aria-label="Who is here">' + tabs + "</div>" + stu + tea + tst + "</div>");
+      wire(ctx);
+    }
+    function show(ctx, k, focus) {
+      tab = k;
+      document.querySelectorAll("#gate .dr-tab").forEach(b => { const on = b.dataset.tab === k; b.classList.toggle("on", on); b.setAttribute("aria-selected", String(on)); b.tabIndex = on ? 0 : -1; });
+      document.querySelectorAll("#gate .dr-pan").forEach(p => { p.hidden = p.id !== "drPan-" + k; });
+      if (k === "tester" && typeof ctx.testerEnter !== "function" && typeof window.doorTester === "function" && !$("drPan-tester").dataset.filled) { $("drPan-tester").dataset.filled = "1"; window.doorTester($("drPan-tester"), ctx); }
+      if (focus === "tab") { const b = $("drTab-" + k); if (b) b.focus(); }
+      else if (focus) {
+        const f = k === "student" ? ($("drName") || $("drOwnGo")) : k === "teacher" ? $("drTeacher") : $("drTester");
+        if (f) f.focus();
+      }
+    }
+    function wire(ctx) {
+      const tabs = [...document.querySelectorAll("#gate .dr-tab")].filter(b => !b.hidden);
+      tabs.forEach((b, i) => {
+        b.onclick = () => show(ctx, b.dataset.tab, true);
+        b.onkeydown = e => {   // arrows move between the tabs (the usual tab keys); Tab goes on into the open panel
+          const d = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0; if (!d) return;
+          e.preventDefault(); show(ctx, tabs[(i + d + tabs.length) % tabs.length].dataset.tab, "tab");
+        };
+      });
+      if ($("drCode")) $("drCode").onclick = () => code(ctx);
+      if ($("drStu")) $("drStu").onsubmit = e => { e.preventDefault(); login(ctx); };
+      if ($("drTester")) $("drTester").onclick = () => tester(ctx);
+      show(ctx, tab, true);
+    }
+    function say(text, still) {
+      const el = $("drErr"); if (el) el.textContent = text;
+      const s = $("drStill"); if (s) s.hidden = !still;
+    }
+    async function login(ctx) {
+      if (busy) return;
+      const name = $("drName").value.trim(), pin = $("drPin").value.trim();
+      if (!name || !pin) { say(T.bad, false); (name ? $("drPin") : $("drName")).focus(); return; }   // nothing to check: no try is counted
+      busy = true; say("", false); $("drEnter").disabled = true;
+      let res; try { res = await doorDb(ctx).rpc("student_login", { p_name: name, p_pin: pin }); } catch (x) { res = { data: null, error: { message: String(x && x.message || x) } }; }
+      busy = false; if ($("drEnter")) $("drEnter").disabled = false;
+      const { data, error } = res || {};
+      if (data && !error) {
+        try { sessionStorage.setItem("wt.pin.ok", String(data)); } catch (x) {}   // he typed his PIN just now: no second PIN page
+        return ctx.boot();
+      }
+      const m = String(error && error.message || "");
+      if (/only the game's own sign-in/i.test(m)) return open(ctx);   // the tutor signed in meanwhile: the page says so
+      if (/too many tries/i.test(m)) say(T.many, false);
+      else if (error && /fetch|network|failed|timeout/i.test(m)) say(T.net, false);
+      else say(T.bad, true);   // a miss, or another laptop holds him: the same answer, the same lines
+      $("drPin").value = ""; $("drPin").focus();
+    }
+    async function tester(ctx) {
+      if (busy) return;
+      busy = true; $("drTester").disabled = true; $("drTstErr").textContent = ""; $("drTstGo").hidden = true;
+      let r; try { r = await ctx.testerEnter(); } catch (e) { r = { error: e }; }
+      busy = false;
+      if (!$("drTester")) return;   // the game has started and drawn over the door
+      $("drTester").disabled = false;
+      if (r === true || r === "ok" || $("gate").hidden) return;
+      if (r === "teacher") { $("drTstErr").textContent = T.tstTeacher; $("drTstGo").hidden = false; return; }
+      $("drTstErr").textContent = T.tstFail;
+    }
+    // The spare key: the old 6-letter code page, unchanged, with one quiet way back to the door under it.
+    function code(ctx) {
+      ctx.renderPair();
+      const g = $("gate"); if (!g) return;
+      g.insertAdjacentHTML("beforeend", '<p class="hint dr-spare dr-back"><button type="button" class="dr-link" id="drBack">' + esc(T.back) + "</button></p>");
+      $("drBack").onclick = () => { tab = "student"; open(ctx); };
+    }
+    window.WW_DOOR = { open, texts: T };
+    if (ZH) ZH.add({
+      "Welcome!": "欢迎！", "Student": "学生", "Teacher": "老师", "Tester": "测试员",
+      "Type your name and your PIN.": "输入你的名字和你的密码。", "Name": "名字", "PIN": "密码", "I have a code": "我有代码",
+      "Not yet. Check your name and PIN.": "还没对。检查一下名字和密码。", "Still shut? Ask your teacher.": "还是进不去？问问老师。",
+      "Too many tries. Wait a little.": "试了太多次。等一会儿再试。",
+      "Can't connect. Tap Enter again.": "连不上。再点一次“进入”。",
+      "You are signed in as the teacher.": "你现在登录的是老师的账号。", "Log out on the teacher page first.": "请先在老师页面退出登录。",
+      "Teachers sign in on their own page.": "老师在自己的页面登录。", "Open the teacher page": "打开老师页面",
+      "Back to name and PIN": "回到名字和密码",
+      "For the adults who test the game.": "给测试游戏的大人用。", "Open the test account": "打开测试账号",
+      "Sign in on the teacher page first.": "请先在老师页面登录。", "Can't open it. Try again.": "打不开。再试一次。"
+    });
+  })();
 </script>
 </body>
 </html>

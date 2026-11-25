@@ -1217,14 +1217,21 @@
     pickerBox();
     renderLog();
   }
-  // Connect his laptop: the code he types once on his laptop (students.pairing_code), and a new one when needed.
+  // His laptop: name and PIN (the front door, 25 November). On a laptop that is not his yet he chooses Student and types his
+  // name and his PIN (deploy/schema.sql student_login). It binds only while no laptop holds him (the first time, or after
+  // "Disconnect his laptop", which is reset_pairing: it also makes a new spare code). The PIN must be 4 or more numbers and
+  // not 1234, else the name door stays shut. The 6-letter code is the spare key (students.pairing_code).
   function laptopCard() {
-    return '<section class="box s-laptop"><div class="bh"><h2>Connect his laptop</h2></div>' +
-      '<p class="lead">His laptop needs this code once, so the game knows it is his.</p>' +
+    const pin = String(student.pin == null ? "" : student.pin).trim(), pinOk = /^[0-9]{4,}$/.test(pin) && pin !== "1234";
+    const warn = pinOk ? "" : '<p class="lead s-pinwarn"><span class="tagw">' + (pin === "1234" ? "His PIN is still 1234." : "His PIN is not 4 numbers yet.") + "</span> " +
+      "The name door stays shut until you set his own PIN below.</p>";
+    return '<section class="box s-laptop"><div class="bh"><h2>His laptop: name and PIN</h2></div>' +
+      '<p class="lead">On his laptop he chooses Student, then types his name and his PIN. That laptop then stays his laptop.</p>' + warn +
       '<p class="state">' + (student.paired_uid ? '<span class="tagok">Connected</span>' + (student.paired_at ? " since " + esc(day3(ld(student.paired_at))) : "") : '<span class="tagw">Not connected yet</span>') + "</p>" +
-      '<p>Code to type on his laptop: <b class="code">' + esc(student.pairing_code) + "</b></p>" +
-      '<p class="lead">On his laptop, open the game and type this code. If he gets a new laptop, or the game asks for the code again, press New code and type the new one there.</p>' +
-      '<div class="row"><button type="button" class="ghost" id="newcode">New code</button></div></section>';
+      '<p class="lead">A new laptop, or the door stays shut on his own laptop: press Disconnect his laptop here first. Then he types his name and PIN again.</p>' +
+      '<div class="row"><button type="button" class="ghost" id="newcode">Disconnect his laptop</button></div>' +
+      '<p class="s-spare">Spare key. Code to type on his laptop: <b class="code">' + esc(student.pairing_code) + "</b></p>" +
+      '<p class="lead">If the door says Too many tries, he taps I have a code and types this code. It works only while no laptop holds him. Disconnect his laptop also makes a new code.</p></section>';
   }
   // His name, the PIN, the name he sees for you, and how much the game gives him each day.
   function detailsCard() {
@@ -1232,7 +1239,7 @@
     return '<section class="box s-details"><div class="bh"><h2>His name, PIN and daily amount</h2></div>' +
       '<form id="stf" class="form">' +
       '<label class="f">His name' + hint("Used on this page and in the note for his mother.") + '<input type="text" id="s_name" value="' + esc(student.name) + '"></label>' +
-      '<label class="f">PIN (4 numbers)' + hint("He types this to open the game.") + '<input type="text" id="s_pin" value="' + esc(student.pin) + '" maxlength="4" inputmode="numeric"></label>' +
+      '<label class="f">PIN (4 numbers)' + hint("He types this with his name on a new laptop, and alone every day after. 4 numbers, not 1234.") + '<input type="text" id="s_pin" value="' + esc(student.pin) + '" maxlength="4" inputmode="numeric"></label>' +
       '<label class="f">Your name in his game' + hint("Your letters to him come from this name.") + '<input type="text" id="s_tn" value="' + esc(student.teacher_name || "WordWizard") + '" maxlength="24"></label>' +
       '<label class="f">First day of the game' + hint("Level 1 opens on this day.") + '<input type="date" id="s_start" value="' + esc(student.start_date || W.today()) + '"></label>' +
       '<label class="f">Words to go over again each day, at most' + hint("Words he learned before that come back that day.") + '<input type="number" id="s_cap" value="' + (student.review_cap || W.REVIEW_CAP) + '" min="1" max="30"></label>' +
