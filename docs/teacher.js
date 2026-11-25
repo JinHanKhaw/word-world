@@ -5,7 +5,7 @@
    School spelling list, Letters, For his mother, and Settings (the technical parts, each with one plain sentence). */
 (function () {
   const W = window.WT, $ = id => document.getElementById(id), view = $("view");
-  const sb = W.client();
+  const sb = W.client("teacher");   // her sign-in is kept in this tab only (common.js W.client)
   const DEMO = !!window.WW_DEMO;
   let me = null, student = null, words = [], sessions = [], quests = [], messages = [], school = [], tests = [], tab = "today";
   const openFolds = {};   // the folded parts she opened stay open when the tab is drawn again
@@ -88,14 +88,14 @@
       me = { id: "teacher-demo", email: "" }; $("who").textContent = "Saved in this browser only"; $("logout").hidden = true;
     } else {
       const { data: { session } } = await sb.auth.getSession();
-      if (!session || session.user.is_anonymous) { if (session) await sb.auth.signOut(); return renderLogin(); }
+      if (!session) return renderLogin();   // the game's sign-in never reaches this client (26 November): only hers
       me = session.user;
       $("who").textContent = me.email;
       const { data: prof } = await sb.from("profiles").select("*").eq("id", me.id).maybeSingle();
       if (!prof) {
         view.innerHTML = '<section class="box narrow"><h2>One more thing</h2><p class="lead">This account is not set up as the teacher yet. Press the button once. Only the first person to log in can do this.</p><div class="row"><button type="button" id="mk">Make me the teacher</button><button type="button" class="ghost" id="lo">Log out</button></div><p class="err" id="merr"></p></section>';
         $("mk").onclick = async () => { const { error } = await sb.rpc("become_teacher"); if (error) $("merr").textContent = error.message; else boot(); };
-        $("lo").onclick = async () => { await sb.auth.signOut(); renderLogin(); };
+        $("lo").onclick = logOut;
         return;
       }
     }
@@ -103,9 +103,11 @@
     await loadAll();
     render();
   }
-  $("logout").onclick = async () => { await sb.auth.signOut(); renderLogin(); };
+  // Log out: her sign-in ends, and the page goes to the door of the game (index.html), where every login starts.
+  async function logOut() { try { await sb.auth.signOut(); } catch (e) {} location.href = "index.html"; }
+  $("logout").onclick = logOut;
   $("toGame").onclick = () => { location.href = "index.html"; };   // the child's door
-  function go(name) { tab = name; document.querySelectorAll(".tabs button").forEach(x => x.classList.toggle("on", x.dataset.tab === name)); render(); if (document.scrollingElement) document.scrollingElement.scrollTop = 0; }
+  function go(name) { if (name !== "today" && window.WW_TEACHER_DAY) window.WW_TEACHER_DAY.stop(); tab = name; document.querySelectorAll(".tabs button").forEach(x => x.classList.toggle("on", x.dataset.tab === name)); render(); if (document.scrollingElement) document.scrollingElement.scrollTop = 0; }
   document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => go(b.dataset.tab));
 
   // ---------- data ----------
@@ -147,13 +149,11 @@
   function renderNewStudent() {
     view.innerHTML = '<section class="box narrow"><h2>Add your student</h2><form id="sf" class="stack">' +
       '<label class="f">Name<input type="text" id="sn" value="" placeholder="Sam"></label>' +
-      '<label class="f">PIN (4 numbers he types to open the game)<input type="text" id="sp" value="1234" maxlength="4" inputmode="numeric"></label>' +
       '<div class="row"><button type="submit">Create</button></div><p class="err" id="serr"></p></form></section>';
     $("sf").onsubmit = async e => {
       e.preventDefault();
-      const pin = $("sp").value.trim() || "1234";
-      if (!/^\d{4}$/.test(pin)) { $("serr").textContent = "The PIN must be 4 numbers, for example 2468."; return; }
-      const { error } = await sb.from("students").insert({ teacher_id: me.id, name: $("sn").value.trim() || "Student", pin });
+      // a new student starts WITHOUT a usable password (26 November): she sets it in Settings, where the red line asks for it
+      const { error } = await sb.from("students").insert({ teacher_id: me.id, name: $("sn").value.trim() || "Student", pin: "" });
       if (error) { $("serr").textContent = error.message; return; }
       await loadAll(); go("settings");
     };
@@ -302,8 +302,9 @@
       '<section class="box d-new"><div class="bh"><h2>New words today</h2></div>' + newHtml + "</section></div>" +
       '<section class="box d-slips"><div class="bh"><h2>Words to practise in your lesson</h2></div>' +
       '<p class="lead">Words he did not get right the first time in the last 7 days. Go over them with him.</p>' + tpHtml + patHtml + "</section>" +
-      "</div>" + (patCard || dictCard ? '<div class="two d-lesson">' + patCard + dictCard + "</div>" : "") + "</div>";
+      "</div>" + '<div class="box tdv" id="dayView" hidden></div>' + (patCard || dictCard ? '<div class="two d-lesson">' + patCard + dictCard + "</div>" : "") + "</div>";
     wireCommon();
+    if (window.WW_TEACHER_DAY) window.WW_TEACHER_DAY.render($("dayView"), { sb, student, W, day: t, words });   // the day view: site/teacher-day.js
   }
   // His island: the newest picture the game saved, and one line to use in the lesson (This week tab).
   function islandCard() {
@@ -1197,49 +1198,58 @@
   function renderSettings() {
     view.innerHTML = '<div class="settings">' +
       '<p class="intro">The things you set once. Each part says what it does.</p>' +
-      laptopCard() + detailsCard() + voiceCard() +
+      loginCard() + detailsCard() + voiceCard() +
       '<section class="box" id="pkBox"><div class="bh"><h2>Choosing his new words</h2></div><p class="lead">Loading…</p></section>' +
       '<details class="box fold" id="logBox"' + (openFolds.logBox ? " open" : "") + '><summary><span class="sum-t">Everything the game saved</span><span class="sum-s">A list of everything he did in the game, day by day. You will rarely need it.</span></summary><div id="logBody"><p class="lead">Loading…</p></div></details>' +
       "</div>";
     view.querySelector("#logBox").ontoggle = e => { openFolds.logBox = e.target.open; };
     wireVoice();
-    $("newcode").onclick = async () => { const { error } = await sb.rpc("reset_pairing", { student: student.id }); if (error) banner(error.message); await loadAll(); renderSettings(); };
+    $("lgf").onsubmit = async e => {
+      e.preventDefault();
+      const pw = $("s_pw").value.replace(PW_WS, "");
+      $("lgok").textContent = ""; $("lgok").className = "ok";
+      if (!pwOk(pw, student.name)) { $("lgok").className = "err"; $("lgok").textContent = "At least 6 letters or numbers. Not his name. Not 123456."; $("s_pw").focus(); return; }
+      const { error } = await sb.from("students").update({ pin: pw }).eq("id", student.id);
+      if (error) banner(error.message); else { await loadAll(); renderSettings(); $("lgok").textContent = "Saved."; }
+    };
     $("stf").onsubmit = async e => {
       e.preventDefault();
       const n = (id, d, lo, hi) => { const x = Math.round(+$(id).value); return isFinite(x) && $(id).value !== "" ? Math.max(lo, Math.min(hi, x)) : d; };
-      // the PIN door in the game takes 4 numbers only: anything else would lock him out (25 November: "12a4" was saved)
       $("sok").textContent = ""; $("sok").className = "ok";
-      if (!/^\d{4}$/.test($("s_pin").value.trim())) { $("sok").className = "err"; $("sok").textContent = "The PIN must be 4 numbers, for example 2468. Nothing was saved."; $("s_pin").focus(); return; }
-      const { error } = await sb.from("students").update({ name: $("s_name").value.trim(), pin: $("s_pin").value.trim(), teacher_name: $("s_tn").value.trim() || "WordWizard", new_per_day: n("s_new", 2, 1, 5), start_date: $("s_start").value || W.today(),
+      const { error } = await sb.from("students").update({ name: $("s_name").value.trim(), teacher_name: $("s_tn").value.trim() || "WordWizard", new_per_day: n("s_new", 2, 1, 5), start_date: $("s_start").value || W.today(),
         review_cap: n("s_cap", W.REVIEW_CAP, 1, 30), play_minutes: n("s_play", 10, 0, 60) }).eq("id", student.id);
-      if (error) banner(error.message); else { $("sok").textContent = "Saved."; await loadAll(); }
+      if (error) banner(error.message); else { await loadAll(); const r = !pwOk(student.pin, student.name); $("lgRed").hidden = !r; $("sok").textContent = "Saved."; }
     };
     pickerBox();
     renderLog();
   }
-  // His laptop: name and PIN (the front door, 25 November). On a laptop that is not his yet he chooses Student and types his
-  // name and his PIN (deploy/schema.sql student_login). It binds only while no laptop holds him (the first time, or after
-  // "Disconnect his laptop", which is reset_pairing: it also makes a new spare code). The PIN must be 4 or more numbers and
-  // not 1234, else the name door stays shut. The 6-letter code is the spare key (students.pairing_code).
-  function laptopCard() {
-    const pin = String(student.pin == null ? "" : student.pin).trim(), pinOk = /^[0-9]{4,}$/.test(pin) && pin !== "1234";
-    const warn = pinOk ? "" : '<p class="lead s-pinwarn"><span class="tagw">' + (pin === "1234" ? "His PIN is still 1234." : "His PIN is not 4 numbers yet.") + "</span> " +
-      "The name door stays shut until you set his own PIN below.</p>";
-    return '<section class="box s-laptop"><div class="bh"><h2>His laptop: name and PIN</h2></div>' +
-      '<p class="lead">On his laptop he chooses Student, then types his name and his PIN. That laptop then stays his laptop.</p>' + warn +
-      '<p class="state">' + (student.paired_uid ? '<span class="tagok">Connected</span>' + (student.paired_at ? " since " + esc(day3(ld(student.paired_at))) : "") : '<span class="tagw">Not connected yet</span>') + "</p>" +
-      '<p class="lead">A new laptop, or the door stays shut on his own laptop: press Disconnect his laptop here first. Then he types his name and PIN again.</p>' +
-      '<div class="row"><button type="button" class="ghost" id="newcode">Disconnect his laptop</button></div>' +
-      '<p class="s-spare">Spare key. Code to type on his laptop: <b class="code">' + esc(student.pairing_code) + "</b></p>" +
-      '<p class="lead">If the door says Too many tries, he taps I have a code and types this code. It works only while no laptop holds him. Disconnect his laptop also makes a new code.</p></section>';
+  // His login: name and password (26 November, the owners: "like any other website"). Every time he opens the game he types
+  // his name and this password (students.pin, the column kept its name); deploy/schema.sql student_login checks them with
+  // the same rule as pwOk here: 6 to 40 characters, not a password everybody tries first, not his name; capitals do not
+  // count. A stored password that breaks the rule opens nothing: the red line says so. The later login wins.
+  const PW_WS = /^[ \t\r\n\u00a0]+|[ \t\r\n\u00a0]+$/g;
+  const PW_BAD = ["123456", "1234567", "12345678", "000000", "111111", "password", "qwerty", "abc123", "abcdef"];
+  function pwOk(pw, name) {
+    const p = String(pw == null ? "" : pw).replace(PW_WS, "").toLowerCase();
+    const n = String(name == null ? "" : name).replace(PW_WS, "").replace(/[\s\u00a0]+/g, " ").toLowerCase();
+    return p.length >= 6 && p.length <= 40 && PW_BAD.indexOf(p) < 0 && p !== n;
   }
-  // His name, the PIN, the name he sees for you, and how much the game gives him each day.
+  function loginCard() {
+    const red = !pwOk(student.pin, student.name);
+    return '<section class="box s-login"><div class="bh"><h2>His login: name and password</h2></div>' +
+      '<p class="lead">His name, as he types it: <b>' + esc(String(student.name || "").trim()) + "</b></p>" +
+      '<p class="err" id="lgRed"' + (red ? "" : " hidden") + ">He cannot log in yet. Set his password here.</p>" +
+      '<form id="lgf" class="form"><label class="f">His password<span class="fh">He types his name and this password every time he opens the game. Capital letters do not matter.</span>' +
+      '<input type="text" id="s_pw" value="' + esc(student.pin || "") + '" maxlength="40" autocomplete="off" spellcheck="false"></label>' +
+      '<div class="row wide"><button type="submit">Save</button><span class="ok" id="lgok"></span></div></form>' +
+      '<p class="lead">If two people log in as him at the same time, the later one wins. Test with the Tester account, not with his.</p></section>';
+  }
+  // His name, the name he sees for you, and how much the game gives him each day (his password: loginCard).
   function detailsCard() {
     const hint = s => '<span class="fh">' + s + "</span>";
-    return '<section class="box s-details"><div class="bh"><h2>His name, PIN and daily amount</h2></div>' +
+    return '<section class="box s-details"><div class="bh"><h2>His name and daily amount</h2></div>' +
       '<form id="stf" class="form">' +
       '<label class="f">His name' + hint("Used on this page and in the note for his mother.") + '<input type="text" id="s_name" value="' + esc(student.name) + '"></label>' +
-      '<label class="f">PIN (4 numbers)' + hint("He types this with his name on a new laptop, and alone every day after. 4 numbers, not 1234.") + '<input type="text" id="s_pin" value="' + esc(student.pin) + '" maxlength="4" inputmode="numeric"></label>' +
       '<label class="f">Your name in his game' + hint("Your letters to him come from this name.") + '<input type="text" id="s_tn" value="' + esc(student.teacher_name || "WordWizard") + '" maxlength="24"></label>' +
       '<label class="f">First day of the game' + hint("Level 1 opens on this day.") + '<input type="date" id="s_start" value="' + esc(student.start_date || W.today()) + '"></label>' +
       '<label class="f">Words to go over again each day, at most' + hint("Words he learned before that come back that day.") + '<input type="number" id="s_cap" value="' + (student.review_cap || W.REVIEW_CAP) + '" min="1" max="30"></label>' +

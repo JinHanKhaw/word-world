@@ -4,27 +4,27 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Word World</title>
-<link rel="stylesheet" href="fonts.css?v=202611251452">
-<link rel="stylesheet" href="ui.css?v=202611251452">
+<link rel="stylesheet" href="fonts.css?v=202611251915">
+<link rel="stylesheet" href="ui.css?v=202611251915">
 <!-- Backend. On claude.ai these two files stand in for the database (progress stays in this browser).
      On the real site, load supabase-js and config.js here instead. -->
-<script src="bank.js?v=202611251452"></script>
-<script src="probes.js?v=202611251452"></script>
-<script src="rude.js?v=202611251452"></script>
-<script src="vendor/supabase.js?v=202611251452"></script>
-<script src="config.js?v=202611251452"></script>
-<script src="common.js?v=202611251452"></script>
-<script src="zh.js?v=202611251452"></script>
-<script src="audio.js?v=202611251452"></script>
-<script src="patterns.js?v=202611251452"></script>
-<script src="pool.js?v=202611251452"></script>
-<script src="first.js?v=202611251452"></script>
-<script src="picker.js?v=202611251452"></script>
-<script src="img/words/pics.js?v=202611251452"></script>
-<script src="img/school/pics.js?v=202611251452"></script>
-<script src="story.js?v=202611251452"></script>
-<script src="pairs.js?v=202611251452"></script>
-<script src="voice.js?v=202611251452"></script>
+<script src="bank.js?v=202611251915"></script>
+<script src="probes.js?v=202611251915"></script>
+<script src="rude.js?v=202611251915"></script>
+<script src="vendor/supabase.js?v=202611251915"></script>
+<script src="config.js?v=202611251915"></script>
+<script src="common.js?v=202611251915"></script>
+<script src="zh.js?v=202611251915"></script>
+<script src="audio.js?v=202611251915"></script>
+<script src="patterns.js?v=202611251915"></script>
+<script src="pool.js?v=202611251915"></script>
+<script src="first.js?v=202611251915"></script>
+<script src="picker.js?v=202611251915"></script>
+<script src="img/words/pics.js?v=202611251915"></script>
+<script src="img/school/pics.js?v=202611251915"></script>
+<script src="story.js?v=202611251915"></script>
+<script src="pairs.js?v=202611251915"></script>
+<script src="voice.js?v=202611251915"></script>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -134,17 +134,17 @@
   <div id="full" class="modal full" hidden><div class="journal"><div class="cover"></div><article class="page paper modal-card"><button type="button" class="pgclose" id="fullClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button><div id="fullBody"></div></article></div></div>
 </div>
 
-<script src="vendor/three.min.js?v=202611251452"></script>
-<script src="vendor/GLTFLoader.js?v=202611251452"></script>
-<script src="models/hero.js?v=202611251452"></script>
-<script src="models/heroidle.js?v=202611251452"></script>
-<script src="models/tower.js?v=202611251452"></script>
-<script src="models/pod.js?v=202611251452"></script>
-<script src="models/tree.js?v=202611251452"></script>
-<script src="models/watchfire.js?v=202611251452"></script><!-- night watch (raid team): the watch-fire he owns -->
-<script src="world3d.js?v=202611251452"></script>
-<script src="orbit3d.js?v=202611251452"></script>
-<script src="raid3d.js?v=202611251452"></script><!-- night watch (raid team): the island test as a watch at the gate -->
+<script src="vendor/three.min.js?v=202611251915"></script>
+<script src="vendor/GLTFLoader.js?v=202611251915"></script>
+<script src="models/hero.js?v=202611251915"></script>
+<script src="models/heroidle.js?v=202611251915"></script>
+<script src="models/tower.js?v=202611251915"></script>
+<script src="models/pod.js?v=202611251915"></script>
+<script src="models/tree.js?v=202611251915"></script>
+<script src="models/watchfire.js?v=202611251915"></script><!-- night watch (raid team): the watch-fire he owns -->
+<script src="world3d.js?v=202611251915"></script>
+<script src="orbit3d.js?v=202611251915"></script>
+<script src="raid3d.js?v=202611251915"></script><!-- night watch (raid team): the island test as a watch at the gate -->
 <script>
 (function () {
   const W = window.WT, $ = id => document.getElementById(id);
@@ -5957,7 +5957,7 @@
   if (window.MutationObserver) { const g = $("guide"); if (g) new MutationObserver(() => hdFitToday()).observe(g, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden", "class"] }); }
   window.addEventListener("resize", () => hdFitToday());
 
-  // The door: one small paper page for the PIN, the pairing code and the start-up troubles.
+  // The door: one small paper page for the login (91-door.js), the old PIN page (test mark only) and the start-up troubles.
   function hdDoor(title, line, body) {
     $("gate").hidden = false;
     $("gate").innerHTML = '<header class="hd-door-h"><div class="face"><img src="img/guide.jpg" alt=""></div><div><span class="eyebrow">Word World</span>' +
@@ -5969,15 +5969,8 @@
     hdDoor(title, line, '<p class="hint hd-teach">' + W.esc(forTeacher) + "</p>" + hdRetry);
     $("hdRetry").onclick = () => location.reload();
   }
-  function renderPair(msg) {
-    hdDoor("Connect this device", "Type the 6-letter code from your teacher.",
-      '<form id="pf" class="answer hd-entry" autocomplete="off"><label class="line hd-code">' + ICON("lock") +
-      '<input type="text" id="code" maxlength="6" autocapitalize="characters" autocomplete="off" spellcheck="false" aria-label="Pairing code"></label>' +
-      '<button type="submit" class="btn primary">Connect</button></form><p class="fb bad" id="perr" aria-live="polite">' + W.esc(msg || "") + "</p>");
-    $("code").focus();
-    $("pf").onsubmit = async e => { e.preventDefault(); const { data, error } = await sb.rpc("pair_device", { code: $("code").value }); if (error || !data) { $("perr").textContent = "Not yet. Check the code with your teacher."; return; } boot(); };
-  }
-  // One door for both: the child's 4-digit PIN opens his world; the teacher's PIN (config.js) opens the dashboard page.
+  // (The 6-letter code page, renderPair, is gone: the code was abolished on 26 November.)
+  // The old PIN page: only with the test mark (window.__door === "skip", see boot). One door for both: the child's 4-digit PIN opens his world; the teacher's PIN (config.js) opens the dashboard page.
   function renderPin() {
     const TP = String((window.WORD_TOWER_CONFIG || {}).TEACHER_PIN || "");
     hdDoor(String(student.name || "").trim() ? "Hi " + String(student.name).trim() + "!" : "Hi!", "Type your PIN.",   // no name saved yet: not "Hi !"
@@ -6010,20 +6003,65 @@
     hdHint(hdStartHint());
     listenForMail(); animate();
     if (!ritualDone()) showMailPopup();
+    hdLogoutItem();
   }
-  async function boot() {
+  // "Log out" in the menu (26 November, the owners): one tap asks once, in the menu itself ("Log out?" "Yes, log out" "Stay"),
+  // so one slip never loses his place. Yes: a level that is open stops first exactly as "Stop here" does (nothing typed is
+  // lost), then this session lets go of him (student_logout), signs out and reloads: the door.
+  function hdLogoutItem(ask) {
+    const list = $("menuList"); if (!list || !student) return;
+    let box = $("hdLogout");
+    if (!box) { box = document.createElement("div"); box.id = "hdLogout"; box.className = "hd-logout"; list.appendChild(box); }
+    const zh = (en, cn) => en + (document.documentElement.classList.contains("zh-on") ? '<span class="zhx" lang="zh-Hans">' + cn + "</span>" : "");
+    box.innerHTML = ask
+      ? '<p class="hd-lo-q" role="status">' + zh("Log out?", "要退出登录吗？") + '</p><button type="button" id="hdLogoutYes">' + zh("Yes, log out", "是的，退出") + '</button><button type="button" id="hdLogoutNo">' + zh("Stay", "留下") + "</button>"
+      : '<button type="button" id="hdLogoutBtn">' + zh("Log out", "退出登录") + "</button>";
+    if (ask) { $("hdLogoutYes").onclick = hdLogout; $("hdLogoutNo").onclick = e => { e.stopPropagation(); hdLogoutItem(false); $("hdLogoutBtn").focus(); }; $("hdLogoutNo").focus(); }
+    else $("hdLogoutBtn").onclick = e => { e.stopPropagation(); hdLogoutItem(true); };
+  }
+  document.addEventListener("toggle", e => { if (e.target && e.target.id === "menu" && student) hdLogoutItem(false); }, true);   // closed and opened again: the plain item
+  try { new MutationObserver(() => { const b = $("hdLogout"); if (b && !$("hdLogoutYes")) hdLogoutItem(false); }).observe(document.documentElement, { attributes: true, attributeFilter: ["class"] }); } catch (e) {}
+  let hdLeaving = false;
+  async function hdLogout() {
+    if (hdLeaving) return; hdLeaving = true;
+    try {
+      const pb = $("pauseBtn"), qp = $("questpage");
+      if (pb && qp && !qp.hidden) pb.click(); else if (q) pauseQuest();   // the level's own stop first
+    } catch (e) {}
+    await new Promise(r => setTimeout(r, 300));   // its save on its way
+    try { await sb.rpc("student_logout"); } catch (e) {}
+    try { await sb.auth.signOut(); } catch (e) {}
+    try { sessionStorage.removeItem("wt.pin.ok"); } catch (e) {}
+    location.reload();
+  }
+  // Start-up (26 November, the owners: "like any other website"). boot() without passed: the door, always (91-door.js
+  // doorOpen). The door signs in (the game's client keeps it in memory only, common.js W.client) and calls boot(true) after a
+  // login that worked: then the game starts for the student of this session, with no PIN page. With passed and no student
+  // (he was logged in elsewhere in that very second): the door again.
+  // TEST MARK: window.__door === "skip", set before the page's scripts by tools/play.js and the jsdom harnesses only, keeps
+  // the start-up of before (anonymous sign-in, the stand-in's student, the old PIN page), so the existing suites and qa
+  // scripts run unchanged. On the real site the mark opens nothing: a fresh page has no session, the anonymous sign-in it
+  // makes is bound to nobody, so no student is found and the door shows.
+  async function boot(passed) {
     if (!sb) return hdTrouble("Not set up yet", "Ask your teacher to set up the game.", "For the teacher: config.js is missing or still has the example values. See deploy/README.md.");
-    let { data: { session } } = await sb.auth.getSession();
-    if (!session) { const r = await sb.auth.signInAnonymously(); if (r.error) return hdTrouble("Can't connect", "Check the internet, then tap Try again.", "For the teacher: anonymous sign-in is off in Supabase, or there is no internet. See deploy/README.md step M2."); session = r.data.session; }
-    const { data, error } = await sb.from("students").select("*").eq("paired_uid", session.user.id).maybeSingle();
-    if (error) { hdTrouble("Can't load", "Tap Try again. If it still does not work, ask your teacher.", "For the teacher: " + error.message); $("gate").querySelector(".hd-teach").classList.add("nozh"); return; }
-    // door hook (91-door.js): a device that is not his yet gets the front door with "Student" and "Teacher"; without that
-    // part, the old page for the 6-letter code. doorOpen({ boot, renderPair, hdDoor }) draws it into #gate.
+    const skip = window.__door === "skip";
     // the door (91-door.js) lives outside this scope: it gets the database client and, when the test account is built in
     // (89-testacct.js), the way into it
-    if (!data) return typeof doorOpen === "function" ? doorOpen({ boot, renderPair, hdDoor, sb, testerEnter: typeof testerEnter === "function" ? testerEnter : undefined }) : renderPair();
+    const door = () => typeof doorOpen === "function" ? doorOpen({ boot, hdDoor, sb, testerEnter: typeof testerEnter === "function" ? testerEnter : undefined })
+      : hdTrouble("Not set up yet", "Ask your teacher to set up the game.", "For the teacher: the door (91-door.js) is missing from the game.");
+    // the door part (91-door.js) is set up after this scope closes, in the same script: wait one turn so it is there
+    if (!passed && !skip) { await null; return door(); }
+    let { data: { session } } = await sb.auth.getSession();
+    if (!session) {
+      if (!skip) return door();
+      const r = await sb.auth.signInAnonymously(); if (r.error) return hdTrouble("Can't connect", "Check the internet, then tap Try again.", "For the teacher: anonymous sign-in is off in Supabase, or there is no internet. See deploy/README.md step M2."); session = r.data.session;
+    }
+    const { data, error } = await sb.from("students").select("*").eq("paired_uid", session.user.id).maybeSingle();
+    if (error) { hdTrouble("Can't load", "Tap Try again. If it still does not work, ask your teacher.", "For the teacher: " + error.message); $("gate").querySelector(".hd-teach").classList.add("nozh"); return; }
+    if (!data) return door();
     student = data;
-    let ok = false; try { ok = sessionStorage.getItem("wt.pin.ok") === student.id; } catch (x) {}
+    if (passed) return unlock();   // he typed his name and password just now: no PIN page
+    let ok = false; try { ok = sessionStorage.getItem("wt.pin.ok") === student.id; } catch (x) {}   // test mark only
     ok ? unlock() : renderPin();
   }
   // Close the menu when he taps somewhere else.
@@ -6033,6 +6071,7 @@
     "Teacher? Type your teacher PIN here.": "老师？在这里输入老师密码。",
     "Connect this device": "连接这台设备", "Type the 6-letter code from your teacher.": "输入老师给你的 6 个字母的代码。", "Connect": "连接",
     "Not yet. Check the code with your teacher.": "还没对。和老师核对一下代码。",
+    "Log out": "退出登录", "Log out?": "要退出登录吗？", "Yes, log out": "是的，退出", "Stay": "留下",
     "Not set up yet": "还没有设置好", "Ask your teacher to set up the game.": "请老师来设置游戏。",
     "Can't connect": "连不上", "Check the internet, then tap Try again.": "检查一下网络，然后点“再试一次”。",
     "Can't load": "加载不了", "Tap Try again. If it still does not work, ask your teacher.": "点“再试一次”。如果还是不行，问老师。",
@@ -6045,95 +6084,72 @@
   boot();
 })();
   // ============ the front door (91-door.js) ============
-  // The owners' decision (25 November): a device that is not his yet no longer asks first for the tutor's 6-letter code.
-  // It shows tabs side by side: "Student" and "Teacher", and "Tester" when the game offers a test account
-  // (ctx.testerEnter, from 89-testacct.js) or a later part defines doorTester(panel, ctx).
-  //  - Student: his NAME and his PIN, one button "Enter". The database function student_login (deploy/schema.sql) checks
-  //    both; right, this device becomes his device and he is in at once (no second PIN page: wt.pin.ok is set, as renderPin
-  //    does). Not right: "Not yet. Check your name and PIN." and under it "Still shut? Ask your teacher.": the database
-  //    gives the same empty answer when another laptop holds him (a new laptop needs the tutor's "Disconnect his laptop"
-  //    first), so the page cannot and must not tell the two apart. Too many tries: "Too many tries. Wait a little."
-  //    Under the form a quiet "I have a code" opens the old code page (renderPair), with a way back.
-  //  - When this browser holds a login that is NOT the game's anonymous one (the tutor signed in on this laptop), the
-  //    database refuses the door to it (a tutor's login must never become his laptop). The Student panel then offers no
-  //    fields and no code: "You are signed in as the teacher." "Log out on the teacher page first." and the teacher link.
-  //    The page learns it from the saved sign-in (auth.getSession(): user.is_anonymous; a login without that field but with
-  //    an e-mail counts as not anonymous).
-  //  - Teacher: one link styled as a button to teacher.html (its own e-mail and password login).
-  //  - Tester: "For the adults who test the game." and "Open the test account": await ctx.testerEnter(). It signs nothing
-  //    in by itself: with the tutor's session it opens the test account and starts the game (the door's work is over:
-  //    true, "ok", or the door gone); "teacher": "Sign in on the teacher page first." with the link; anything else or an
-  //    error: "Can't open it. Try again."
-  // A device that IS his already never comes here: boot() shows the old "Hi <name>! Type your PIN." page.
+  // Third version (26 November, the owners: "make it simple like any other website"). Every load of the game page shows
+  // this door, on the real site and in the practice copy alike; nothing about who was logged in is kept on the device (the
+  // game's client keeps its sign-in in memory only: site/common.js W.client). Tabs side by side: "Student" and "Teacher",
+  // and "Tester" when the game offers a test account (ctx.testerEnter, from 89-testacct.js) or a later part defines
+  // doorTester(panel, ctx).
+  //  - Student: his NAME and his PASSWORD, one button "Log in". On submit the game's client signs in anonymously (once per
+  //    page load: a second try after "Not yet" reuses that sign-in, so a child who mistypes does not use up the project's
+  //    anonymous sign-ins), then student_login (deploy/schema.sql) checks name and password and makes this session his.
+  //    Right: ctx.boot(true), the game starts at once. Not right: "Not yet. Check your name and password." Too many tries:
+  //    "Too many tries. Wait a little." No network: "Can't connect. Tap Log in again." In the practice copy one small line
+  //    says the password there: "Practice copy. Password: practice".
+  //  - Teacher: E-mail and Password, "Log in": her e-mail sign-in on the TEACHER client (kept in this tab only), then
+  //    teacher.html. Not right: "Not yet. Check your e-mail and password." In the practice copy (no accounts there): no
+  //    fields, "Practice copy: no password." and "Open the teacher page".
+  //  - Tester: "For the adults who test the game." and "Open the test account": await ctx.testerEnter(). With the tutor's
+  //    session it opens the test account and starts the game (true, "ok", or the door gone); "teacher": "Sign in on the
+  //    teacher page first." with the link; anything else or an error: "Can't open it. Try again."
   //
-  // How it is wired: 90-boot.js boot() calls doorOpen({ boot, renderPair, hdDoor, sb, testerEnter }) when this function
-  // exists. 90-boot.js closes the game's shared function scope ("})();" on its last line), so this part runs AFTER that
-  // scope: $, ICON and logEvent of the other parts are not reachable here. doorOpen is a plain function of the page, and
-  // this part keeps its own small helpers. The database client is ctx.sb; only when a boot() without it calls, a client of
-  // its own (doorDb), which reads the same saved sign-in and never refreshes it itself.
+  // How it is wired: 90-boot.js boot() calls doorOpen({ boot, hdDoor, sb, testerEnter }). 90-boot.js closes the game's shared
+  // function scope ("})();" on its last line), so this part runs AFTER that scope; doorOpen is a plain function of the page
+  // and this part keeps its own small helpers. ctx.sb is the game's own client (the session that becomes his).
   function doorOpen(ctx) { return window.WW_DOOR.open(ctx || {}); }
   (function () {
     const W = window.WT, ZH = window.WT_ZH, $ = id => document.getElementById(id);
     const ICON = name => '<svg class="ic" aria-hidden="true"><use href="#i-' + name + '"/></svg>';
     const T = {
       title: "Welcome!", student: "Student", teacher: "Teacher", tester: "Tester",
-      stuDo: "Type your name and your PIN.", name: "Name", pin: "PIN", enter: "Enter", code: "I have a code",
-      bad: "Not yet. Check your name and PIN.", still: "Still shut? Ask your teacher.", many: "Too many tries. Wait a little.",
-      net: "Can't connect. Tap Enter again.",
-      asTeacher: "You are signed in as the teacher.", logOut: "Log out on the teacher page first.",
-      teaDo: "Teachers sign in on their own page.", teaGo: "Open the teacher page", back: "Back to name and PIN",
+      stuDo: "Type your name and your password.", name: "Name", pw: "Password", login: "Log in", mail: "E-mail",
+      practice: "Practice copy. Password: practice",
+      bad: "Not yet. Check your name and password.", many: "Too many tries. Wait a little.", net: "Can't connect. Tap Log in again.",
+      teaDo: "Type your e-mail and password.", teaBad: "Not yet. Check your e-mail and password.",
+      teaPractice: "Practice copy: no password.", teaGo: "Open the teacher page",
       tstDo: "For the adults who test the game.", tstGo: "Open the test account", tstTeacher: "Sign in on the teacher page first.",
       tstFail: "Can't open it. Try again."
     };
-    let client = null;
-    // The database client: the game's own (ctx.sb). Fallback for a boot() that does not pass it: a second client of the
-    // same project; it reads the same saved sign-in and never refreshes it on a timer, so the two never race to renew it.
-    function doorDb(ctx) {
-      if (ctx.sb) return ctx.sb;
-      if (client) return client;
-      const cfg = window.WORD_TOWER_CONFIG || {};
-      if (!window.supabase || !cfg.SUPABASE_URL) return (client = W.client());
-      client = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: false, detectSessionInUrl: false } });
-      return client;
-    }
-    // Is the saved sign-in somebody's own login (the tutor's e-mail), not the game's anonymous one?
-    async function ownLogin(ctx) {
-      try {
-        const db = doorDb(ctx); if (!db || !db.auth || !db.auth.getSession) return false;
-        const r = await db.auth.getSession(), u = r && r.data && r.data.session && r.data.session.user;
-        if (!u) return false;
-        return u.is_anonymous === false || (u.is_anonymous == null && !!u.email);
-      } catch (e) { return false; }
-    }
     const esc = s => (W && W.esc ? W.esc(s) : String(s));
-    let tab = "student", busy = false, own = false;
+    const demo = () => !!window.WW_DEMO;   // the practice copy (the stand-in database): no accounts
+    let tab = "student", busy = false;
     const TABS = () => [["student", "pencil"], ["teacher", "book"], ["tester", "flag"]];
     const testerOn = ctx => typeof ctx.testerEnter === "function" || typeof window.doorTester === "function";
     const teacherLink = id => '<div class="pg-foot dr-foot"><a class="btn primary zhk" id="' + id + '" href="teacher.html">' + esc(T.teaGo) + "</a></div>";
+    const field = (id, label, icon, input) => '<div class="dr-field"><span class="kind dr-lbl" id="' + id + 'L">' + esc(label) + '</span><label class="line">' + ICON(icon) + input.replace("<input ", '<input id="' + id + '" aria-labelledby="' + id + 'L" ') + "</label></div>";
+    const isNet = m => /^network|fetch|failed to|timeout|load failed/i.test(m);
     async function open(ctx) {
       busy = false; window.WW_DOOR.ctx = ctx;   // the last door drawn (tests and the tester part may open it again with more)
-      own = await ownLogin(ctx);
       if (tab === "tester" && !testerOn(ctx)) tab = "student";
       const tabs = TABS().map(([k, ic]) => '<button type="button" role="tab" class="dr-tab' + (k === tab ? " on" : "") + '" id="drTab-' + k + '" data-tab="' + k + '"' +
         ' aria-controls="drPan-' + k + '" aria-selected="' + (k === tab) + '" tabindex="' + (k === tab ? 0 : -1) + '"' + (k === "tester" && !testerOn(ctx) ? " hidden" : "") + ">" +
         ICON(ic) + "<span>" + esc(T[k]) + "</span></button>").join("");
-      const form = '<p class="do">' + esc(T.stuDo) + "</p>" +
-        '<form id="drStu" class="answer hd-entry dr-form" autocomplete="off" novalidate>' +
-        '<div class="dr-field"><span class="kind dr-lbl" id="drNameL">' + esc(T.name) + '</span><label class="line">' + ICON("pencil") +
-        '<input type="text" id="drName" maxlength="40" autocomplete="off" autocapitalize="words" spellcheck="false" aria-labelledby="drNameL"></label></div>' +
-        '<div class="dr-field"><span class="kind dr-lbl" id="drPinL">' + esc(T.pin) + '</span><label class="line hd-pin">' + ICON("lock") +
-        '<input type="password" inputmode="numeric" id="drPin" maxlength="12" autocomplete="off" aria-labelledby="drPinL"></label></div>' +
-        '<button type="submit" class="btn primary" id="drEnter">' + esc(T.enter) + "</button></form>" +
-        '<p class="fb bad" id="drErr" aria-live="polite"></p><p class="hint dr-still" id="drStill" hidden>' + esc(T.still) + "</p>" +
-        '<p class="hint dr-spare"><button type="button" class="dr-link" id="drCode">' + esc(T.code) + "</button></p>";
-      const asTeacher = '<p class="do dr-own" id="drOwn">' + esc(T.asTeacher) + '</p><p class="do dr-own">' + esc(T.logOut) + "</p>" + teacherLink("drOwnGo");
-      const stu = '<div class="dr-pan" role="tabpanel" id="drPan-student" aria-labelledby="drTab-student"' + (tab === "student" ? "" : " hidden") + ">" + (own ? asTeacher : form) + "</div>";
-      const tea = '<div class="dr-pan" role="tabpanel" id="drPan-teacher" aria-labelledby="drTab-teacher"' + (tab === "teacher" ? "" : " hidden") + ">" +
-        '<p class="do">' + esc(T.teaDo) + "</p>" + teacherLink("drTeacher") + "</div>";
-      const tst = '<div class="dr-pan" role="tabpanel" id="drPan-tester" aria-labelledby="drTab-tester"' + (tab === "tester" ? "" : " hidden") + ">" +
-        (typeof ctx.testerEnter === "function" ? '<p class="do">' + esc(T.tstDo) + '</p><div class="pg-foot dr-foot"><button type="button" class="btn primary" id="drTester">' + esc(T.tstGo) + "</button></div>" +
-          '<p class="fb bad" id="drTstErr" aria-live="polite"></p><div class="dr-tstgo" id="drTstGo" hidden>' + teacherLink("drTstTeacher") + "</div>" : "") + "</div>";
-      ctx.hdDoor(T.title, "", '<div class="dr-door"><div class="dr-tabs" role="tablist" aria-label="Who is here">' + tabs + "</div>" + stu + tea + tst + "</div>");
+      const pan = (k, html) => '<div class="dr-pan" role="tabpanel" id="drPan-' + k + '" aria-labelledby="drTab-' + k + '"' + (tab === k ? "" : " hidden") + ">" + html + "</div>";
+      const stu = '<p class="do">' + esc(T.stuDo) + "</p>" +
+        '<form id="drStu" class="answer hd-entry dr-form" autocomplete="on" novalidate>' +
+        field("drName", T.name, "pencil", '<input type="text" name="username" maxlength="80" autocomplete="username" autocapitalize="words" spellcheck="false">') +
+        field("drPin", T.pw, "lock", '<input type="password" name="password" maxlength="40" autocomplete="current-password">') +
+        '<button type="submit" class="btn primary" id="drEnter">' + esc(T.login) + "</button></form>" +
+        '<p class="fb bad" id="drErr" aria-live="polite"></p>' + (demo() ? '<p class="hint dr-practice">' + esc(T.practice) + "</p>" : "");
+      const tea = demo() ? '<p class="do">' + esc(T.teaPractice) + "</p>" + teacherLink("drTeacher") :
+        '<p class="do">' + esc(T.teaDo) + "</p>" +
+        '<form id="drTea" class="answer hd-entry dr-form" autocomplete="on" novalidate>' +
+        field("drMail", T.mail, "mail", '<input type="email" name="email" maxlength="200" autocomplete="username" spellcheck="false">') +
+        field("drTpw", T.pw, "lock", '<input type="password" name="password" maxlength="200" autocomplete="current-password">') +
+        '<button type="submit" class="btn primary" id="drTLogin">' + esc(T.login) + "</button></form>" +
+        '<p class="fb bad" id="drTErr" aria-live="polite"></p>';
+      const tst = typeof ctx.testerEnter === "function" ? '<p class="do">' + esc(T.tstDo) + '</p><div class="pg-foot dr-foot"><button type="button" class="btn primary" id="drTester">' + esc(T.tstGo) + "</button></div>" +
+        '<p class="fb bad" id="drTstErr" aria-live="polite"></p><div class="dr-tstgo" id="drTstGo" hidden>' + teacherLink("drTstTeacher") + "</div>" : "";
+      ctx.hdDoor(T.title, "", '<div class="dr-door"><div class="dr-tabs" role="tablist" aria-label="Who is here">' + tabs + "</div>" + pan("student", stu) + pan("teacher", tea) + pan("tester", tst) + "</div>");
       wire(ctx);
     }
     function show(ctx, k, focus) {
@@ -6143,7 +6159,7 @@
       if (k === "tester" && typeof ctx.testerEnter !== "function" && typeof window.doorTester === "function" && !$("drPan-tester").dataset.filled) { $("drPan-tester").dataset.filled = "1"; window.doorTester($("drPan-tester"), ctx); }
       if (focus === "tab") { const b = $("drTab-" + k); if (b) b.focus(); }
       else if (focus) {
-        const f = k === "student" ? ($("drName") || $("drOwnGo")) : k === "teacher" ? $("drTeacher") : $("drTester");
+        const f = k === "student" ? $("drName") : k === "teacher" ? ($("drMail") || $("drTeacher")) : $("drTester");
         if (f) f.focus();
       }
     }
@@ -6156,33 +6172,50 @@
           e.preventDefault(); show(ctx, tabs[(i + d + tabs.length) % tabs.length].dataset.tab, "tab");
         };
       });
-      if ($("drCode")) $("drCode").onclick = () => code(ctx);
-      if ($("drStu")) $("drStu").onsubmit = e => { e.preventDefault(); login(ctx); };
+      $("drStu").onsubmit = e => { e.preventDefault(); login(ctx); };
+      if ($("drTea")) $("drTea").onsubmit = e => { e.preventDefault(); teacher(); };
       if ($("drTester")) $("drTester").onclick = () => tester(ctx);
       show(ctx, tab, true);
     }
-    function say(text, still) {
-      const el = $("drErr"); if (el) el.textContent = text;
-      const s = $("drStill"); if (s) s.hidden = !still;
+    function say(id, text) { const el = $(id); if (el) el.textContent = text; }
+    // The game's anonymous sign-in: at most one per page load. The first submit makes it; later tries reuse the one the
+    // game's client holds in memory. Nothing is signed in while the door merely shows.
+    async function signedIn(db) {
+      const r = await db.auth.getSession(), s = r && r.data && r.data.session;
+      if (s) return { ok: true };
+      const a = await db.auth.signInAnonymously();
+      return a && !a.error ? { ok: true } : { ok: false, error: a && a.error };
     }
     async function login(ctx) {
       if (busy) return;
-      const name = $("drName").value.trim(), pin = $("drPin").value.trim();
-      if (!name || !pin) { say(T.bad, false); (name ? $("drPin") : $("drName")).focus(); return; }   // nothing to check: no try is counted
-      busy = true; say("", false); $("drEnter").disabled = true;
-      let res; try { res = await doorDb(ctx).rpc("student_login", { p_name: name, p_pin: pin }); } catch (x) { res = { data: null, error: { message: String(x && x.message || x) } }; }
+      const name = $("drName").value.trim(), pw = $("drPin").value.trim();
+      if (!name || !pw) { say("drErr", T.bad); (name ? $("drPin") : $("drName")).focus(); return; }   // nothing to check: no try is counted
+      busy = true; say("drErr", ""); $("drEnter").disabled = true;
+      let res;
+      try {
+        const db = ctx.sb, s = await signedIn(db);
+        res = s.ok ? await db.rpc("student_login", { p_name: name, p_pin: pw }) : { data: null, error: { message: "network: " + String(s.error && s.error.message || "") } };
+      } catch (x) { res = { data: null, error: { message: "network: " + String(x && x.message || x) } }; }
       busy = false; if ($("drEnter")) $("drEnter").disabled = false;
       const { data, error } = res || {};
-      if (data && !error) {
-        try { sessionStorage.setItem("wt.pin.ok", String(data)); } catch (x) {}   // he typed his PIN just now: no second PIN page
-        return ctx.boot();
-      }
+      if (data && !error) return ctx.boot(true);   // the game starts for the student of this session
       const m = String(error && error.message || "");
-      if (/only the game's own sign-in/i.test(m)) return open(ctx);   // the tutor signed in meanwhile: the page says so
-      if (/too many tries/i.test(m)) say(T.many, false);
-      else if (error && /fetch|network|failed|timeout/i.test(m)) say(T.net, false);
-      else say(T.bad, true);   // a miss, or another laptop holds him: the same answer, the same lines
+      say("drErr", /too many tries/i.test(m) ? T.many : error && isNet(m) ? T.net : T.bad);
       $("drPin").value = ""; $("drPin").focus();
+    }
+    // The tutor: her e-mail sign-in on the teacher client (kept in this tab only), then her page. The game never reads it.
+    async function teacher() {
+      if (busy) return;
+      const mail = $("drMail").value.trim(), pw = $("drTpw").value;
+      if (!mail || !pw) { say("drTErr", T.teaBad); (mail ? $("drTpw") : $("drMail")).focus(); return; }
+      busy = true; say("drTErr", ""); $("drTLogin").disabled = true;
+      let error = null;
+      try { const tc = W.client("teacher"); const r = await tc.auth.signInWithPassword({ email: mail, password: pw }); error = r && r.error; }
+      catch (x) { error = { message: "network: " + String(x && x.message || x) }; }
+      busy = false; if ($("drTLogin")) $("drTLogin").disabled = false;
+      if (!error) return window.WW_DOOR.go("teacher.html");
+      say("drTErr", isNet(String(error.message || "")) ? T.net : T.teaBad);
+      $("drTpw").value = ""; $("drTpw").focus();
     }
     async function tester(ctx) {
       if (busy) return;
@@ -6195,23 +6228,15 @@
       if (r === "teacher") { $("drTstErr").textContent = T.tstTeacher; $("drTstGo").hidden = false; return; }
       $("drTstErr").textContent = T.tstFail;
     }
-    // The spare key: the old 6-letter code page, unchanged, with one quiet way back to the door under it.
-    function code(ctx) {
-      ctx.renderPair();
-      const g = $("gate"); if (!g) return;
-      g.insertAdjacentHTML("beforeend", '<p class="hint dr-spare dr-back"><button type="button" class="dr-link" id="drBack">' + esc(T.back) + "</button></p>");
-      $("drBack").onclick = () => { tab = "student"; open(ctx); };
-    }
-    window.WW_DOOR = { open, texts: T };
+    window.WW_DOOR = { open, texts: T, go: url => { location.href = url; } };
     if (ZH) ZH.add({
       "Welcome!": "欢迎！", "Student": "学生", "Teacher": "老师", "Tester": "测试员",
-      "Type your name and your PIN.": "输入你的名字和你的密码。", "Name": "名字", "PIN": "密码", "I have a code": "我有代码",
-      "Not yet. Check your name and PIN.": "还没对。检查一下名字和密码。", "Still shut? Ask your teacher.": "还是进不去？问问老师。",
-      "Too many tries. Wait a little.": "试了太多次。等一会儿再试。",
-      "Can't connect. Tap Enter again.": "连不上。再点一次“进入”。",
-      "You are signed in as the teacher.": "你现在登录的是老师的账号。", "Log out on the teacher page first.": "请先在老师页面退出登录。",
-      "Teachers sign in on their own page.": "老师在自己的页面登录。", "Open the teacher page": "打开老师页面",
-      "Back to name and PIN": "回到名字和密码",
+      "Type your name and your password.": "输入你的名字和密码。", "Name": "名字", "Password": "密码", "Log in": "登录", "E-mail": "邮箱",
+      "Practice copy. Password: practice": "练习版。密码：practice",
+      "Not yet. Check your name and password.": "还没对。检查一下名字和密码。", "Too many tries. Wait a little.": "试了太多次。等一会儿再试。",
+      "Can't connect. Tap Log in again.": "连不上。再点一次“登录”。",
+      "Type your e-mail and password.": "输入你的邮箱和密码。", "Not yet. Check your e-mail and password.": "还没对。检查一下邮箱和密码。",
+      "Practice copy: no password.": "练习版：不用密码。", "Open the teacher page": "打开老师页面",
       "For the adults who test the game.": "给测试游戏的大人用。", "Open the test account": "打开测试账号",
       "Sign in on the teacher page first.": "请先在老师页面登录。", "Can't open it. Try again.": "打不开。再试一次。"
     });

@@ -1,0 +1,67 @@
+/* Word World, the tutor's page: the day view on the Today tab ("Every answer", site/teacher-day.js). Owner: the day-view builder.
+   Uses the colours and faces of teacher.css. No table: every row wraps, so nothing scrolls sideways from a phone to a laptop. */
+.tdv{margin:0 0 22px;min-width:0}
+.tdv .bh{margin-bottom:8px}
+.tdv-now{font-size:18px;margin:6px 0 10px;color:var(--ink)}
+.tdv-now b{font-weight:700}
+.tdv-choose{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin:0 0 8px}
+.tdv-choose button.mini{min-height:44px}
+.tdv-choose button[disabled]{opacity:.4;cursor:default;box-shadow:none}
+.tdv-sel{display:flex;align-items:center;gap:8px;min-width:0}
+.tdv-sel span{color:var(--ink-3);font-size:15px}
+.tdv-sel select{min-height:44px;max-width:100%;padding:0 10px;border:1px solid var(--rule);border-radius:8px;background:var(--paper-hi);font-size:16px}
+.tdv-small{color:var(--ink-3);font-size:14.5px;margin:4px 0}
+.tdv-how2{max-width:760px;margin:2px 0 14px}
+.tdv-empty{color:var(--ink-2);margin:10px 0}
+
+/* a level, folded; inside it each part, folded */
+details.tdv-level{border-top:1px solid var(--rule);padding:0}
+details.tdv-level>summary,details.tdv-part>summary{list-style:none;cursor:pointer;position:relative;display:grid;gap:2px;min-width:0}
+details.tdv-level>summary::-webkit-details-marker,details.tdv-part>summary::-webkit-details-marker{display:none}
+details.tdv-level>summary{padding:14px 4px 14px 30px}
+details.tdv-level>summary::before,details.tdv-part>summary::before{content:"";position:absolute;left:6px;top:21px;width:9px;height:9px;border-right:2px solid var(--ink-2);border-bottom:2px solid var(--ink-2);transform:rotate(-45deg);transition:transform .15s}
+details.tdv-level[open]>summary::before,details.tdv-part[open]>summary::before{transform:rotate(45deg)}
+.tdv-lt{font-family:var(--f-display);font-size:22px;line-height:1.25}
+.tdv-ls{color:var(--ink-2);font-size:15px}
+details.tdv-part{margin:0 0 8px 14px;border-left:3px solid var(--paper-lo);padding:0 0 0 2px}
+details.tdv-part>summary{padding:8px 4px 8px 28px}
+details.tdv-part>summary::before{top:15px;left:8px}
+.tdv-pt{font-weight:700;font-size:17px}
+.tdv-ps{color:var(--ink-2);font-size:15.5px}
+details.tdv-part>.tdv-small{margin-left:28px}
+.tdv-rows{padding:2px 0 6px 28px;min-width:0}
+.tdv-sub{font-family:var(--f-body);font-size:15px;font-weight:700;color:var(--ink-3);margin:10px 0 4px;text-transform:none}
+
+/* one question: the word, what kind of question, how it went; then each try on its own line */
+.tdv-q{padding:8px 0;border-bottom:1px dashed var(--rule);min-width:0}
+.tdv-q:last-child{border-bottom:0}
+.tdv-qh{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 12px;min-width:0}
+.tdv-w{font-size:18px;overflow-wrap:anywhere}
+.tdv-how{color:var(--ink-3);font-size:15px}
+.tdv-res{font-size:15px;color:var(--ink-2);margin-left:auto}
+.tdv-res.tdv-ok{color:var(--leaf)}
+.tdv-tries,.tdv-lines{list-style:none;margin:4px 0 0;padding:0;display:grid;gap:4px}
+.tdv-tries li,.tdv-lines li{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;min-width:0;line-height:1.5}
+.tdv-n{font-size:14px;color:var(--ink-3);min-width:44px}
+.tdv-a{min-width:0;overflow-wrap:anywhere}
+.tdv-ans{font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,"Liberation Mono",monospace;font-size:16.5px;background:#fffaf0;border:1px solid var(--rule);border-radius:4px;padding:0 5px;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word}
+.tdv-ans.tdv-none{color:var(--ink-3);font-style:italic}
+.tdv-sp{color:var(--ember-lo);font-weight:700}
+.tdv-cap{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:2px;color:var(--ember-lo);font-weight:700}
+.tdv-note{font-size:14px;color:var(--ember-lo)}
+.tdv-v{font-weight:700;font-size:15px}
+.tdv-ok{color:var(--leaf)}
+.tdv-ny{color:var(--rust)}
+.tdv-h{font-size:14.5px;color:var(--plum);background:#efe3f0;border-radius:999px;padding:0 9px}
+.tdv-t{font-size:14px;color:var(--ink-3)}
+.tdv-voice:empty{display:none}
+
+@media (max-width:640px){
+  details.tdv-part{margin-left:0}
+  .tdv-rows{padding-left:10px}
+  details.tdv-part>.tdv-small{margin-left:10px}
+  .tdv-res{margin-left:0;flex-basis:100%}
+  .tdv-lt{font-size:20px}
+  .tdv-sel{order:-1;flex:1 1 100%}            /* on a phone: the day list on its own row, the two arrows side by side under it */
+  .tdv-sel select{flex:1;min-width:0}
+}

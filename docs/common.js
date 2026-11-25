@@ -3,11 +3,25 @@
   const cfg = window.WORD_TOWER_CONFIG || {};
   const W = (window.WT = {});
 
-  W.client = function () {
+  // The database client (26 November, the owners: "like any other website"). kind "game" (the default): the sign-in lives in
+  // the page's memory only, so a reload has none and the door asks again; nothing about who was logged in stays on the device.
+  // kind "teacher": the tutor's e-mail sign-in, kept in this TAB only (sessionStorage, a key of its own), so the teacher page
+  // keeps it across its own reloads and the hand-over from the door; a new tab or a new visit asks again. A browser that
+  // forbids sessionStorage gets a store in memory.
+  const tabStore = (function () {
+    const mem = {}, ss = () => { try { const s = window.sessionStorage; s.setItem("ww.t", "1"); s.removeItem("ww.t"); return s; } catch (e) { return null; } };
+    return {
+      getItem: k => { const s = ss(); try { return s ? s.getItem(k) : (k in mem ? mem[k] : null); } catch (e) { return k in mem ? mem[k] : null; } },
+      setItem: (k, v) => { const s = ss(); try { if (s) s.setItem(k, v); else mem[k] = v; } catch (e) { mem[k] = v; } },
+      removeItem: k => { const s = ss(); try { if (s) s.removeItem(k); } catch (e) {} delete mem[k]; }
+    };
+  })();
+  W.client = function (kind) {
     if (!window.supabase || !cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY || /YOUR-/.test(cfg.SUPABASE_URL)) return null;
-    return window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
-    });
+    const auth = kind === "teacher"
+      ? { persistSession: true, storage: tabStore, storageKey: "ww-teacher-auth", autoRefreshToken: true, detectSessionInUrl: false }
+      : { persistSession: false, autoRefreshToken: true, detectSessionInUrl: false };
+    return window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, { auth });
   };
 
   // The memory ladder (the tutor's decision C, 21 November): a learned word is met again after 1 day, then 4 days, then 14 days.

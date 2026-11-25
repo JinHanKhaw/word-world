@@ -1583,3 +1583,11 @@ body.rd-on:not(.rd-morn) #guide .gd-say,body.rd-on:not(.rd-morn) #guide .say{max
 #gate .dr-own+.dr-own{margin-top:calc(var(--u)*6)}
 #gate #drTstErr{margin-top:calc(var(--u)*8)}
 .dr-tstgo .dr-foot{margin-top:calc(var(--u)*6)}
+
+/* "Log out" in the game's menu (90-boot.js hdLogoutItem): one quiet item; asked once, in the menu itself */
+.menulist .hd-logout{border-top:calc(var(--u)*1) solid rgba(255,228,196,.18);margin-top:calc(var(--u)*2);padding-top:calc(var(--u)*2)}
+.menu .menulist .hd-logout button{min-height:max(44px,calc(var(--u)*40));border-radius:calc(var(--u)*9)}
+.menu .menulist .hd-logout button+button{border-top:0}
+.menulist .hd-lo-q{margin:calc(var(--u)*4) 0 calc(var(--u)*2);padding:calc(var(--u)*4) calc(var(--u)*12);font-size:calc(var(--u)*14.5);font-weight:700;color:var(--glass-fg)}
+.menulist .hd-logout .zhx{display:block;font-size:calc(var(--u)*13);color:var(--glass-dim)}
+#hdLogoutYes{color:#ffd2b0}
