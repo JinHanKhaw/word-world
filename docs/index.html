@@ -4,27 +4,27 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Word World</title>
-<link rel="stylesheet" href="fonts.css?v=202611251915">
-<link rel="stylesheet" href="ui.css?v=202611251915">
+<link rel="stylesheet" href="fonts.css?v=202611251958">
+<link rel="stylesheet" href="ui.css?v=202611251958">
 <!-- Backend. On claude.ai these two files stand in for the database (progress stays in this browser).
      On the real site, load supabase-js and config.js here instead. -->
-<script src="bank.js?v=202611251915"></script>
-<script src="probes.js?v=202611251915"></script>
-<script src="rude.js?v=202611251915"></script>
-<script src="vendor/supabase.js?v=202611251915"></script>
-<script src="config.js?v=202611251915"></script>
-<script src="common.js?v=202611251915"></script>
-<script src="zh.js?v=202611251915"></script>
-<script src="audio.js?v=202611251915"></script>
-<script src="patterns.js?v=202611251915"></script>
-<script src="pool.js?v=202611251915"></script>
-<script src="first.js?v=202611251915"></script>
-<script src="picker.js?v=202611251915"></script>
-<script src="img/words/pics.js?v=202611251915"></script>
-<script src="img/school/pics.js?v=202611251915"></script>
-<script src="story.js?v=202611251915"></script>
-<script src="pairs.js?v=202611251915"></script>
-<script src="voice.js?v=202611251915"></script>
+<script src="bank.js?v=202611251958"></script>
+<script src="probes.js?v=202611251958"></script>
+<script src="rude.js?v=202611251958"></script>
+<script src="vendor/supabase.js?v=202611251958"></script>
+<script src="config.js?v=202611251958"></script>
+<script src="common.js?v=202611251958"></script>
+<script src="zh.js?v=202611251958"></script>
+<script src="audio.js?v=202611251958"></script>
+<script src="patterns.js?v=202611251958"></script>
+<script src="pool.js?v=202611251958"></script>
+<script src="first.js?v=202611251958"></script>
+<script src="picker.js?v=202611251958"></script>
+<script src="img/words/pics.js?v=202611251958"></script>
+<script src="img/school/pics.js?v=202611251958"></script>
+<script src="story.js?v=202611251958"></script>
+<script src="pairs.js?v=202611251958"></script>
+<script src="voice.js?v=202611251958"></script>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -134,17 +134,17 @@
   <div id="full" class="modal full" hidden><div class="journal"><div class="cover"></div><article class="page paper modal-card"><button type="button" class="pgclose" id="fullClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button><div id="fullBody"></div></article></div></div>
 </div>
 
-<script src="vendor/three.min.js?v=202611251915"></script>
-<script src="vendor/GLTFLoader.js?v=202611251915"></script>
-<script src="models/hero.js?v=202611251915"></script>
-<script src="models/heroidle.js?v=202611251915"></script>
-<script src="models/tower.js?v=202611251915"></script>
-<script src="models/pod.js?v=202611251915"></script>
-<script src="models/tree.js?v=202611251915"></script>
-<script src="models/watchfire.js?v=202611251915"></script><!-- night watch (raid team): the watch-fire he owns -->
-<script src="world3d.js?v=202611251915"></script>
-<script src="orbit3d.js?v=202611251915"></script>
-<script src="raid3d.js?v=202611251915"></script><!-- night watch (raid team): the island test as a watch at the gate -->
+<script src="vendor/three.min.js?v=202611251958"></script>
+<script src="vendor/GLTFLoader.js?v=202611251958"></script>
+<script src="models/hero.js?v=202611251958"></script>
+<script src="models/heroidle.js?v=202611251958"></script>
+<script src="models/tower.js?v=202611251958"></script>
+<script src="models/pod.js?v=202611251958"></script>
+<script src="models/tree.js?v=202611251958"></script>
+<script src="models/watchfire.js?v=202611251958"></script><!-- night watch (raid team): the watch-fire he owns -->
+<script src="world3d.js?v=202611251958"></script>
+<script src="orbit3d.js?v=202611251958"></script>
+<script src="raid3d.js?v=202611251958"></script><!-- night watch (raid team): the island test as a watch at the gate -->
 <script>
 (function () {
   const W = window.WT, $ = id => document.getElementById(id);
@@ -5822,6 +5822,328 @@
       }, 300);
     }
   })();
+  // ============ the test account on the real database (owner: test-account team, prefix ta-) ============
+  // The tutor, 25 November: "a third tab ... the same world as [him], but advanced tools for testing, like skipping days,
+  // reset timers, skipping to specific levels, monster fights". So the tutor's own login opens a TEST STUDENT of her own on
+  // the real database (deploy/schema.sql, section "the test account": students.is_test, tester_open, tester_close,
+  // tester_tomorrow, tester_reset): the game runs exactly as on his laptop, through the same calls and the same database
+  // rules, and his record cannot be reached (the rules give her extra rights on test rows only).
+  //   testerEnter()  the door's "Tester" tab (91-door.js; 90-boot.js passes it in the door's ctx). The door has just signed
+  //                  the tutor in on the GAME's client (in memory only, site/common.js W.client("game")). Her session ->
+  //                  tester_open, then the game's own start boot(true), resolves to "ok"; not the tutor -> resolves to
+  //                  "teacher" and changes nothing; anything else that goes wrong -> it throws.
+  //   testerOn()     true while the student of this page is a test student.
+  // Nothing of it is kept on the device: the game's sign-in lives in the page's memory, so a reload always ends at the door
+  // (no mark in the tab is needed). The test PIN is never shown anywhere. The ways out: "Leave the test account" and the
+  // menu's "Log out" both stop an open level, call tester_close, sign out and reload: the door.
+  // While testerOn(): a mark on every page, and the tools in the menu (the same set as 88-tester.js has for the stand-in,
+  // done here through sb). Every tool checks student.is_test first; the database refuses the rest by itself.
+  // Known limit (the lead, 25 November): the test account runs with the tutor's login, so the ROW rules of his device are
+  // not exercised by it (she may read every row); the column guards are (deploy/schema.sql, child_columns_guard). It tests
+  // the real website, the real tables and the game's pages in any state; tests/test_schema_rls.py tests his device's rules.
+  // For the adults' own computers only, never on his laptop (the menu says so).
+  const testerOn = () => !!(student && student.is_test === true);
+  const taDayKey = n => W.dkey(new Date(Date.now() - n * 864e5));
+  const taIso = n => new Date(Date.now() - n * 864e5).toISOString();
+  let taSayT = 0;
+  const taSay = msg => { banner(msg); clearTimeout(taSayT); taSayT = setTimeout(() => { if ($("banner").textContent === msg) banner(""); }, 6000); };
+  let taBusy = false;
+
+  async function testerEnter() {
+    if (!sb) throw new Error("the game is not set up (config.js)");
+    const t = await sb.rpc("is_teacher");
+    if (t.error) throw new Error(t.error.message);
+    if (t.data !== true) return "teacher";          // not the tutor: nothing is changed
+    const r = await sb.rpc("tester_open");
+    if (r.error || !r.data) throw new Error(r.error ? r.error.message : "tester_open gave no student");
+    await boot(true);   // "the door has been passed in this page load": the game starts for the student of this session
+    if (!testerOn()) throw new Error("the test account did not start");
+    return "ok";
+  }
+  // unlock (90-boot.js) starts his world once per page: the test account's mark and tools come with it
+  { const taUnlock0 = unlock; unlock = async function () { const r = await taUnlock0.apply(this, arguments); taBuild(); return r; }; }
+
+  // After a tool: the game reads everything again from the database IN THIS PAGE (no reload: on the real site nothing of
+  // the sign-in survives a reload, the door would come back), draws the world again, says one short line, and opens the
+  // level when asked ("level", or "test": the level at its island test). What unlock (90-boot.js) does once per page
+  // (the mail listener, the animation, Orbit's greeting) is not repeated.
+  async function taReload(said, go) {
+    if (!(await loadAll())) return taFail("Reading the test record again");
+    await enterToday();
+    if (typeof pkFill === "function") await Promise.race([pkFill(), new Promise(r => setTimeout(r, 4000))]);
+    if (typeof scLoad === "function") await Promise.race([scLoad(), new Promise(r => setTimeout(r, 1500))]);
+    if (typeof storyLoad === "function") await Promise.race([storyLoad(), new Promise(r => setTimeout(r, 1500))]);
+    if (q) { q.ended = true; q = null; }
+    if (!$("modal").hidden) closeModal();
+    showPage("world"); drawWorld(); renderStats();
+    taSay(said || "");
+    if (go) { taFlag = go; await taAfterReload(); }
+    else if (!ritualDone()) showMailPopup();
+    return true;
+  }
+  const taFail = (what, err) => { taSay(what + " did not work." + (err && err.message ? " " + err.message : "")); return false; };
+  // Every tool runs through here: only for a test student, one at a time, and any error ends in one line.
+  function taTool(name, fn) {
+    return async (...a) => {
+      if (!testerOn()) { taSay("Only in the test account."); return false; }
+      if (taBusy) { taSay("One moment, the last tool is still working."); return false; }
+      taBusy = true; $("menu").open = false;
+      try { return await fn(...a); } catch (e) { try { console.warn(e); } catch (x) {} return taFail(name, e); } finally { taBusy = false; }
+    };
+  }
+  const taFirstOpen = () => { let d = 1; while (d <= LEVELS && dayDone(d)) d++; return d; };
+
+  // Today's mail counts as opened and every letter as read (as 88-tester mailRead).
+  async function taMailRead() {
+    if (todaySession && !todaySession.mail_opened_at) await saveSession({ mail_opened_at: new Date().toISOString() });
+    const fresh = messages.filter(m => !m.read_at && m.student_id === student.id);
+    if (fresh.length) { const r = await sb.from("messages").update({ read_at: new Date().toISOString() }).in("id", fresh.map(m => m.id)); if (r.error) throw r.error; }
+  }
+  // Level d counts as finished `back` days ago: its row, a session that day, its words met (step 2, due in five days).
+  async function taFinish(d, back) {
+    const sid = student.id, k = taDayKey(back), done = { completed: true, finished_at: taIso(back), started_at: taIso(back) };
+    let r = quests.find(x => x.quest_day === d);
+    if (r) { const u = await sb.from("quests").update(done).eq("id", r.id).eq("student_id", sid); if (u.error) throw u.error; Object.assign(r, done); }
+    else {
+      const ins = await sb.from("quests").insert(Object.assign({ student_id: sid, quest_day: d, diamonds_earned: 4, new_right: 2, new_wrong: 0 }, done)).select().single();
+      if (ins.error) throw ins.error; quests.push(ins.data);
+    }
+    if (!sessions.some(x => x.day === k)) {
+      const s = await sb.from("sessions").insert({ student_id: sid, day: k, mail_opened_at: taIso(back) }).select().single();
+      if (s.error) throw s.error; sessions.push(s.data);
+    }
+    const fresh = dayWords(d).filter(w => !(w.level > 0)).map(w => w.id), met = dayWords(d).filter(w => w.level > 0).map(w => w.id), due = W.addDays(taDayKey(0), 5);
+    if (fresh.length) { const u = await sb.from("words").update({ level: 2, introduced_on: k, last_seen: k, due }).in("id", fresh).eq("student_id", sid); if (u.error) throw u.error; }
+    if (met.length) { const u = await sb.from("words").update({ due }).in("id", met).eq("student_id", sid); if (u.error) throw u.error; }
+    dayWords(d).forEach(w => { if (fresh.includes(w.id)) Object.assign(w, { level: 2, introduced_on: k, last_seen: k }); w.due = due; });
+  }
+
+  // "Go to level N": every level before it finished on an earlier day (one level a day, the last one yesterday), with the
+  // words the picker gives (87-picker pkFill, the same add_pool_words call as in his game); levels from N on are open again.
+  async function taGoLevel(n, go) {
+    n = Math.max(1, Math.min(LEVELS, Math.round(+n) || 1));
+    taSay("Working: level " + n + "…");
+    if (!(await loadAll())) return taFail("Go to level");
+    const sid = student.id;
+    if (quests.some(x => x.quest_day && x.quest_day >= n)) {
+      const r = await sb.from("quests").delete().eq("student_id", sid).gte("quest_day", n); if (r.error) throw r.error;
+      quests = quests.filter(x => !(x.quest_day && x.quest_day >= n));
+    }
+    const later = words.filter(w => w.quest_day && w.quest_day >= n && (w.level > 0 || w.due || w.introduced_on || w.last_seen));
+    if (later.length) {
+      const blank = { level: 0, due: null, introduced_on: null, last_seen: null, wrong_streak: 0 };
+      const r = await sb.from("words").update(blank).in("id", later.map(w => w.id)).eq("student_id", sid); if (r.error) throw r.error;
+      later.forEach(w => Object.assign(w, blank));
+    }
+    // a level finished today before the target: moved to the day before, so the target can open today
+    for (const x of quests) if (x.completed && x.quest_day && x.finished_at && W.dkey(new Date(x.finished_at)) === taDayKey(0)) {
+      const r = await sb.from("quests").update({ finished_at: taIso(1) }).eq("id", x.id).eq("student_id", sid); if (r.error) throw r.error; x.finished_at = taIso(1);
+    }
+    for (let d = taFirstOpen(); d < n; d++) {
+      if (!isTest(d) && dayWords(d).length < 2) await pkFill();
+      if (!isTest(d) && !dayWords(d).length) return taFail("Go to level", { message: "There are no words for level " + d + "." });
+      await taFinish(d, n - d);
+    }
+    if (!isTest(n) && dayWords(n).length < 2) await pkFill();
+    if (!isTest(n) && !dayWords(n).length) return taFail("Go to level", { message: "There are no words for level " + n + "." });
+    await taMailRead();
+    await taReload(isTest(n) ? "Level " + n + ": the island test." : "Level " + n + " is open.", go || "level");
+    return true;
+  }
+  // "Go to the island test": the next monster level (every 10th), reached as above, and the level opens at its test.
+  async function taIsland() { const cur = taFirstOpen(); return taGoLevel(Math.ceil(cur / PER_ZONE) * PER_ZONE, "test"); }
+
+  // "Finish today's task": today's level, one go of school words when there is a school list, today's story pages, the mail.
+  async function taFinishTask() {
+    if (!(await loadAll())) return taFail("Finish today's task");
+    const sid = student.id, cur = taFirstOpen(), t = taDayKey(0), now = new Date().toISOString();
+    if (dayWords(cur).length || isTest(cur)) {
+      const done = { completed: true, finished_at: now };
+      let r = quests.find(x => x.quest_day === cur);
+      if (r) { const u = await sb.from("quests").update(done).eq("id", r.id).eq("student_id", sid); if (u.error) throw u.error; Object.assign(r, done); }
+      else { const ins = await sb.from("quests").insert(Object.assign({ student_id: sid, quest_day: cur, started_at: now, diamonds_earned: 4, new_right: 2, new_wrong: 0 }, done)).select().single(); if (ins.error) throw ins.error; quests.push(ins.data); }
+      const fresh = dayWords(cur).filter(w => !(w.level > 0)).map(w => w.id);
+      if (fresh.length) { const u = await sb.from("words").update({ level: 1, introduced_on: t, last_seen: t, due: W.addDays(t, 1) }).in("id", fresh).eq("student_id", sid); if (u.error) throw u.error; }
+    }
+    // School words (82-school scList): the list with the nearest dictation date from today on; the day before it, the
+    // practice dictation is the go, else one drill.
+    const sw = await sb.from("school_words").select("*").eq("student_id", sid); if (sw.error) throw sw.error;
+    const near = (sw.data || []).filter(x => x.dictation_date && x.dictation_date >= t);
+    if (near.length) {
+      const date = near.map(x => x.dictation_date).sort()[0], n = near.filter(x => x.dictation_date === date).length;
+      if (t >= W.addDays(date, -1)) {
+        const st = await sb.from("school_tests").select("*").eq("student_id", sid).eq("dictation_date", date); if (st.error) throw st.error;
+        if (!(st.data || []).length) { const r = await sb.from("school_tests").insert({ student_id: sid, dictation_date: date, taken_on: t, score: n, total: n, missed: [], self_marked: true }); if (r.error) throw r.error; }
+      } else if (!quests.some(x => x.kind === "school" && x.started_at && W.dkey(new Date(x.started_at)) === t)) {
+        const r = await sb.from("quests").insert({ student_id: sid, quest_day: null, kind: "school", started_at: now, diamonds_earned: 2 }); if (r.error) throw r.error;
+      }
+    }
+    // the story page of every level finished today counts as read (55-story)
+    const ev = await sb.from("events").select("*").eq("student_id", sid).eq("type", "story_done"); if (ev.error) throw ev.error;
+    for (const x of quests.filter(x => x.completed && x.quest_day && x.finished_at && W.dkey(new Date(x.finished_at)) === t)) {
+      if ((window.WW_STORY || {})[x.quest_day] && !(ev.data || []).some(e => e.detail && e.detail.level === x.quest_day)) {
+        const r = await sb.from("events").insert({ student_id: sid, session_id: todaySession ? todaySession.id : null, type: "story_done", detail: { level: x.quest_day, tester: true } }); if (r.error) throw r.error;
+      }
+    }
+    await taMailRead();
+    await taReload("Today's task is done.");
+    return true;
+  }
+  async function taDiamonds() {
+    const r = await sb.from("quests").insert({ student_id: student.id, quest_day: null, kind: "tester", completed: false, started_at: new Date().toISOString(), diamonds_earned: 50 });
+    if (r.error) return taFail("Give 50 diamonds", r.error);
+    await taReload("50 diamonds given.");
+    return true;
+  }
+  // "Reset free play" (36-sleep.js keeps the clock in today's session: play_used, asleep_at; and "two more minutes" was
+  // said once a day on this device: ww.sleep.warned.<day>).
+  async function taResetPlay() {
+    if (!todaySession) return taFail("Reset free play", { message: "No session today." });
+    const r = await sb.from("sessions").update({ play_used: 0, asleep_at: null }).eq("id", todaySession.id).eq("student_id", student.id);
+    if (r.error) return taFail("Reset free play", r.error);
+    try { localStorage.removeItem("ww.sleep.warned." + todaySession.day); } catch (e) {}
+    await taReload("Free play starts again.");
+    return true;
+  }
+  // The keys of THE TEST STUDENT on this device: those that carry its id or the id of one of its words or level rows
+  // (ww.rounds.<id>.<day>, ww.guide.<id>, wt.card.<word>.<day>, ww.watch.<level row>, ...), and the day marker with no id
+  // (ww.sleep.warned.<day>) only while this tab plays the test account. Never a key of another student on a shared browser.
+  function taKeys() {
+    const ids = [student.id].concat(words.filter(w => w.student_id === student.id).map(w => w.id), quests.filter(x => x.student_id === student.id).map(x => x.id)).filter(Boolean).map(String);
+    const out = [];
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i); if (!k || !/^w[wt]\./.test(k)) continue;
+        if (ids.some(id => k.indexOf(id) >= 0) || (testerOn() && k.indexOf("ww.sleep.warned.") === 0)) out.push(k);
+      }
+    } catch (e) {}
+    return out;
+  }
+  // Their dates (in the name, and in Orbit's memory) move one day back too, so that the device agrees with the database.
+  function taShiftDevice() {
+    const D = /\d{4}-\d{2}-\d{2}/g, back = s => s.replace(D, k => W.addDays(k, -1));
+    try {
+      taKeys().forEach(k => {
+        const v = localStorage.getItem(k), nk = back(k), nv = k.indexOf("ww.guide.") === 0 ? back(v || "") : v;
+        if (nk !== k) localStorage.removeItem(k);
+        localStorage.setItem(nk, nv);
+      });
+    } catch (e) {}
+  }
+  async function taTomorrow() {
+    const r = await sb.rpc("tester_tomorrow");
+    if (r.error) return taFail("Pretend it is tomorrow", r.error);
+    taShiftDevice();
+    await taReload("It is tomorrow now.");
+    return true;
+  }
+  let taResetArmed = 0;
+  async function taReset(btn) {
+    if (Date.now() - taResetArmed > 4000) { taResetArmed = Date.now(); if (btn) btn.textContent = "Tap again: reset the test record"; taSay("Tap again to reset the test record."); return false; }
+    taResetArmed = 0;
+    const r = await sb.rpc("tester_reset");
+    if (r.error) return taFail("Reset the test record", r.error);
+    try {
+      taKeys().forEach(k => localStorage.removeItem(k));
+    } catch (e) {}
+    // The game's own fresh start (00-core freshStart) clears the day markers of EVERY student on this browser when a record
+    // is empty; the keys that are not the test student's are put back afterwards (see the report: a fault of freshStart).
+    const keep = {};
+    try { const mine = new Set(taKeys()); for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && FRESH_KEYS.some(x => k.indexOf(x) === 0) && !mine.has(k)) keep[k] = localStorage.getItem(k); } } catch (e) {}
+    await taReload("The test record is back at day 1.");
+    try { Object.keys(keep).forEach(k => { if (localStorage.getItem(k) === null) localStorage.setItem(k, keep[k]); }); } catch (e) {}
+    return true;
+  }
+  // The way out, for "Leave the test account" and for the menu's "Log out" while the test account plays: an open level
+  // stops first exactly as "Stop here" does (as 90-boot.js hdLogout), then tester_close (the tutor's login lets go of the
+  // test student), sign out, reload: the door. Each step is tried even when one before it fails, so the page always ends
+  // at the door; a test student left held by her login is taken again by the next tester_open, and harms nothing.
+  let taLeaving = false;
+  async function taOut() {
+    if (taLeaving) return false; taLeaving = true;
+    try { const pb = $("pauseBtn"), qp = $("questpage"); if (pb && qp && !qp.hidden) pb.click(); else if (q) pauseQuest(); } catch (e) {}
+    await new Promise(r => setTimeout(r, 300));   // its save on its way
+    try { await sb.rpc("tester_close"); } catch (e) {}
+    try { await sb.auth.signOut(); } catch (e) {}
+    try { sessionStorage.removeItem("wt.pin.ok"); } catch (e) {}
+    location.reload();
+    return true;
+  }
+  const taLeave = () => taOut();
+  // The menu's "Log out" (90-boot.js hdLogoutItem): "Yes, log out" while the test account plays goes the same way out.
+  document.addEventListener("click", e => {
+    if (!testerOn() || !e.target || !e.target.closest || !e.target.closest("#hdLogoutYes")) return;
+    e.stopImmediatePropagation(); e.preventDefault(); taOut();
+  }, true);
+  // Inside a level: on to the next page, or to the next kind of page, without answering (as 88-tester skip).
+  function taSkip(part) {
+    if (!q || !q.items || q.ended || q.step === "end") { taSay("Open a level first."); return false; }
+    if (q.step === "part") { q.step = null; renderQ(); return true; }
+    const kind = x => { try { return stageOf(x); } catch (e) { return x.step; } };
+    const here = kind(cur()); let i = q.i + 1;
+    if (part) while (i < q.items.length && kind(q.items[i]) === here) i++;
+    q.tries = 0; q.tl = null; q.bub = null; q.talk = null; q.meet = null; q.busy = false; q.peek = false;
+    if (i >= q.items.length) { q.i = q.items.length; q.step = "end"; } else q.i = i;
+    renderQ();
+    taSay(part ? "Skipped to the next part." : "Skipped this page.");
+    return true;
+  }
+
+  // ---- the mark and the menu (made once the test student is in) ----
+  const TA_TOOLS = [
+    ["Pretend it is tomorrow", taTool("Pretend it is tomorrow", taTomorrow)],
+    ["Go to the island test", taTool("Go to the island test", taIsland)],
+    ["Finish today's task", taTool("Finish today's task", taFinishTask)],
+    ["Give 50 diamonds", taTool("Give 50 diamonds", taDiamonds)],
+    ["Reset free play", taTool("Reset free play", taResetPlay)],
+    ["In a level: skip this page", taTool("Skip", async () => taSkip(false))],
+    ["In a level: skip to the next part", taTool("Skip", async () => taSkip(true))],
+    ["Reset the test record", null],
+    ["Leave the test account", taTool("Leave the test account", taLeave)]
+  ];
+  const taGo = taTool("Go to level", taGoLevel);
+  function taBuild() {
+    if (!testerOn()) return;
+    const list = $("menuList");
+    if (list && !$("taTools")) {
+      // the stand-in's own tester items act on the stand-in's first student, not on this one: they go while this one plays
+      list.querySelectorAll(".ts-head, .ts-item, .ts-level").forEach(e => { if (!e.closest(".ta")) e.remove(); });
+      list.querySelectorAll("button").forEach(b => { if (!b.closest(".ta") && /^(Pretend it is tomorrow|Reset the demo)$/.test(b.textContent.trim())) b.remove(); });
+      const box = document.createElement("div"); box.className = "ta"; box.id = "taTools";
+      box.innerHTML = '<p class="ts-head ta-head nozh">Test account. Not on his laptop.</p>';
+      TA_TOOLS.forEach(([label, fn]) => {
+        const b = document.createElement("button"); b.type = "button"; b.className = "ts-item ta-item nozh"; b.textContent = label;
+        b.onclick = label === "Reset the test record" ? taTool("Reset the test record", () => taReset(b)) : fn;
+        box.appendChild(b);
+      });
+      const row = document.createElement("form"); row.className = "ts-level ta-level nozh"; row.autocomplete = "off";
+      row.innerHTML = '<label class="ts-lv">Go to level <input type="number" min="1" max="50" value="5" id="taLevel" aria-label="Level"></label><button type="submit" class="ts-item ts-go ta-item">Go</button>';
+      row.onsubmit = e => { e.preventDefault(); taGo(row.querySelector("#taLevel").value); };
+      row.addEventListener("click", e => e.stopPropagation());
+      box.insertBefore(row, box.children[2]);
+      const lo = $("hdLogout"); lo ? list.insertBefore(box, lo) : list.appendChild(box);   // "Log out" stays the last item
+    }
+    if (!$("taMark")) {
+      const mark = document.createElement("div"); mark.className = "ta-mark nozh"; mark.id = "taMark"; mark.setAttribute("role", "note");
+      mark.textContent = "Test account. His record is not touched.";
+      document.body.appendChild(mark);
+    }
+    document.body.classList.add("ta-on");
+  }
+  // After a tool: start what was asked for (the level, or the level at its test).
+  let taFlag = "";
+  async function taAfterReload() {
+    const flag = taFlag; taFlag = "";
+    const d = openDay(); if (!d) return;
+    if (flag === "test" && !isTest(d)) return;
+    if (!$("modal").hidden) closeModal();
+    showPage("quest"); await startQuest(d);
+    if (flag === "test") { const k = q && q.items ? q.items.findIndex(x => x.part === "test") : -1; if (k > 0) { q.i = k; renderQ(); } }
+  }
+  // The menu may be drawn again by other parts (the stand-in's tester items, the Log out item): the tools come back.
+  setInterval(() => { try { if (testerOn() && $("gate").hidden) taBuild(); } catch (e) {} }, 1500);
+  // for the checks
+  window.WW_TESTER = { enter: testerEnter, on: testerOn };
   // ============ the counters, today's parts, the door, start-up ============
   // Labels on glass get their Chinese line inline (see 30-hud.css).
   $("dayLine").classList.add("zhk");
@@ -6098,9 +6420,12 @@
   //  - Teacher: E-mail and Password, "Log in": her e-mail sign-in on the TEACHER client (kept in this tab only), then
   //    teacher.html. Not right: "Not yet. Check your e-mail and password." In the practice copy (no accounts there): no
   //    fields, "Practice copy: no password." and "Open the teacher page".
-  //  - Tester: "For the adults who test the game." and "Open the test account": await ctx.testerEnter(). With the tutor's
-  //    session it opens the test account and starts the game (true, "ok", or the door gone); "teacher": "Sign in on the
-  //    teacher page first." with the link; anything else or an error: "Can't open it. Try again."
+  //  - Tester (the test account, 89-testacct.js): "For the adults who test the game.", the tutor's E-mail and Password and
+  //    "Open the test account". It signs her in on the GAME's client (ctx.sb, in memory only), then await ctx.testerEnter():
+  //    true, "ok" or the door gone = the game has started; "teacher": "That login is not the teacher's."; a wrong e-mail
+  //    or password: "Not yet. Check your e-mail and password."; anything else or an error: "Can't open it. Try again."
+  //    Whenever it did not open, the game's client signs out again, so no e-mail session stays on the page. In the
+  //    practice copy (no accounts): no fields, "Practice copy: no password." and the button.
   //
   // How it is wired: 90-boot.js boot() calls doorOpen({ boot, hdDoor, sb, testerEnter }). 90-boot.js closes the game's shared
   // function scope ("})();" on its last line), so this part runs AFTER that scope; doorOpen is a plain function of the page
@@ -6116,7 +6441,7 @@
       bad: "Not yet. Check your name and password.", many: "Too many tries. Wait a little.", net: "Can't connect. Tap Log in again.",
       teaDo: "Type your e-mail and password.", teaBad: "Not yet. Check your e-mail and password.",
       teaPractice: "Practice copy: no password.", teaGo: "Open the teacher page",
-      tstDo: "For the adults who test the game.", tstGo: "Open the test account", tstTeacher: "Sign in on the teacher page first.",
+      tstDo: "For the adults who test the game.", tstGo: "Open the test account", tstNot: "That login is not the teacher's.",
       tstFail: "Can't open it. Try again."
     };
     const esc = s => (W && W.esc ? W.esc(s) : String(s));
@@ -6147,8 +6472,15 @@
         field("drTpw", T.pw, "lock", '<input type="password" name="password" maxlength="200" autocomplete="current-password">') +
         '<button type="submit" class="btn primary" id="drTLogin">' + esc(T.login) + "</button></form>" +
         '<p class="fb bad" id="drTErr" aria-live="polite"></p>';
-      const tst = typeof ctx.testerEnter === "function" ? '<p class="do">' + esc(T.tstDo) + '</p><div class="pg-foot dr-foot"><button type="button" class="btn primary" id="drTester">' + esc(T.tstGo) + "</button></div>" +
-        '<p class="fb bad" id="drTstErr" aria-live="polite"></p><div class="dr-tstgo" id="drTstGo" hidden>' + teacherLink("drTstTeacher") + "</div>" : "";
+      const tst = typeof ctx.testerEnter !== "function" ? "" : demo()
+        ? '<p class="do">' + esc(T.teaPractice) + '</p><div class="pg-foot dr-foot"><button type="button" class="btn primary" id="drTester">' + esc(T.tstGo) + "</button></div>" +
+          '<p class="fb bad" id="drTstErr" aria-live="polite"></p>'
+        : '<p class="do">' + esc(T.tstDo) + "</p>" +
+          '<form id="drTst" class="answer hd-entry dr-form" autocomplete="on" novalidate>' +
+          field("drXMail", T.mail, "mail", '<input type="email" name="email" maxlength="200" autocomplete="username" spellcheck="false">') +
+          field("drXPw", T.pw, "lock", '<input type="password" name="password" maxlength="200" autocomplete="current-password">') +
+          '<button type="submit" class="btn primary" id="drTester">' + esc(T.tstGo) + "</button></form>" +
+          '<p class="fb bad" id="drTstErr" aria-live="polite"></p>';
       ctx.hdDoor(T.title, "", '<div class="dr-door"><div class="dr-tabs" role="tablist" aria-label="Who is here">' + tabs + "</div>" + pan("student", stu) + pan("teacher", tea) + pan("tester", tst) + "</div>");
       wire(ctx);
     }
@@ -6159,7 +6491,7 @@
       if (k === "tester" && typeof ctx.testerEnter !== "function" && typeof window.doorTester === "function" && !$("drPan-tester").dataset.filled) { $("drPan-tester").dataset.filled = "1"; window.doorTester($("drPan-tester"), ctx); }
       if (focus === "tab") { const b = $("drTab-" + k); if (b) b.focus(); }
       else if (focus) {
-        const f = k === "student" ? $("drName") : k === "teacher" ? ($("drMail") || $("drTeacher")) : $("drTester");
+        const f = k === "student" ? $("drName") : k === "teacher" ? ($("drMail") || $("drTeacher")) : ($("drXMail") || $("drTester"));
         if (f) f.focus();
       }
     }
@@ -6174,7 +6506,8 @@
       });
       $("drStu").onsubmit = e => { e.preventDefault(); login(ctx); };
       if ($("drTea")) $("drTea").onsubmit = e => { e.preventDefault(); teacher(); };
-      if ($("drTester")) $("drTester").onclick = () => tester(ctx);
+      if ($("drTst")) $("drTst").onsubmit = e => { e.preventDefault(); tester(ctx); };
+      else if ($("drTester")) $("drTester").onclick = () => tester(ctx);
       show(ctx, tab, true);
     }
     function say(id, text) { const el = $(id); if (el) el.textContent = text; }
@@ -6219,14 +6552,25 @@
     }
     async function tester(ctx) {
       if (busy) return;
-      busy = true; $("drTester").disabled = true; $("drTstErr").textContent = ""; $("drTstGo").hidden = true;
+      const form = !!$("drTst"), mail = form ? $("drXMail").value.trim() : "", pw = form ? $("drXPw").value : "";
+      if (form && (!mail || !pw)) { say("drTstErr", T.teaBad); (mail ? $("drXPw") : $("drXMail")).focus(); return; }   // nothing to check
+      busy = true; say("drTstErr", ""); $("drTester").disabled = true;
+      const db = ctx.sb;
+      const out = async line => {   // it did not open: the game's client lets go of the e-mail sign-in again
+        if (form) { try { await db.auth.signOut(); } catch (e) {} }
+        busy = false; if (!$("drTester")) return;
+        $("drTester").disabled = false; say("drTstErr", line);
+        if (form) { $("drXPw").value = ""; $("drXPw").focus(); }
+      };
+      if (form) {
+        let error = null;
+        try { const r = await db.auth.signInWithPassword({ email: mail, password: pw }); error = r && r.error; }
+        catch (x) { error = { message: "network: " + String(x && x.message || x) }; }
+        if (error) return out(isNet(String(error.message || "")) ? T.tstFail : T.teaBad);
+      }
       let r; try { r = await ctx.testerEnter(); } catch (e) { r = { error: e }; }
-      busy = false;
-      if (!$("drTester")) return;   // the game has started and drawn over the door
-      $("drTester").disabled = false;
-      if (r === true || r === "ok" || $("gate").hidden) return;
-      if (r === "teacher") { $("drTstErr").textContent = T.tstTeacher; $("drTstGo").hidden = false; return; }
-      $("drTstErr").textContent = T.tstFail;
+      if (r === true || r === "ok" || $("gate").hidden || !$("drTester")) { busy = false; return; }   // the game has started
+      return out(r === "teacher" ? T.tstNot : T.tstFail);
     }
     window.WW_DOOR = { open, texts: T, go: url => { location.href = url; } };
     if (ZH) ZH.add({
@@ -6238,7 +6582,7 @@
       "Type your e-mail and password.": "输入你的邮箱和密码。", "Not yet. Check your e-mail and password.": "还没对。检查一下邮箱和密码。",
       "Practice copy: no password.": "练习版：不用密码。", "Open the teacher page": "打开老师页面",
       "For the adults who test the game.": "给测试游戏的大人用。", "Open the test account": "打开测试账号",
-      "Sign in on the teacher page first.": "请先在老师页面登录。", "Can't open it. Try again.": "打不开。再试一次。"
+      "That login is not the teacher's.": "这不是老师的账号。", "Can't open it. Try again.": "打不开。再试一次。"
     });
   })();
 </script>

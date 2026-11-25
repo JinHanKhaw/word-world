@@ -113,7 +113,7 @@
   // ---------- data ----------
   const safe = q => Promise.resolve(q).catch(e => ({ data: [], error: e }));
   async function loadAll() {
-    const st = await sb.from("students").select("*").order("created_at").limit(1).maybeSingle();
+    const st = await sb.from("students").select("*").eq("is_test", false).order("created_at").limit(1).maybeSingle();
     if (st.error) { banner(st.error.message); return; }
     student = st.data;
     if (!student) { words = []; sessions = []; return; }

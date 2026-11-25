@@ -1525,6 +1525,15 @@ body.rd-on:not(.rd-morn) #guide .gd-say,body.rd-on:not(.rd-morn) #guide .say{max
 /* the mark of the test world on the real website (88-tester.js) */
 .ts-world{position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:60;padding:calc(var(--u)*4) calc(var(--u)*14) calc(var(--u)*5);font-size:calc(var(--u)*12.5);font-weight:700;letter-spacing:.02em;background:#b84a10;color:#fff7ec;border-radius:0 0 calc(var(--u)*9) calc(var(--u)*9);pointer-events:none;white-space:nowrap}
 
+/* ---- 89-testacct.css ---- */
+/* the test account on the real database (89-testacct.js): the mark on every page, the tools in the menu */
+.ta-mark{position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:60;padding:calc(var(--u)*4) calc(var(--u)*14) calc(var(--u)*5);font-size:calc(var(--u)*12.5);font-weight:700;letter-spacing:.02em;background:#8a1f6a;color:#fff4fb;border-radius:0 0 calc(var(--u)*9) calc(var(--u)*9);pointer-events:none;white-space:nowrap;box-shadow:0 calc(var(--u)*2) calc(var(--u)*8) rgba(0,0,0,.25)}
+.menulist .ta-head{color:#ffd2f0}
+.menulist .ta{display:flex;flex-direction:column;gap:calc(var(--u)*4)}
+.menulist .ta-item{min-height:calc(var(--u)*44)}
+.ta-level input{min-height:calc(var(--u)*44)}
+.ta-on .menu .menulist{max-height:calc(100vh - calc(var(--u)*66));overflow-y:auto;overscroll-behavior:contain}   /* the tools make the menu long: it scrolls, "Log out" stays reachable */
+
 /* ---- 91-door.css ---- */
 /* ============ the front door (91-door.js): "Student" and "Teacher" tabs on the door's paper page ============ */
 /* paper tabs standing on the head rule, as on the build page (70-build.css); room for a third tab ("Tester") */
