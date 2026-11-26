@@ -462,6 +462,14 @@ html.zh-on .ml-btns .gbtn .zhx{display:inline;margin:0;font-size:calc(var(--u)*1
 .pg-foot:has(>.ml-games:not([hidden])){flex-wrap:wrap;row-gap:calc(var(--u)*10)}
 .ml-games{margin-left:auto;flex-wrap:wrap;justify-content:flex-end}
 
+/* ---- 11-voice-rec.css ---- */
+/* His voice for the tutor (src/js/11-voice-rec.js): the small sign on the say-it card while the microphone records. */
+.vr-sign{display:inline-flex;align-items:center;gap:calc(var(--u)*8);margin:calc(var(--u)*10) 0 0;padding:calc(var(--u)*4) calc(var(--u)*12);border-radius:999px;background:rgba(214,64,69,.1);border:calc(var(--u)*1.5) solid rgba(214,64,69,.45);color:var(--ink);font-size:calc(var(--u)*14);font-weight:700;line-height:1.3}
+.vr-sign .zhk{font-size:calc(var(--u)*14)}
+.vr-sign .zhx{display:block;font-size:calc(var(--u)*13);font-weight:600;color:var(--ink-2)}
+.vr-dot{flex:none;width:calc(var(--u)*11);height:calc(var(--u)*11);border-radius:50%;background:var(--rose,#d64045);animation:mlblink 1s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.vr-dot{animation:none}}
+
 /* ---- 30-hud.css ---- */
 /* HUD (owner: hud team): the plate, the counters, the menu, today's parts, the dock, the door.
    Built on the kit (.glass, .plate, .count, .pips, .rbtn, .today/.part, .dock, .paper, .btn, .line); this file adds only what they still need. */
@@ -821,6 +829,7 @@ body[data-hd-open="build"] #w3open:not([data-spot="build"]){opacity:.6;filter:sa
 #modal.ht-modal{background:radial-gradient(120% 90% at 50% 45%,rgba(30,12,30,.30),rgba(24,10,26,.62))}
 #panel .page:has(.ht-hut){max-height:calc(100vh - calc(var(--u)*190))}
 .ht-page .ht-ptitle .zhx{display:block;margin-top:calc(var(--u)*2);font-size:calc(var(--u)*13);letter-spacing:0}
+.ht-tools .chip{min-height:44px;display:inline-flex;align-items:center}   /* a full tap area for the 中文 chip on his story page */
 
 /* ---- 70-build.css ---- */
 /* My place (part 70-build): the plot as a plan in his journal, and the shop of paper price tags. Prefix: bd- */

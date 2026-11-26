@@ -28,7 +28,7 @@
      Quick check: quick, quick_done; Pair game: pair, pairs_done
      Sentences: step_done (tiles), sentence_copied, sentence_skipped, sentence_none, sentence_saved (older saves: his own sentence)
      Never-taught word: probe, probe_slow; One more time: again
-     Story: story_opened, story_heard, story_zh, story_answer, story_done, hut_story_tab
+     Story: story_opened, story_heard, story_zh, story_answer, story_choice (the answer he tapped, and the question), story_done, hut_story_tab
      School words: school_open, school_drill_start, school_back, school_copy, school_slowly, school_drill_done, school_pause,
                    school_test_start, school_test, school_retype_done
      Free play: asleep (and sessions.play_used); bought, build3d_open, build3d_moved (his island) -> only for the "Now" line
@@ -105,7 +105,7 @@
     clap: "new", training_start: "training", training_done: "training", quick: "quick", quick_done: "quick", pair: "pairs", pairs_done: "pairs",
     sentence_copied: "sentence", sentence_skipped: "sentence", sentence_none: "sentence", sentence_saved: "sentence",
     probe: "probe", probe_slow: "probe", again: "again",
-    story_opened: "story", story_heard: "story", story_zh: "story", story_answer: "story", story_done: "story", hut_story_tab: "story",
+    story_opened: "story", story_heard: "story", story_zh: "story", story_answer: "story", story_choice: "story", story_done: "story", hut_story_tab: "story",
     school_open: "school", school_drill_start: "school", school_back: "school", school_copy: "school", school_slowly: "school", school_drill_done: "school",
     school_pause: "school", school_test_start: "school", school_test: "school", school_retype_done: "school",
     asleep: "play", bought: "island", build3d_open: "island", build3d_moved: "island", login: "start", old_start: "old", old_done: "old"
@@ -281,7 +281,7 @@
         const L = [];
         L.push(of("card_heard").length ? "He heard the word." : "He did not tap to hear it on the card.");
         if (says.length) L.push("He said it " + times(says.length) + " into the microphone." + (says.some(e => e.detail.heard) ? " The laptop heard: " + says.map(e => e.detail.heard ? typedHtml(e.detail.heard) : '<code class="tdv-ans tdv-none">(nothing)</code>').join(" / ") : ""));
-        if (self) L.push("He said it out loud 3 times and tapped “I said it” each time (no microphone).");
+        if (self) L.push("He said it out loud 3 times and tapped “I said it” each time (the laptop could not check his speech).");
         if (!says.length && !self && ok) L.push("He said it.");
         const gm = of("game_meaning"), gs = of("game_sentence");
         const gl = (list, name) => { if (!list.length) return; const r = list.findIndex(e => e.detail.correct); L.push(name + (r < 0 ? ": not yet right" : r === 0 ? ": right the first time" : ": right on try " + (r + 1)) + "."); };
@@ -383,11 +383,21 @@
       rows = lv.map(l => {
         const pg = S && S[l], ans = ev("story_answer").filter(e => e.detail.level === l), L = [];
         const op = ev("story_opened").find(e => e.detail.level === l);
-        L.push("He opened page " + l + (op ? " at " + clock(op.created_at) : "") + "." + (ev("story_heard").some(e => e.detail.level === l) ? " He pressed Hear it." : "") + (ev("story_zh").some(e => e.detail.level === l) ? " He looked at the Chinese." : ""));
-        if (pg && pg.q) L.push("The question: <b>" + esc(pg.q) + "</b>");
-        ans.forEach((e, k) => L.push('<span class="tdv-n">Try ' + (k + 1) + "</span> " + (e.detail.right ? "He chose " + (pg && pg.a ? typedHtml(pg.a) : "the right answer") + " " + verdict(true) : "He chose another answer " + verdict(false) + ' <span class="tdv-small">(the game does not save which one)</span>') + ' <span class="tdv-t">' + clock(e.created_at) + (k ? " · " + Math.round((ms(e.created_at) - ms(ans[k - 1].created_at)) / 1000) + " s after try " + k : "") + "</span>"));
+        // story_choice (newer games): the answer he tapped and the question, one per try; own: true = the tutor's own page
+        const chs = ev("story_choice").filter(e => e.detail.level === l);
+        const own = evs.some(e => (e.detail || {}).level === l && e.detail.own === true);
+        const title = own ? ((op && op.detail.title) || "Your story, page " + l) : (pg && pg.title ? pg.title : "Page " + l);
+        const q = (chs[0] && chs[0].detail.q) || (!own && pg && pg.q) || "";
+        L.push("He opened page " + l + (own ? " (your own story)" : "") + (op ? " at " + clock(op.created_at) : "") + "." + (ev("story_heard").some(e => e.detail.level === l) ? " He pressed Hear it." : "") + (ev("story_zh").some(e => e.detail.level === l) ? " He looked at the Chinese." : ""));
+        if (q) L.push("The question: <b>" + esc(q) + "</b>");
+        ans.forEach((e, k) => {
+          const c = chs.find(x => x.detail.tries === e.detail.tries) || chs[k] || null, said = c && c.detail.answer ? typedHtml(c.detail.answer) : "";
+          const line = e.detail.right ? "He chose " + (said || (!own && pg && pg.a ? typedHtml(pg.a) : "the right answer")) + " " + verdict(true)
+            : "He chose " + (said || "another answer") + " " + verdict(false) + (said ? "" : ' <span class="tdv-small">(this older game did not save which one)</span>');
+          L.push('<span class="tdv-n">Try ' + (k + 1) + "</span> " + line + ' <span class="tdv-t">' + clock(e.created_at) + (k ? " · " + Math.round((ms(e.created_at) - ms(ans[k - 1].created_at)) / 1000) + " s after try " + k : "") + "</span>");
+        });
         if (!ans.length && ev("story_done").some(e => e.detail.level === l)) L.push("He finished the page.");
-        return '<div class="tdv-q"><div class="tdv-qh"><b class="tdv-w">' + esc(pg && pg.title ? pg.title : "Page " + l) + "</b></div><ul class=\"tdv-lines\">" + L.map(x => "<li>" + x + "</li>").join("") + "</ul></div>";
+        return '<div class="tdv-q"><div class="tdv-qh"><b class="tdv-w">' + esc(title) + "</b></div><ul class=\"tdv-lines\">" + L.map(x => "<li>" + x + "</li>").join("") + "</ul></div>";
       });
       const a1 = ev("story_answer");
       summary = many(lv.length, "story page") + (a1.length ? ": " + (a1[0].detail.right ? "the question right the first time" : a1.some(e => e.detail.right) ? "the question right on try " + (a1.findIndex(e => e.detail.right) + 1) : "the question not answered yet") : "");
@@ -510,6 +520,7 @@
       if (scrollKeep !== true && window.scrollY !== y) window.scrollTo(0, y);
     }
     st.model = m;
+    if (window.WW_TEACHER_VOICE) window.WW_TEACHER_VOICE.fill(st.container, { sb: st.ctx.sb, student: st.ctx.student, day, W });   // his voice recordings (site/teacher-voice.js)
   }
   const $ = id => st.container.querySelector("#" + id);
   function askStory() {

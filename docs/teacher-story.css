@@ -1,0 +1,112 @@
+/* Word World, the tutor's page: the "Stories" tab (site/teacher-story.js). Owner: the story builder.
+   Built on teacher.css (.box, .lead, .f, .row, button.ghost/.mini/.red); this file adds only the list, the editor, the
+   preview of his page and "His reading answers". */
+
+/* ---- (a) the levels ---- */
+.ts-list{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:0}
+.ts-item{border-top:1px solid var(--rule);padding:10px 0}
+.ts-item:last-child{border-bottom:1px solid var(--rule)}
+.ts-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}
+.ts-lv{flex:none;min-width:70px;font-size:14.5px;font-weight:700;color:var(--ink-3);letter-spacing:.02em}
+.ts-what{flex:1 1 260px;min-width:0;overflow-wrap:anywhere}
+.ts-tag{font-weight:400;color:var(--ink-3)}
+.ts-mine .ts-tag{color:var(--leaf);font-weight:700}
+.ts-mine{background:linear-gradient(90deg,rgba(63,125,58,.09),transparent 60%)}
+.ts-acts{display:flex;flex-wrap:wrap;gap:8px;margin-left:auto}
+.ts-acts button,.ts-ask button{min-height:40px}
+.ts-ask{margin:10px 0 2px;padding:10px 14px;border:1.4px solid var(--rust);border-radius:8px;background:rgba(174,68,40,.06);display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px}
+.ts-ask p{margin:0;flex:1 1 100%;font-weight:600;color:var(--ink)}
+.ts-read{margin:12px 0 4px}
+.ts-msg{margin:6px 0 4px}
+
+/* ---- (b) the editor ---- */
+.ts-editor{margin-bottom:22px;scroll-margin-top:118px}   /* its heading stays clear of the sticky band at the top */
+.ts-voice{margin:-4px 0 14px;padding:8px 12px;border-left:3px solid var(--glow);background:rgba(255,176,102,.12);color:var(--ink-2);font-size:15.5px;max-width:760px}
+.ts-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:26px;align-items:start}
+.ts-form{display:grid;gap:14px;min-width:0}
+.ts-level input{max-width:120px}
+.ts-lvnote{margin:-8px 0 0;font-size:14.5px;color:var(--ink-3)}
+.ts-form fieldset{margin:0;padding:0;border:0;min-width:0;display:grid;gap:8px}
+.ts-form legend{padding:0;margin-bottom:6px;font-size:15px;font-weight:700;color:var(--ink-2)}
+.ts-form legend .fh,.ts-zh .fh{font-weight:400;font-size:14.5px;color:var(--ink-3)}
+.ts-sent{display:grid;grid-template-columns:26px minmax(0,1fr) auto;align-items:center;gap:4px 8px}
+.ts-sl{font-weight:700;color:var(--ink-3);text-align:right}
+.ts-x{min-height:40px}
+.ts-c{grid-column:2 / 4;margin:0;min-height:18px;display:flex;flex-wrap:wrap;gap:2px 12px;font-size:14px;color:var(--ink-3)}
+.ts-long{color:var(--ink-2);font-style:italic}
+.ts-long::before{content:"";display:inline-block;width:7px;height:7px;margin-right:6px;border-radius:50%;background:var(--glow);vertical-align:1px}
+.ts-max{margin:0;font-size:14.5px}
+.ts-a{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:10px}
+.ts-right{display:inline-flex;align-items:center;gap:6px;min-height:42px;padding:0 10px;border:1px solid var(--rule);border-radius:8px;font-size:15px;font-weight:600;color:var(--ink-2);cursor:pointer}
+.ts-right input{width:18px;height:18px;margin:0;accent-color:var(--leaf)}
+.ts-right:has(input:checked){border-color:var(--leaf);color:var(--leaf);background:rgba(63,125,58,.08)}
+.ts-zh{border:1px solid var(--rule);border-radius:8px;padding:0 14px;background:rgba(255,253,246,.5)}
+.ts-zh>summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:700;color:var(--ink-2)}
+.ts-zh[open]{padding-bottom:14px}
+.ts-zh[open]>summary{margin-bottom:4px}
+.ts-zh .f{margin-top:10px}
+.ts-zh .f .fh{display:inline;font-weight:400;overflow-wrap:anywhere}
+.ts-zh input{font-family:var(--f-zh),var(--f-body)}
+.ts-errs:empty{display:none}
+.ts-errs{padding:10px 14px;border:1.4px solid var(--rust);border-radius:8px;color:var(--rust);background:rgba(174,68,40,.06)}
+.ts-errs p{margin:0 0 4px;font-weight:700}
+.ts-errs ul{margin:0;padding-left:20px}
+.ts-save{background:linear-gradient(180deg,#f58a3a,#e2631a);color:#fff6e6;border-color:#8e380c;box-shadow:0 2px 0 #8e380c}
+.ts-prev{position:sticky;top:112px;min-width:0}
+.ts-prev .eyebrow{margin:0 0 6px}
+
+/* ---- his page, as he sees it (src/css/50-hut.css .ht-storypage, at the tutor's page's sizes) ---- */
+.tsp-page{padding:18px 22px 20px;border-radius:6px;background:#fbf4e4 var(--grain);background-size:220px 220px;box-shadow:0 0 0 1px rgba(150,120,80,.35),0 8px 22px -12px rgba(60,30,10,.5);color:var(--ink);overflow-wrap:anywhere}
+.tsp-eye{margin:0;font-size:14px;color:var(--ink-3)}
+.tsp-title{margin:6px 0 4px;font-family:var(--f-display);font-weight:400;font-size:28px;line-height:1.15}
+.tsp-tools{display:flex;align-items:center;gap:10px;margin:8px 0 12px}
+.tsp-btn,.tsp-chip{display:inline-flex;align-items:center;min-height:40px;padding:0 16px;border:1.4px solid var(--ink);border-radius:8px;background:var(--paper-hi);font-family:var(--f-display);font-size:16px;box-shadow:0 2px 0 rgba(44,31,23,.8)}
+.tsp-fake{cursor:default;opacity:.85}
+.tsp-chip{font-family:var(--f-zh);border-style:dashed;box-shadow:none;letter-spacing:0}
+.tsp-chip[aria-pressed="true"]{border-style:solid;background:#fffdf6}
+.tsp-text{font-size:22px;line-height:1.45}
+.tsp-s{margin:0 0 6px}
+.tsp-zl{display:none;font-family:var(--f-zh);font-weight:400;font-size:.8em;color:var(--ink-2);line-height:1.45}
+.tsp-zhon .tsp-zl{display:block}
+.tsp-empty{color:var(--ink-3);font-style:italic}
+.tsp-q{margin-top:14px;padding:11px 16px 12px;border:1px dashed var(--ink-3);border-radius:8px;background:rgba(255,253,246,.6)}
+.tsp-kind{margin:0 0 4px;font-size:14px;font-weight:700;color:var(--ink-3);letter-spacing:.04em;text-transform:uppercase}
+.tsp-qtext{margin:0;font-size:19px;font-weight:600}
+.tsp-qtext .tsp-zl{font-size:16px}
+.tsp-opts{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+.tsp-opt{flex-direction:column;justify-content:center;gap:0;min-height:50px;min-width:110px;padding:6px 18px;font-size:18px;line-height:1.25;white-space:normal}
+.tsp-opt .tsp-zl{font-size:14.5px}
+.tsp-opt.tsp-miss{opacity:.45}
+.tsp-opt.tsp-right{opacity:1;border-color:var(--leaf);color:var(--leaf);box-shadow:inset 0 0 0 1.2px var(--leaf)}
+.tsp-fb{margin:8px 0 0;font-weight:600}
+.tsp-fb:empty{display:none}
+
+/* ---- (c) his reading answers ---- */
+.ts-his{list-style:none;margin:6px 0 0;padding:0}
+.ts-h{border-top:1px solid var(--rule);padding:10px 0 12px}
+.ts-hh{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px}
+.ts-day{font-weight:700;color:var(--ink-2);min-width:96px}
+.ts-hh .ts-lv{min-width:0}
+.ts-src{font-size:14px;color:var(--ink-3)}
+.ts-hq{margin:4px 0 2px}
+.ts-tries{margin:2px 0;padding-left:0;list-style:none}
+.ts-tries li{margin:2px 0}
+.ts-try{display:inline-block;min-width:46px;font-size:14px;color:var(--ink-3)}
+.ts-ok{color:var(--leaf)}
+.ts-ny{color:var(--ink-2)}
+.ts-facts{margin:4px 0 0;font-size:15px;color:var(--ink-3)}
+
+/* ---- narrow screens: the preview under the form ---- */
+@media (max-width:900px){
+  .ts-grid{grid-template-columns:minmax(0,1fr)}
+  .ts-prev{position:static}
+}
+@media (max-width:520px){
+  .ts-editor{scroll-margin-top:230px}   /* the top band is three lines high here */
+  .ts-acts{margin-left:0;width:100%}
+  .ts-acts button{flex:1 1 auto;justify-content:center}
+  .tsp-page{padding:14px 14px 16px}
+  .tsp-text{font-size:20px}
+  .ts-sent{grid-template-columns:22px minmax(0,1fr)}
+  .ts-x{grid-column:2;justify-self:start}
+}

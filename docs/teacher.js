@@ -142,7 +142,8 @@
   }
   function render() {
     if (!student) return renderNewStudent();
-    ({ today: renderToday, week: renderWeek, school: renderSchool, chat: renderChat, mother: renderMother, words: renderWords, settings: renderSettings })[tab]();
+    ({ today: renderToday, week: renderWeek, school: renderSchool, chat: renderChat, mother: renderMother, words: renderWords, settings: renderSettings,
+      stories: () => window.WW_TEACHER_STORY && window.WW_TEACHER_STORY.render(view, { sb, student, W }) })[tab]();   // the Stories tab: site/teacher-story.js
   }
 
   // ---------- no student yet ----------
@@ -1761,40 +1762,6 @@
     };
   }
 
-  // The numbers Claude gets, worked out here only (the Edge Function on the real site does not count again).
-  // No name, no id, none of his sentences. The names the page knows are cleaned out before they leave (WW_AI.scrub, site/ai-prompt.js).
-  function aiNumbers(P) {
-    const L = P.last, sh = arr => arr.map(c => pct(shareOf(c))), n = arr => arr.map(c => c.n);
-    const data = {
-      weeks_starting_monday: P.weeks, this_week_starts: P.weeks[L], verdict_uses_weeks: P.win.map(i => P.weeks[i]),
-      verdict: { result: P.verdict.title, reason: P.verdict.reason, what_to_try: P.verdict.next },
-      measures: {
-        memory: { about: "old words that came back, share right on the first try (percent)", weekly_percent_right: sh(P.mem), weekly_answers: n(P.mem),
-          this_week_by_days_away: AWAY.map((x, j) => ({ back: x.label, right: P.away[L][j].right, of: P.away[L][j].n })),
-          last_3_weeks_back_after_14_days_or_more: { right: P.pooled.long.right, of: P.pooled.long.n } },
-        new_rule_words: { about: "words never taught that follow the island's rule, one try each (percent right)", weekly_percent_right: sh(P.probe), weekly_answers: n(P.probe),
-          last_3_weeks: { right: P.pooled.probe.right, of: P.pooled.probe.n }, rising_3_weeks: P.pooled.rising,
-          by_island: Object.keys(P.islands).sort().map(k => ({ island: +k, right: P.islands[k].right, of: P.islands[k].n })) },
-        words_spelled_now: { about: "words at memory level 2 or more at the end of each week", weekly: P.spell, change_from_last_week: P.spell[L] - P.spell[L - 1], slipped_down_a_step_this_week: P.slippedWords.length },
-        help: { about: "hints per first try", weekly_hints_per_first_try: P.hintsPer.map(x => x == null ? null : round1(x)), weekly_first_tries: P.help.map(h => h.n), weekly_hints: P.help.map(h => h.hints) }
-      },
-      days_played_weekly: P.days,
-      minutes_per_level_median_this_week: P.perLevel.length ? round1(median(P.perLevel)) : null,
-      words_typed_per_minute_this_week: P.weekMins > 0 ? round1(P.typed / P.weekMins) : null,
-      slips_this_week: P.slips.slice(0, 40),
-      hints_by_word_this_week: P.hintWords.slice(0, 20),
-      patterns: P.patterns ? P.patterns.map(p => ({ pattern: p.name, this_week: p.now, four_weeks_before: p.before, examples: p.examples.map(x => ({ word: x.word, typed: x.typed })) })) : "not available",
-      word_picker_this_week: { about: "the words the game picked for new levels, by fixed rules; band 1 easiest to 9 hardest", picks: P.picks || [] },
-      school_dictation: P.results.slice(-8).map(r => ({ date: r.date, right: +r.right, of: +r.total })),
-      thresholds: RULES
-    };
-    const AI = window.WW_AI;
-    if (!AI) throw { code: "no_prompt" };
-    return AI.scrub(data, [student && student.name, student && student.teacher_name, me && me.email ? String(me.email).split("@")[0] : ""]).data;
-  }
-  // The one string Claude gets on claude.ai: the shared instructions (site/ai-prompt.js) around the numbers.
-  function buildAiInput(P) { return window.WW_AI.text(aiNumbers(P)); }
-
   // A small bar chart, drawn here: one bar a week, the value above it, the Monday below it. Pale bars rest on few answers.
   function bars(values, o) {
     o = o || {};
@@ -1903,20 +1870,46 @@
     $("srSlot").querySelectorAll("[data-srdel]").forEach(b => b.onclick = async () => { const { error } = await safe(sb.from("school_results").delete().eq("id", b.dataset.srdel)); if (error) banner(error.message); fillResults(); });
   }
 
-  // ---- Claude's notes ----
+  // ---------- The adviser (the card on the Progress tab) ----------
+  // An education specialist for spelling (an AI) reports to the tutor when she presses the button: what it notices in his
+  // learning, spelling and play, what to try (with sources only from the checked list), practice ideas with his own
+  // words, one small goal. Advice only: nothing in the game changes by itself.
+  // The facts of the span she chose are worked out by WW_AI.facts (site/ai-prompt.js) from the rows loaded here; the
+  // names the page knows are cleaned out before they leave (WW_AI.scrub). The answer is checked by WW_AI.check.
+  const ADV_SPANS = [["week", "This week"], ["two", "The last 2 weeks"], ["all", "Everything"]];
+  let advSpan = "week", advSaved = [];
+  function advRange(span) {
+    const t = W.today();
+    if (span === "two") return { from: W.addDays(W.weekStart(t), -7), to: t, label: "the last 2 weeks" };
+    if (span === "all") {
+      const ds = [student && student.start_date].concat(words.map(w => w.introduced_on), sessions.map(s => s.day)).filter(Boolean).sort();
+      return { from: ds[0] && ds[0] < t ? ds[0] : t, to: t, label: "everything so far" };
+    }
+    return { from: W.weekStart(t), to: t, label: "this week" };
+  }
+  const advNames = () => [student && student.name, student && student.teacher_name, me && me.email ? String(me.email).split("@")[0] : ""];
+  const advNeeds = () => { const v = student && typeof student.teaching_needs === "string" ? student.teaching_needs.trim() : ""; return v || window.WW_AI.NEEDS_DEFAULT; };
+  async function adviserFacts(span) {
+    const AI = window.WW_AI; if (!AI) throw { code: "no_prompt" };
+    const r = advRange(span);
+    const [a, e] = await Promise.all([fetchSince("attempts", new Date("2000-01-01T00:00:00Z").toISOString()), fetchSince("events", new Date(r.from + "T00:00:00").toISOString())]);
+    if (a.error || e.error) throw { code: "load" };
+    const f = AI.facts({ attempts: a.data, events: e.data, sessions, words, from: r.from, to: r.to, label: r.label, reviewMode: student && student.review_mode, top: W.DIAMOND });
+    return AI.scrub(f, advNames()).data;
+  }
   // claude.use("sample") only hands over the capability; no model is called until the tutor presses the button.
   let sampleFor = null, samplePromise = null;
   const getSample = () => {
     if (sampleFor !== window.claude || !samplePromise) { sampleFor = window.claude; samplePromise = (async () => { try { return window.claude && typeof window.claude.use === "function" ? (await window.claude.use("sample")) || null : null; } catch (e) { return null; } })(); }
     return samplePromise;
   };
-  const OFF_SITE = "The analysis cannot be written from this copy of the page. It works on claude.ai and on your own website.";
+  const OFF_SITE = "The adviser cannot be asked from this copy of the page. It works on claude.ai and on your own website.";
   // ---- the real website: no page ability there, so the button asks the Edge Function (deploy/functions/weekly-analysis) ----
   const AI_FUNCTION = "weekly-analysis";
   // Claude Opus 5.5 list prices, US dollars per million tokens, from the claude-api skill's model table (cached 2026-11-03),
   // copied on 2026-11-21. Only for the rough cost line under a run; check the price page before quoting it.
   const AI_PRICE = { input: 4, output: 20 };
-  const AI_SORRY = "The analysis could not be written. Try again in a minute.";
+  const AI_SORRY = "The adviser could not write its report. Try again in a minute.";
   const onSite = () => !DEMO && !!(sb && sb.functions && typeof sb.functions.invoke === "function") && !!window.WW_AI;
   function costLine(u) {
     const i = Math.max(0, Math.round(+(u && u.input_tokens) || 0)), o = Math.max(0, Math.round(+(u && u.output_tokens) || 0));
@@ -1929,55 +1922,118 @@
     try { const r = err && err.context; if (r && typeof r.json === "function") { const j = await r.json(); if (j && typeof j.message === "string" && j.message.length < 200) return j.message; } } catch (e) { }
     return AI_SORRY;
   }
-  function wireSite(P) {
-    const ctl = $("aiCtl");
-    ctl.innerHTML = '<div class="row"><button type="button" id="aiGo">Write this week\'s analysis</button><span class="muted" id="aiMsg">Sends this week\'s numbers to Claude, without his name. Only when you press.</span></div><p class="muted ai-cost" id="aiCost" hidden></p>';
-    $("aiGo").onclick = async () => {
-      const b = $("aiGo"), msg = $("aiMsg"), cost = $("aiCost"); b.disabled = true; cost.hidden = true; msg.textContent = "Writing… this takes about a minute";
-      let res;
-      try { res = await sb.functions.invoke(AI_FUNCTION, { body: { numbers: aiNumbers(P) } }); } catch (e) { res = { data: null, error: e }; }
-      if (tab !== "week" || $("aiGo") !== b) return;   // she left the tab; a kept result shows on her next visit
-      const data = res && !res.error ? res.data : null;
-      if (!data || !data.record || typeof data.record.json !== "string") { msg.textContent = res && res.error ? await fnMessage(res.error) : AI_SORRY; b.disabled = false; return; }
-      $("aiOut").innerHTML = analysisHtml(data.record, P);
-      msg.textContent = data.saved ? "Kept on this page for next time." : "Shown, but it could not be kept for next time.";
-      const line = costLine(data.usage); cost.textContent = line; cost.hidden = !line;
-      b.disabled = false;
+  const spanLine = s => !s ? "" : (s.label ? s.label.charAt(0).toUpperCase() + s.label.slice(1) : "Report") + (s.from && s.to ? ": " + day3(s.from) + (s.to !== s.from ? " to " + day3(s.to) : "") : "");
+  // One kept report. Version 2 is the adviser's; older rows (the weekly notes before 25 November) are shown plainly.
+  function reportHtml(rec) {
+    let o = null; try { o = typeof rec.json === "string" ? JSON.parse(rec.json) : rec.json; } catch (e) { o = null; }
+    const at = rec.at ? day3(ld(rec.at)) + " " + W.fmtTime(rec.at) : "", AI = window.WW_AI;
+    if (o && o.v === 2 && o.report && AI) {
+      const R = o.report;
+      if (AI.hasDiagnosis(JSON.stringify(R))) return '<p class="muted">This report is not shown: it used words the adviser must never use.</p>';
+      const k = (label, s) => s ? '<p><span class="adv-k">' + label + "</span> " + esc(s) + "</p>" : "";
+      const groups = [["learning", "His learning"], ["spelling", "His spelling"], ["behaviour", "How he plays"]].map(g => {
+        const it = (R.notice && R.notice[g[0]]) || [];
+        return it.length ? '<div class="adv-grp"><h4>' + g[1] + "</h4><ul>" + it.map(x => "<li><b>" + esc(x.pattern) + "</b>" + (x.evidence ? ' <span class="adv-ev">' + esc(x.evidence) + "</span>" : "") + "</li>").join("") + "</ul></div>" : "";
+      }).join("");
+      const tries = (R.try || []).map(t => { const s = t.source && AI.sourceByKey(t.source);
+        return '<li class="adv-try"><b class="adv-tt">' + esc(t.title || t.principle) + "</b>" + (t.title ? k("The idea:", t.principle) : "") + k("Why for him:", t.why) + k("What you do:", t.what_to_do) + (s ? '<p class="adv-src">Source: ' + esc(s.authors + " (" + s.year + ")") + "</p>" : "") + "</li>"; }).join("");
+      const prac = (R.practice || []).map(x => '<li class="adv-pr"><b>' + esc(x.pattern) + '</b><div class="adv-words">' + (x.words || []).map(w => '<span class="adv-w">' + esc(w) + "</span>").join("") + "</div>" + k("Five minutes:", x.five_minutes) + "</li>").join("");
+      const used = (o.sources || []).map(s => AI.sourceByKey(s)).filter(Boolean);
+      return '<article class="adv-report"><p class="adv-meta">' + esc(spanLine(o.span)) + (at ? " · written " + esc(at) : "") + "</p>" +
+        (R.summary ? '<p class="adv-sum">' + esc(R.summary) + "</p>" : "") + (R.data_note ? '<p class="adv-note">' + esc(R.data_note) + "</p>" : "") +
+        (groups ? '<h3>What I notice</h3><div class="adv-grps">' + groups + "</div>" : "") +
+        (tries ? '<h3>What to try</h3><ol class="adv-tries">' + tries + "</ol>" : "") +
+        (prac ? '<h3>Practice ideas</h3><ul class="adv-prs">' + prac + "</ul>" : "") +
+        (R.goal ? '<h3>One small goal for next week</h3><p class="adv-goal">' + esc(R.goal) + "</p>" : "") +
+        (o.dropped ? '<p class="muted">Some lines were left out because they used words the adviser must not use.</p>' : "") +
+        (o.unknown_sources ? '<p class="muted">It named a source that is not on the checked list, so no source is shown for that idea.</p>' : "") +
+        (used.length ? '<div class="adv-sources"><h4>Sources</h4><ul>' + used.map(s => '<li><a href="https://doi.org/' + esc(s.doi) + '" target="_blank" rel="noopener">' + esc(s.authors + " (" + s.year + "). " + s.title + ". " + s.journal + ".") + "</a></li>").join("") + "</ul></div>" : "") +
+        '<p class="adv-ai">The adviser is an AI. Check its advice against what you see in him.</p></article>';
+    }
+    if (o && typeof o.headline === "string") {
+      const items = x => (Array.isArray(x) ? x : []).filter(s => typeof s === "string" && s);
+      const list = (h, x) => items(x).length ? "<h4>" + h + "</h4><ul>" + items(x).map(s => "<li>" + esc(s) + "</li>").join("") + "</ul>" : "";
+      return '<article class="adv-report adv-legacy"><p class="adv-meta">Weekly notes' + (rec.week ? " for the week of " + esc(wkLabel(rec.week)) : "") + (at ? " · written " + esc(at) : "") + "</p><p>" + esc(o.headline) + "</p>" +
+        list("What changed", o.changed) + list("In his spelling", o.patterns) + list("For your next lesson", o.next_lesson) + '<p class="adv-ai">Written by an AI. Check it against what you see in him.</p></article>';
+    }
+    return '<p class="muted">This report could not be read.</p>';
+  }
+  // The newest report open, the earlier ones in a fold, newest first.
+  function reportsHtml() {
+    const list = advSaved.slice().sort((p, q) => String(q.at || "").localeCompare(String(p.at || "")));
+    if (!list.length) return '<p class="lead adv-none">No report yet.</p>';
+    const older = list.slice(1);
+    return reportHtml(list[0]) + (older.length ? '<details class="inner adv-old"><summary>Earlier reports (' + older.length + ")</summary>" + older.map(reportHtml).join("") + "</details>" : "");
+  }
+  function needsHtml() {
+    return '<details class="inner adv-needs"><summary>What the adviser should keep in mind</summary>' +
+      '<p class="lead">What helps him learn. The adviser plans every idea around it.</p>' +
+      '<form id="advNf" autocomplete="off"><label class="adv-sr" for="advNt">What the adviser should keep in mind</label><textarea id="advNt" rows="3" maxlength="' + (window.WW_AI ? window.WW_AI.NEEDS_MAX : 400) + '">' + esc(window.WW_AI ? advNeeds() : "") + "</textarea>" +
+      '<div class="row"><button type="submit">Save</button><span class="err" id="advNe" role="status"></span></div></form></details>';
+  }
+  function wireNeeds() {
+    const f = $("advNf"); if (!f || !window.WW_AI) return;
+    f.onsubmit = async ev => {
+      ev.preventDefault();
+      const AI = window.WW_AI, v = $("advNt").value.replace(/\s+/g, " ").trim(), line = $("advNe");
+      line.className = "err";
+      if (AI.hasDiagnosis(v)) { line.textContent = AI.NEEDS_REFUSED; return; }
+      const val = (v || AI.NEEDS_DEFAULT).slice(0, AI.NEEDS_MAX);
+      const r = await safe(sb.from("students").update({ teaching_needs: val }).eq("id", student.id));
+      if (!$("advNt")) return;
+      if (r && r.error) { $("advNt").value = AI.NEEDS_DEFAULT; line.textContent = "This setting is not ready yet."; return; }
+      student.teaching_needs = val; $("advNt").value = val; line.className = "ok"; line.textContent = "Saved.";
     };
   }
-  function analysisHtml(rec, P) {
-    let o = null; try { o = typeof rec.json === "string" ? JSON.parse(rec.json) : rec.json; } catch (e) { o = null; }
-    if (!o || typeof o.headline !== "string") return '<p class="muted">The last analysis could not be read.</p>';
-    const items = x => (Array.isArray(x) ? x : []).slice(0, 3).map(s => typeof s === "string" ? s : s && (s.text || s.item) ? String(s.text || s.item) : "").filter(Boolean);
-    const list = (h, x) => items(x).length ? "<h3>" + h + "</h3><ul>" + items(x).map(s => "<li>" + esc(s) + "</li>").join("") + "</ul>" : "";
-    const c = o.confidence, level = typeof c === "string" ? c : c && c.level, why = o.confidence_reason || (c && c.reason) || "";
-    const at = rec.at ? day3(ld(rec.at)) + " " + W.fmtTime(rec.at) : "";
-    return '<div class="ai-note"><p class="ai-head">' + esc(o.headline) + "</p>" + list("What changed", o.changed) + list("In his spelling", o.patterns) + list("For your next lesson", o.next_lesson) +
-      (level ? '<p class="ai-conf"><b>How sure Claude is: ' + esc(String(level)) + "</b>" + (why ? " · " + esc(String(why)) : "") + "</p>" : "") +
-      '<p class="ai-by">Written by Claude from this week\'s numbers. Check them against what you know. · ' + esc(at) + (rec.week && P && rec.week !== P.weeks[P.last] ? " · about the week of " + wkLabel(rec.week) : "") + "</p></div>";
+  function adviserCard(rows) {
+    advSaved = rows.slice();
+    return '<section class="box pg-ai adv" id="aiBox"><div class="bh"><h2>The adviser</h2></div>' +
+      '<p class="lead">An education specialist for spelling, played by an AI. It looks at his learning, his spelling and how he plays, tells you what it notices and what to try, and names the research for each idea. It writes only when you press the button, and nothing in the game changes by itself.</p>' +
+      '<div id="aiCtl"><p class="lead">Checking whether the adviser can be asked from here…</p></div>' +
+      '<p class="muted adv-sent">His answers, times and hints are sent to the AI service without his name.</p>' +
+      '<div id="aiOut">' + reportsHtml() + "</div>" + needsHtml() + "</section>";
   }
-  async function wireAi(P, saved) {
-    const box = $("aiBox"); if (!box) return;
+  async function wireAi() {
+    if (!$("aiBox")) return;
+    wireNeeds();
     const sample = await getSample();
     if (tab !== "week" || !$("aiBox")) return;
-    const ctl = $("aiCtl");
-    if (!sample) { if (onSite()) return wireSite(P); ctl.innerHTML = '<p class="muted">' + OFF_SITE + "</p>"; return; }
-    ctl.innerHTML = '<div class="row"><button type="button" id="aiGo">Write this week\'s analysis</button><span class="muted" id="aiMsg">Sends this week\'s numbers to Claude, without his name. Only when you press.</span></div>';
+    const ctl = $("aiCtl"), site = !sample && onSite();
+    if (!sample && !site) { ctl.innerHTML = '<p class="muted">' + OFF_SITE + "</p>"; return; }
+    ctl.innerHTML = '<div class="row adv-ask"><label class="inl" for="aiSpan">Look at</label><select id="aiSpan">' + ADV_SPANS.map(s => '<option value="' + s[0] + '"' + (s[0] === advSpan ? " selected" : "") + ">" + s[1] + "</option>").join("") + "</select>" +
+      '<button type="button" id="aiGo">Ask the adviser</button></div><p class="muted" id="aiMsg">It writes only when you press. It takes about a minute.</p><p class="muted ai-cost" id="aiCost" hidden></p>';
+    $("aiSpan").onchange = () => { advSpan = $("aiSpan").value; };
     $("aiGo").onclick = async () => {
-      const b = $("aiGo"), msg = $("aiMsg"); b.disabled = true; msg.textContent = "Claude is reading the week…";
-      try {
-        const out = await sample.json(buildAiInput(P), { modelTier: "default" });
-        if (!out || typeof out !== "object" || typeof out.headline !== "string") throw { code: "shape" };
-        const rec = { student_id: student.id, week: P.weeks[P.last], at: new Date().toISOString(), json: JSON.stringify(out) };
-        const r = await safe(sb.from("analyses").insert(rec));
-        $("aiOut").innerHTML = analysisHtml(rec, P);
-        msg.textContent = r && r.error ? "Shown, but it could not be kept for next time." : "Kept on this page for next time.";
-      } catch (e) {
-        const code = e && e.code;
-        msg.textContent = code === "rate_limited" ? "Claude has had many questions just now. Try again later." :
-          code === "not_granted" ? "The analysis is switched off for this page." :
-          "The analysis could not be written this time. Try again later.";
-        if (code === "not_granted") { b.hidden = true; return; }
+      const b = $("aiGo"), msg = $("aiMsg"), cost = $("aiCost"), AI = window.WW_AI;
+      b.disabled = true; cost.hidden = true; msg.textContent = "The adviser is reading… this takes about a minute";
+      const show = rec => { advSaved = advSaved.concat([rec]); $("aiOut").innerHTML = reportsHtml(); };
+      let facts;
+      try { facts = await adviserFacts($("aiSpan").value); } catch (e) { msg.textContent = "His data could not be loaded. Try again in a minute."; b.disabled = false; return; }
+      const needs = AI.cleanNeeds(advNeeds(), advNames()).text;
+      if (site) {
+        let res; try { res = await sb.functions.invoke(AI_FUNCTION, { body: { facts, teaching_needs: needs } }); } catch (e) { res = { data: null, error: e }; }
+        if (tab !== "week" || $("aiGo") !== b) return;   // she left the tab; a kept report shows on her next visit
+        const data = res && !res.error ? res.data : null;
+        if (!data || !data.record || typeof data.record.json !== "string") { msg.textContent = res && res.error ? await fnMessage(res.error) : AI_SORRY; b.disabled = false; return; }
+        show(data.record);
+        msg.textContent = data.saved ? "Kept on this page for next time." : "Shown, but it could not be kept for next time.";
+        const line = costLine(data.usage); cost.textContent = line; cost.hidden = !line;
+      } else {
+        try {
+          const out = await sample.json(AI.text(facts, needs), { modelTier: "default" });
+          const c = AI.check(out, facts);
+          if (tab !== "week" || $("aiGo") !== b) return;
+          if (!c.ok) { msg.textContent = c.message; b.disabled = false; return; }
+          const rec = { student_id: student.id, week: facts.span.week, at: new Date().toISOString(), json: JSON.stringify(AI.record(c, facts)) };
+          const r = await safe(sb.from("analyses").insert(rec));
+          show(rec);
+          msg.textContent = r && r.error ? "Shown, but it could not be kept for next time." : "Kept on this page for next time.";
+        } catch (e) {
+          const code = e && e.code;
+          msg.textContent = code === "rate_limited" ? "The AI service has had many questions just now. Try again later." :
+            code === "not_granted" ? "The adviser is switched off for this page." : "The adviser could not write its report this time. Try again later.";
+          if (code === "not_granted") { b.hidden = true; return; }
+        }
       }
       b.disabled = false;
     };
@@ -2009,19 +2065,16 @@
     if (tab !== "week") return;
     if (a.error) banner(a.error.message);
     const P = computeProgress({ attempts: a.data, events: e.data, words, sessions, results: (sr && !sr.error && sr.data) || [], today: t });
-    const saved = ((an && !an.error && an.data) || []).slice(-1)[0] || null;
+    const kept = (an && !an.error && an.data) || [];
     const aDays = new Set((a.data || []).map(x => ld(x.created_at)));
     view.innerHTML = '<div class="wk">' + glanceHtml(P, aDays) +
-      '<section class="box pg-ai" id="aiBox"><div class="bh"><h2>A written look at the week</h2></div>' +
-      '<p class="lead">Claude, an AI helper, reads this week\'s numbers and writes a few short notes for your lesson. It only does this when you press the button.</p>' +
-      '<div id="aiOut">' + (saved ? analysisHtml(saved, P) : '<p class="lead">No notes yet.</p>') + "</div>" +
-      '<div id="aiCtl"><p class="lead">Checking whether Claude can be asked from here…</p></div></section>' +
+      adviserCard(kept) +
       '<div class="two">' + helpingHtml(P) + islandCard() + "</div>" + memoryChart(P) + "</div>";
-    wireAi(P, saved);
+    wireAi();
     wireCommon();
   }
 
   // For checks: the Chinese summary of the data as it is now.
-  window.WT_TEACHER = { motherText: async () => motherText(await motherFacts()), progress: computeProgress, aiInput: buildAiInput, RULES };
+  window.WT_TEACHER = { motherText: async () => motherText(await motherFacts()), progress: computeProgress, adviserFacts, RULES };
   boot();
 })();

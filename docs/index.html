@@ -4,27 +4,27 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Word World</title>
-<link rel="stylesheet" href="fonts.css?v=202611252045">
-<link rel="stylesheet" href="ui.css?v=202611252045">
+<link rel="stylesheet" href="fonts.css?v=202611260000">
+<link rel="stylesheet" href="ui.css?v=202611260000">
 <!-- Backend. On claude.ai these two files stand in for the database (progress stays in this browser).
      On the real site, load supabase-js and config.js here instead. -->
-<script src="bank.js?v=202611252045"></script>
-<script src="probes.js?v=202611252045"></script>
-<script src="rude.js?v=202611252045"></script>
-<script src="vendor/supabase.js?v=202611252045"></script>
-<script src="config.js?v=202611252045"></script>
-<script src="common.js?v=202611252045"></script>
-<script src="zh.js?v=202611252045"></script>
-<script src="audio.js?v=202611252045"></script>
-<script src="patterns.js?v=202611252045"></script>
-<script src="pool.js?v=202611252045"></script>
-<script src="first.js?v=202611252045"></script>
-<script src="picker.js?v=202611252045"></script>
-<script src="img/words/pics.js?v=202611252045"></script>
-<script src="img/school/pics.js?v=202611252045"></script>
-<script src="story.js?v=202611252045"></script>
-<script src="pairs.js?v=202611252045"></script>
-<script src="voice.js?v=202611252045"></script>
+<script src="bank.js?v=202611260000"></script>
+<script src="probes.js?v=202611260000"></script>
+<script src="rude.js?v=202611260000"></script>
+<script src="vendor/supabase.js?v=202611260000"></script>
+<script src="config.js?v=202611260000"></script>
+<script src="common.js?v=202611260000"></script>
+<script src="zh.js?v=202611260000"></script>
+<script src="audio.js?v=202611260000"></script>
+<script src="patterns.js?v=202611260000"></script>
+<script src="pool.js?v=202611260000"></script>
+<script src="first.js?v=202611260000"></script>
+<script src="picker.js?v=202611260000"></script>
+<script src="img/words/pics.js?v=202611260000"></script>
+<script src="img/school/pics.js?v=202611260000"></script>
+<script src="story.js?v=202611260000"></script>
+<script src="pairs.js?v=202611260000"></script>
+<script src="voice.js?v=202611260000"></script>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -134,17 +134,17 @@
   <div id="full" class="modal full" hidden><div class="journal"><div class="cover"></div><article class="page paper modal-card"><button type="button" class="pgclose" id="fullClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button><div id="fullBody"></div></article></div></div>
 </div>
 
-<script src="vendor/three.min.js?v=202611252045"></script>
-<script src="vendor/GLTFLoader.js?v=202611252045"></script>
-<script src="models/hero.js?v=202611252045"></script>
-<script src="models/heroidle.js?v=202611252045"></script>
-<script src="models/tower.js?v=202611252045"></script>
-<script src="models/pod.js?v=202611252045"></script>
-<script src="models/tree.js?v=202611252045"></script>
-<script src="models/watchfire.js?v=202611252045"></script><!-- night watch (raid team): the watch-fire he owns -->
-<script src="world3d.js?v=202611252045"></script>
-<script src="orbit3d.js?v=202611252045"></script>
-<script src="raid3d.js?v=202611252045"></script><!-- night watch (raid team): the island test as a watch at the gate -->
+<script src="vendor/three.min.js?v=202611260000"></script>
+<script src="vendor/GLTFLoader.js?v=202611260000"></script>
+<script src="models/hero.js?v=202611260000"></script>
+<script src="models/heroidle.js?v=202611260000"></script>
+<script src="models/tower.js?v=202611260000"></script>
+<script src="models/pod.js?v=202611260000"></script>
+<script src="models/tree.js?v=202611260000"></script>
+<script src="models/watchfire.js?v=202611260000"></script><!-- night watch (raid team): the watch-fire he owns -->
+<script src="world3d.js?v=202611260000"></script>
+<script src="orbit3d.js?v=202611260000"></script>
+<script src="raid3d.js?v=202611260000"></script><!-- night watch (raid team): the island test as a watch at the gate -->
 <script>
 (function () {
   const W = window.WT, $ = id => document.getElementById(id);
@@ -176,16 +176,27 @@
   async function saveWord(w, patch) { if (practising()) return; Object.assign(w, patch); const { error } = await sb.from("words").update(patch).eq("id", w.id); if (error) banner("No internet? Progress was not saved."); }
   async function saveSession(patch) { Object.assign(todaySession, patch); const { error } = await sb.from("sessions").update(patch).eq("id", todaySession.id); if (error) banner("No internet? Progress was not saved."); }
   async function saveQuest(row, patch) { if (practising()) return; Object.assign(row, patch); const { error } = await sb.from("quests").update(patch).eq("id", row.id); if (error) banner("No internet? Progress was not saved."); }
+  // Her story pages belong to the real student. The test account (the tutor playing) shows them too, so she can try her
+  // own page before he does; it only reads them, and its events stay with the test student.
+  async function storyRows() {
+    let id = student.id;
+    if (student.is_test === true) {
+      try { const r = await sb.from("students").select("id").eq("is_test", false).order("created_at").limit(1); if (r && r.data && r.data[0] && r.data[0].id) id = r.data[0].id; } catch (e) {}
+    }
+    return sb.from("stories").select("*").eq("student_id", id).order("level");
+  }
   async function loadAll() {
     const t = today();
-    const [w, s, qs, m] = await Promise.all([
+    const [w, s, qs, m, sto] = await Promise.all([
       sb.from("words").select("*").eq("student_id", student.id).eq("approved", true).order("sort_order").order("created_at"),
       sb.from("sessions").select("*").eq("student_id", student.id).gte("day", W.addDays(t, -400)).order("day"),
       sb.from("quests").select("*").eq("student_id", student.id).order("quest_day"),
-      sb.from("messages").select("*").eq("student_id", student.id).order("created_at")
+      sb.from("messages").select("*").eq("student_id", student.id).order("created_at"),
+      storyRows().catch(e => ({ data: null, error: e }))   // the tutor's own story pages (deploy/stories.sql; not there yet: none)
     ]);
     if (w.error || s.error || qs.error) { banner("Could not load your words. Check the internet and reload."); return false; }
     words = w.data || []; sessions = s.data || []; quests = qs.data || []; messages = m.data || [];
+    if (typeof storyOwnSet === "function") storyOwnSet(sto && !sto.error ? sto.data : null);   // 55-story.js: her page replaces the game's for its level
     todaySession = sessions.find(x => x.day === t) || null;
     freshStart();
     await fromOldLadder();
@@ -1427,17 +1438,18 @@
     if (cardOpened(w)) { note("Good. You said it.", "good"); afterSaid(); }
     else if (canListen()) micReady(false);
     else fallbackTaps(true);
-    $("rec").onclick = () => {
+    if ($("said").hidden) $("rec").onclick = () => {   // (with no speech check, fallbackTaps has given the mic its own tap)
       const rec = $("rec"); if (rec.disabled) return;
       try { if (W.devStop) W.devStop(); else if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}   // the computer's voice must not be heard as his
       $("vfb").className = "fb"; $("vfb").textContent = "";
       mlListen({
         wait() { rec.disabled = true; rec.classList.add("wait"); rec.classList.remove("live"); vdo("Wait…"); mlAsk(fbody, null); },
         allow() { if (!here()) return; vdo("Tap <b>Allow</b>."); },
-        live() { if (!here()) return; rec.classList.remove("wait"); rec.classList.add("live"); $("ml-wave").hidden = false; vdo("Say it now."); },
+        live() { if (!here()) return; rec.classList.remove("wait"); rec.classList.add("live"); $("ml-wave").hidden = false; vdo("Say it now."); vrStart(w.word); },
         hear() { if (!here() || rec.classList.contains("hears")) return; rec.classList.add("hears"); vdo("I hear you."); },
         check: texts => !!mlHeard(texts, w.word),
         done(texts, reason, p) {
+          vrStop(reason === "left" ? "left" : "said");   // his voice for the tutor (11-voice-rec.js): the saying ended
           if (!here()) return;
           path = p;
           if (reason === "left") return;
@@ -1463,11 +1475,15 @@
       if (!atStart) logEvent("voice", { word: w.word, audio: "", reason: "no_mic" });
       const rec = $("rec"); rec.hidden = true; rec.classList.remove("live", "wait"); $("ml-wave").hidden = true;
       $("said").hidden = false; $("ml-pips").hidden = false;
-      vdo("Say it 3 times. Tap each time.");
-      mlAsk(fbody, $("said"));
       let c = 0;
+      // his voice for the tutor (11-voice-rec.js): only from his tap on the mic to his tap on "I said it", never at card open
+      const vrOk = () => c < 3 && !!window.WWVoiceRec && window.WWVoiceRec.can(w.word);
+      const ready = () => { const m = vrOk(); rec.hidden = !m; rec.classList.remove("live"); vdo(m ? "Tap the mic. Say <b>" + W.esc(w.word) + "</b>." : "Say it 3 times. Tap each time."); mlAsk(fbody, m ? rec : $("said")); };
+      rec.onclick = () => { if (!vrOk() || window.WWVoiceRec.busy()) return; rec.classList.add("live"); vdo("Say it now. Tap “I said it”."); mlAsk(fbody, $("said")); vrStart(w.word, () => { if (here()) rec.classList.remove("live"); }); };
+      ready();
       $("said").onclick = () => {
         if (c >= 3) return; c++; W.sfx("pop");
+        vrStop("said"); if (c < 3) ready(); else rec.hidden = true;   // his voice for the tutor: this saying ended; the mic waits for his next tap
         $("ml-pips").querySelectorAll("i").forEach((p, k) => p.classList.toggle("on", k < c));
         if (c >= 3) { $("said").disabled = true; logEvent("voice_self", { word: w.word }); note("Done. You said it 3 times.", "good"); finishOk("self", { tries: 3, path: "self", heard: "" }); }
       };
@@ -1552,6 +1568,148 @@
     [/^Yes\. I heard (.+)\.$/, "对。我听到了 $1。"],
     [/^New mail from (.+)\.$/, "$1 给你发来了新信。"]
   ]);
+  // ============ his voice, kept for the tutor (25 November) ============
+  // The tutor: "save it so that I can replay how he speaks in my teacher dashboard"; his mother agreed. The promised limits:
+  //  - recorded ONLY while he says one of the new words in the mailbox's "say it" step (10-mail.js calls vrStart when the
+  //    saying starts and vrStop when it ends; nothing else in the game calls them);
+  //    With the speech check: from "Say it now." (the recogniser listens) to the end of that saying. Without it (10-mail.js
+  //    fallbackTaps): from his tap on the mic to his tap on "I said it"; nothing when the card opens (review finding 7);
+  //  - only on the real website: the practice copy (the stand-in database, window.WW_DEMO) never opens the microphone here;
+  //  - never for the test student (students.is_test; the tutor playing the test account): no microphone at all;
+  //  - only while the mailbox itself is open (not a card reopened from the card games);
+  //  - at most 6 seconds for one saying, at most 3 recordings for one word in one level;
+  //  - stopped when he taps "I said it", when the step ends, when he leaves the page or the tab hides; every track of the
+  //    microphone is stopped at once, so the microphone is never left on;
+  //  - a small sign "Recording." shows on the card the whole time, so nothing is recorded behind his back;
+  //  - the file goes to the private bucket "voice" of the game's own database (<his id>/<yyyy-mm-dd>/<word>-<time>.<ext>),
+  //    then one row into voice_clips (deploy/voice-clips.sql). Only the tutor's login can read them; nothing goes elsewhere.
+  // It must never hold up or break the lesson: no microphone, a refused permission, no MediaRecorder, an upload that fails:
+  // the lesson goes on as before and one event "voice_rec" { ok: false, why } is logged.
+  // The "say it" step listens through the browser's own speech recognition (or the viewer's dictation), which opens the
+  // microphone by itself and gives the page no stream to share; so this asks for its own stream once the recogniser is
+  // already listening ("Say it now."), which does not ask him a second time on the same page.
+  const VR_BUCKET = "voice", VR_MAX_MS = 6000, VR_PER_WORD = 3, VR_BPS = 24000;
+  const VR_TYPES = [["audio/webm;codecs=opus", "audio/webm", "webm"], ["audio/webm", "audio/webm", "webm"],
+    ["audio/mp4;codecs=mp4a.40.2", "audio/mp4", "m4a"], ["audio/mp4", "audio/mp4", "m4a"]];   // Safari: mp4/aac
+  // the bucket, through the game's own client (".call" so that deploy/check_schema.py does not read the bucket as a table)
+  const vrBucket = () => sb.storage.from.call(sb.storage, VR_BUCKET);
+  let vrCur = null;          // the recording that is running: { word, stream, rec, chunks, t0, timers, ... }
+  let vrOff = "";            // why this page cannot record at all (asked once, not again on every card)
+  const vrCounts = {};       // recordings made per word and level today (also kept in this tab: sessionStorage)
+  const vrKind = () => {
+    const MR = window.MediaRecorder; if (!MR) return null;
+    if (typeof MR.isTypeSupported !== "function") return VR_TYPES[0];
+    return VR_TYPES.find(t => { try { return MR.isTypeSupported(t[0]); } catch (e) { return false; } }) || null;
+  };
+  const vrWord = word => (words || []).find(x => x.word === word) || null;
+  const vrKey = word => { const w = vrWord(word); return "ww.vr." + today() + "." + (w && w.quest_day != null ? w.quest_day : "-") + "." + String(word).toLowerCase(); };
+  const vrCount = k => { let n = vrCounts[k] || 0; try { n = Math.max(n, +sessionStorage.getItem(k) || 0); } catch (e) {} return n; };
+  const vrCountUp = k => { vrCounts[k] = vrCount(k) + 1; try { sessionStorage.setItem(k, String(vrCounts[k])); } catch (e) {} };
+  const vrSafe = s => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 40) || "word";
+  const vrLog = (ok, why, extra) => { try { logEvent("voice_rec", Object.assign({ ok, why: why || "" }, extra || {})); } catch (e) {} };
+  const vrTracksOff = s => { try { if (s && s.getTracks) s.getTracks().forEach(t => { try { t.stop(); } catch (e) {} }); } catch (e) {} };
+  // One of the mailbox's new words, on the say-it page that is open now.
+  const vrInMail = word => {
+    // the mailbox must be OPEN too ("mail" stays set after it closes; a card reopened from the card games is not the mailbox)
+    try { return !!(mail && mail.cards && mail.cards.some(c => c.w && c.w.word === word) && $("modal") && !$("modal").hidden && $("full") && !$("full").hidden && $("voicebox")); } catch (e) { return false; }
+  };
+  function vrSign(on) {
+    const old = $("vr-sign"); if (old) old.remove();
+    if (!on) return;
+    const box = $("voicebox"); if (!box) return;
+    const p = document.createElement("div"); p.className = "vr-sign";   // a div: only the line itself gets the Chinese
+    p.id = "vr-sign"; p.setAttribute("role", "status");
+    p.innerHTML = '<i class="vr-dot" aria-hidden="true"></i><span class="zhk">Recording.</span>';
+    box.appendChild(p);
+  }
+  // May a recording of this word start now? Returns the recorder type to use, or null. Nothing is asked of the browser.
+  // A page that can never record (no storage, no recorder, no microphone API) is noted once and logged once.
+  function vrCheck(word) {
+    if (vrOff || !word || !student) return null;
+    if (window.WW_DEMO) { vrOff = "practice"; return null; }             // the practice copy: nothing is ever recorded
+    if (student.is_test === true) { vrOff = "test"; return null; }       // the test student (the tutor playing): never (a missing is_test is false)
+    if (student.voice_rec === false) { vrOff = "tutor_off"; return null; }   // the tutor switched recording off on her page: no microphone for it
+    if (!vrInMail(word)) return null;
+    if (!sb || !sb.storage || typeof sb.storage.from !== "function") { vrOff = "no_storage"; vrLog(false, "no_storage", { word }); return null; }
+    const kind = vrKind();
+    if (!kind) { vrOff = "no_recorder"; vrLog(false, "no_recorder", { word }); return null; }
+    const md = navigator.mediaDevices;
+    if (!md || typeof md.getUserMedia !== "function") { vrOff = "no_mic"; vrLog(false, "no_mic", { word }); return null; }
+    if (vrCount(vrKey(word)) >= VR_PER_WORD) return null;                // three for this word in this level: enough
+    return kind;
+  }
+  // The saying starts. word: the new word he is about to say. onEnd (optional): called once when this recording ends.
+  function vrStart(word, onEnd) {
+    try {
+      if (vrCur) vrStop("again");
+      const kind = vrCheck(word); if (!kind) return false;
+      const md = navigator.mediaDevices, key = vrKey(word);
+      const cur = vrCur = { word, key, kind, stream: null, rec: null, chunks: [], t0: 0, timers: [], ended: false, anchor: $("voicebox"), onEnd };
+      const gone = () => !cur.anchor || !cur.anchor.isConnected || !$("full") || $("full").hidden;
+      // the step ended without telling (the page was closed, another card opened): stop, also while the browser answers
+      cur.timers.push(setInterval(() => { if (gone()) vrStop("left"); }, 300));
+      md.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false }).then(stream => {
+        cur.stream = stream;
+        if (cur.ended || vrCur !== cur || gone()) { if (vrCur === cur) vrEnd(cur); return vrTracksOff(stream); }   // the saying ended while the browser was answering
+        let rec;
+        try { rec = new MediaRecorder(stream, { mimeType: kind[0], audioBitsPerSecond: VR_BPS }); }
+        catch (e) { try { rec = new MediaRecorder(stream); } catch (e2) { vrEnd(cur); vrOff = "no_recorder"; return vrLog(false, "no_recorder", { word }); } }
+        cur.rec = rec;
+        rec.ondataavailable = e => { if (e && e.data && e.data.size) cur.chunks.push(e.data); };
+        rec.onstop = () => vrSave(cur);
+        rec.onerror = () => { cur.failed = "recorder"; vrStop("error"); };
+        try { rec.start(); } catch (e) { vrEnd(cur); return vrLog(false, "recorder", { word }); }
+        cur.t0 = Date.now(); vrCountUp(key); vrSign(true);
+        cur.timers.push(setTimeout(() => vrStop("max"), VR_MAX_MS));
+      }, err => {
+        vrEnd(cur);
+        const n = err && err.name;
+        const why = n === "NotAllowedError" || n === "SecurityError" || n === "PermissionDeniedError" ? "refused" : n === "NotFoundError" || n === "OverconstrainedError" || n === "DevicesNotFoundError" ? "no_mic" : "mic_error";
+        if (why !== "mic_error") vrOff = why;
+        vrLog(false, why, { word });
+      }).catch(() => {});
+      return true;
+    } catch (e) { try { if (vrCur) vrEnd(vrCur); } catch (x) {} vrLog(false, "error", { word }); return false; }
+  }
+  // The saying ends (or the step, the page, the tab): stop the recorder; its onstop saves the file.
+  function vrStop(why) {
+    const cur = vrCur; if (!cur) return;
+    cur.why = cur.why || why || "";
+    const rec = cur.rec;
+    if (rec && rec.state !== "inactive") { try { rec.stop(); } catch (e) { vrEnd(cur); } }
+    vrEnd(cur);
+  }
+  // Microphone off, sign off, timers off. Safe to call more than once.
+  function vrEnd(cur) {
+    if (!cur) return;
+    cur.ended = true; if (!cur.t1) cur.t1 = Date.now();
+    cur.timers.forEach(t => { clearTimeout(t); clearInterval(t); }); cur.timers = [];
+    vrTracksOff(cur.stream);
+    if (vrCur === cur) { vrCur = null; vrSign(false); }
+    if (cur.onEnd) { const f = cur.onEnd; cur.onEnd = null; try { f(); } catch (e) {} }
+  }
+  async function vrSave(cur) {
+    vrEnd(cur);
+    if (cur.saved) return; cur.saved = true;
+    try {
+      if (cur.failed) return vrLog(false, cur.failed, { word: cur.word });
+      const type = cur.kind[1], blob = new Blob(cur.chunks, { type });
+      if (!blob.size) return vrLog(false, "empty", { word: cur.word });
+      const secs = Math.min(7, Math.max(0, Math.round((cur.t1 - cur.t0) / 100) / 10));
+      const w = vrWord(cur.word), now = new Date();
+      const path = student.id + "/" + today() + "/" + vrSafe(cur.word) + "-" + now.getTime() + "." + cur.kind[2];
+      const up = await vrBucket().upload(path, blob, { contentType: type, upsert: false, cacheControl: "no-cache" });
+      if (!up || up.error) return vrLog(false, "upload", { word: cur.word });   // only the error is read: nothing is read back
+      // no .select() after the insert: his session may add a row but never read one back
+      const r = await sb.from("voice_clips").insert({ student_id: student.id, word: cur.word, path, mime: type, seconds: secs, level: w && w.quest_day != null ? w.quest_day : null });
+      if (r && r.error) return vrLog(false, "row", { word: cur.word });
+      vrLog(true, cur.why || "", { word: cur.word, seconds: secs, bytes: blob.size });
+    } catch (e) { vrLog(false, "upload", { word: cur.word }); }
+  }
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") vrStop("hidden"); });
+  window.addEventListener("pagehide", () => vrStop("left"));
+  try { window.WWVoiceRec = { start: vrStart, stop: vrStop, busy: () => !!vrCur, can: word => !!vrCheck(word), limits: { ms: VR_MAX_MS, perWord: VR_PER_WORD, bps: VR_BPS } }; } catch (e) {}
+  if (ZH) ZH.add({ "Recording.": "正在录音。", "Say it now. Tap “I said it”.": "现在说。点“我说了”。" });
   // ============ his build: bricks he places himself ============
   const GC = 14, GR = 10; // grid columns and rows
   const COLORS = ["#b5442f", "#c89a62", "#868d99", "#a9ddff", "#7cc04d", "#f1c94b"]; // brick, wood, stone, glass, leaf, gold
@@ -2301,7 +2459,8 @@
         : '<p class="do ht-tip">No words yet. Finish your first level and they come here.</p>') + "</div>";
   }
   function htStory() {
-    const S = window.WW_STORY || {}, ns = Object.keys(S).map(Number).filter(n => n > 0).sort((a, b) => a - b);
+    // every level with a page, in level order: the tutor's own pages (55-story.js storyPageOf) sit among the game's
+    const ns = storyAllLevels(), S = {}; ns.forEach(n => { S[n] = storyPageOf(n); });
     if (!ns.length) return '<div class="ht-pane"><p class="do ht-tip">No story pages yet.</p></div>';
     const open = ns.filter(n => dayDone(n));
     return '<div class="ht-pane"><p class="do ht-tip">' + (open.length ? "<b>Tap</b> a page to read it." : "Finish level 1 to open the first page.") + '</p><ol class="ht-pages">' + ns.map(n => dayDone(n)
@@ -2365,7 +2524,10 @@
   try { if (window.claude && window.claude.use) window.claude.use("tts").then(t => { storyTts = t || null; storyVoiceCheck(); }).catch(() => {}); } catch (e) {}
   const storyVoices = () => { try { return "speechSynthesis" in window ? speechSynthesis.getVoices() : []; } catch (e) { return []; } };
   const storyCanSpeak = () => storyVoices().length > 0 || !!(storyTts && storyTts.speak) || !!(W.clipsOn && W.clipsOn());   // recordings (site/voice.js) need no voice of the device
-  function storyVoiceCheck() { const b = document.getElementById("htHear"); if (b) b.hidden = !storyCanSpeak(); }
+  // Her page has no recording: "Hear it" shows only when the laptop has a voice of its own (else it would read nothing).
+  let storyOwnPage = false;
+  const storyDevVoice = () => storyVoices().length > 0 || !!(storyTts && storyTts.speak);
+  function storyVoiceCheck() { const b = document.getElementById("htHear"); if (b) b.hidden = !(storyOwnPage ? storyDevVoice() : storyCanSpeak()); }
   try { if ("speechSynthesis" in window) speechSynthesis.addEventListener("voiceschanged", storyVoiceCheck); } catch (e) {}
 
   // Split the page into sentences (any tags in the text stay with their sentence). A sentence ends at . ! ? outside a quote, or at the end of a
@@ -2434,6 +2596,27 @@
     step(0);
   }
 
+  // ---- the tutor's own pages (table stories, deploy/stories.sql; her "Stories" tab, site/teacher-story.js) ----
+  // Her page for a level REPLACES the game's page of that level; every other level keeps the game's page. Her texts have no
+  // recording: "Hear it" reads them with the laptop's own voice (the reading below falls back to it for any text).
+  // storyOwnSet(rows) is called by loadAll (00-core.js) with his rows of that table (none, or an error: the game's pages only).
+  let storyOwn = {};
+  function storyOwnSet(rows) {
+    const own = {};
+    (Array.isArray(rows) ? rows : []).forEach(r => {
+      const lv = +(r && r.level), ss = (r && Array.isArray(r.sentences) ? r.sentences : []).map(x => ({ en: String((x && x.en) || "").trim(), zh: String((x && x.zh) || "").trim() })).filter(x => x.en);
+      const as = (r && Array.isArray(r.answers) ? r.answers : []).map(x => typeof x === "string" ? { en: x.trim(), zh: "" } : { en: String((x && x.en) || "").trim(), zh: String((x && x.zh) || "").trim() });
+      if (!(lv >= 1) || !String(r.title || "").trim() || !ss.length || !String(r.question || "").trim() || as.length !== 3 || as.some(a => !a.en) || [0, 1, 2].indexOf(+r.right) < 0) return;
+      own[lv] = { own: true, id: r.id, title: String(r.title).trim(), titleZh: String(r.title_zh || "").trim(), sents: ss, q: String(r.question).trim(), qzh: String(r.question_zh || "").trim(), answers: as, right: +r.right };
+      if (own[lv].titleZh && ZH) ZH.add({ [own[lv].title]: own[lv].titleZh });   // her title's Chinese line, as the game's titles have
+    });
+    storyOwn = own;
+    window.WW_STORY_OWN = Object.keys(own).map(Number);   // the levels that have her page (numbers only; read by the tests)
+  }
+  // The page of a level (hers first), and every level that has a page, in order.
+  const storyPageOf = level => storyOwn[level] || (window.WW_STORY || {})[level] || null;
+  const storyAllLevels = () => [...new Set(Object.keys(window.WW_STORY || {}).concat(Object.keys(storyOwn)).map(Number).filter(n => n > 0))].sort((a, b) => a - b);
+
   let storyPrev = null;   // the close handlers of #full while a story page is on it
   function closeStory(cb) {
     storyStopReading();
@@ -2447,19 +2630,21 @@
   // one of three short answers; a miss says "Not yet. Look again." and he can tap again. Nothing is counted.
   function showStory(level, onClose) {
     level = +level;
-    const S = window.WW_STORY || {}, p = S[level];
+    const p = storyPageOf(level), own = !!(p && p.own), ev = d => own ? Object.assign(d, { own: true }) : d;   // her page: every event says own: true
     if (!p) { if (typeof onClose === "function") onClose(); return false; }
     if (!storyPrev) storyPrev = { x: $("fullClose").onclick, bg: $("full").onclick };
     const zone = ZONES[zoneOf(level)] ? ZONES[zoneOf(level)].name : "", inZone = (level - 1) % STORY_PER_ZONE + 1;
-    const ofZone = Object.keys(S).map(Number).filter(n => zoneOf(n) === zoneOf(level)).length || STORY_PER_ZONE;
-    const sents = storySentences(p.en || ""), zhs = Array.isArray(p.zhs) && p.zhs.length === sents.length ? p.zhs : null;
+    const ofZone = storyAllLevels().filter(n => zoneOf(n) === zoneOf(level)).length || STORY_PER_ZONE;
+    // her page: her sentences as she wrote them (plain text), each with her Chinese line when she gave one
+    const sents = own ? p.sents.map(x => W.esc(x.en)) : storySentences(p.en || ""), zhs = own ? p.sents.map(x => x.zh) : Array.isArray(p.zhs) && p.zhs.length === sents.length ? p.zhs : null;
     const zl = (t, cls) => t ? '<span class="ht-zl ' + (cls || "") + '" lang="zh">' + W.esc(t) + "</span>" : "";
     // the right answer and the two others, in an order that depends on the level (the right one is not always first)
-    const opts = p.q && p.a && Array.isArray(p.o) && p.o.length
-      ? [{ t: p.a, z: p.azh, ok: true }].concat(p.o.map((t, i) => ({ t, z: (p.ozh || [])[i], ok: false }))) : [];
-    for (let r = level % opts.length || 0; r > 0; r--) opts.push(opts.shift());
-    const hasZh = !!(zhs || p.zh);
-    $("fullBody").innerHTML = '<div class="ht-storypage" id="htPage">' +
+    // (her page: her three answers in her order, the one she marked is right)
+    const opts = own ? p.answers.map((a, i) => ({ t: a.en, z: a.zh, ok: i === p.right }))
+      : p.q && p.a && Array.isArray(p.o) && p.o.length ? [{ t: p.a, z: p.azh, ok: true }].concat(p.o.map((t, i) => ({ t, z: (p.ozh || [])[i], ok: false }))) : [];
+    if (!own) for (let r = level % opts.length || 0; r > 0; r--) opts.push(opts.shift());
+    const hasZh = own ? !!(p.sents.some(x => x.zh) || p.qzh || p.answers.some(a => a.zh)) : !!(zhs || p.zh);
+    $("fullBody").innerHTML = '<div class="ht-storypage' + (own ? " ht-own" : "") + '" id="htPage">' +
       '<header class="pg-head"><span class="eyebrow">' + W.esc(zone) + " · page " + inZone + " of " + ofZone + "</span></header>" +
       '<h3 class="pg-title">' + storyNums(W.esc(p.title || "Page " + level)) + "</h3>" +
       '<div class="ht-tools"><button type="button" class="btn" id="htHear">' + ICON("speaker") + 'Hear it</button><button type="button" class="chip" id="htZh" aria-pressed="false">中文</button></div>' +
@@ -2471,12 +2656,12 @@
       // the way out is quiet until the question is answered; then it is the main button (the story is a part of his day)
       '<footer class="pg-foot"><span class="grow"></span><button type="button" class="btn' + (opts.length ? "" : " primary") + '" id="storyClose">Close the story</button></footer></div>';
     $("full").classList.add("ht-storyfull"); $("full").hidden = false; W.sfx("page");
-    storyVoiceCheck();
+    storyOwnPage = own; storyVoiceCheck();
     const spans = [...$("fullBody").querySelectorAll(".ht-s")];
-    $("htHear").onclick = () => { if ($("htHear").classList.contains("on")) { storyStopReading(); return; } storyRead(spans); logEvent("story_heard", { level }); };
+    $("htHear").onclick = () => { if ($("htHear").classList.contains("on")) { storyStopReading(); return; } storyRead(spans); logEvent("story_heard", ev({ level })); };
     const setZh = on => { $("htPage").classList.toggle("ht-zhon", on); $("htZh").setAttribute("aria-pressed", String(on)); };
     if (hasZh) {
-      $("htZh").onclick = () => { const on = !$("htPage").classList.contains("ht-zhon"); setZh(on); if (on) logEvent("story_zh", { level }); };
+      $("htZh").onclick = () => { const on = !$("htPage").classList.contains("ht-zhon"); setZh(on); if (on) logEvent("story_zh", ev({ level })); };
       if (zhOn()) setZh(true);   // the game's own 中文 is on: the story starts with its Chinese shown
     } else $("htZh").hidden = true;
     if (opts.length) {
@@ -2486,21 +2671,24 @@
         if (o.ok) {
           b.classList.add("ht-right"); $("htOpts").querySelectorAll(".ht-opt").forEach(x => { x.disabled = true; });
           $("htFb").innerHTML = "Yes! You found it." + zl("对了！你找到了。"); W.sfx("pop");
-          storyFinish(level, tries);   // read, and its question answered: the story part of today is done
+          storyFinish(level, tries, own);   // read, and its question answered: the story part of today is done
           $("storyClose").classList.add("primary"); $("storyClose").focus();
         } else {
           b.classList.add("ht-miss"); b.disabled = true;
           $("htFb").innerHTML = "Not yet. Look again." + zl("还没找到。再看一看。");
         }
-        logEvent("story_answer", { level, right: !!o.ok, tries });
+        // which answer he chose, and the question, in an event of its own (story_answer keeps its fields: level, right,
+        // tries); the tutor's page joins the two by level and try under "His reading answers"
+        logEvent("story_choice", ev({ level, tries, answer: o.t, q: p.q || "" }));
+        logEvent("story_answer", ev({ level, right: !!o.ok, tries }));
       });
     }
     if ($("htShow")) $("htShow").onclick = () => { $("htA").hidden = false; $("htShow").hidden = true; };
     // a page with no question to tap (none today; kept for older pages) counts as read when he closes it
-    const done = () => { if (!opts.length) storyFinish(level, 0); closeStory(onClose); };
+    const done = () => { if (!opts.length) storyFinish(level, 0, own); closeStory(onClose); };
     $("storyClose").onclick = done; $("fullClose").onclick = done;
     $("full").onclick = e => { if (e.target === $("full")) done(); };
-    logEvent("story_opened", { level });
+    logEvent("story_opened", ev({ level, title: p.title || "" }));
     return true;
   }
   // ---- the story as the last part of today's task (the tutor: "once user finishes the daily task, he MUST read the story") ----
@@ -2521,8 +2709,8 @@
   }
   // The levels finished today that have a story page, in order.
   function storyLevels() {
-    const S = window.WW_STORY || {}, t = today();
-    return quests.filter(x => x.completed && x.quest_day && x.finished_at && W.dkey(new Date(x.finished_at)) === t && S[x.quest_day])
+    const t = today();
+    return quests.filter(x => x.completed && x.quest_day && x.finished_at && W.dkey(new Date(x.finished_at)) === t && storyPageOf(x.quest_day))
       .map(x => x.quest_day).sort((a, b) => a - b);
   }
   // The story part of today's task (hdPlan in 90-boot.js): null when no level with a page was finished today.
@@ -2531,11 +2719,11 @@
     const left = ls.filter(n => !(storyDone && storyDone.has(n)));
     return { done: !left.length, n: "", label: "Story", level: left.length ? left[0] : ls[ls.length - 1] };
   }
-  function storyFinish(level, tries) {
+  function storyFinish(level, tries, own) {
     if (!storyDone) storyDone = new Set();
     if (storyDone.has(level)) return;
     storyDone.add(level);
-    logEvent("story_done", { level, tries: tries || 0 });
+    logEvent("story_done", Object.assign({ level, tries: tries || 0 }, own ? { own: true } : {}));
     if (student && todaySession) renderStats();
   }
   // Today's page as the next part (the plate, Hut in the dock, the level's end page). Closing it lands in the walking view.

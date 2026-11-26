@@ -1,0 +1,26 @@
+/* His voice recordings on the tutor's page (site/teacher-voice.js). */
+.tdv-voice{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin:6px 0 2px}
+.tvr-h{font-size:14px;color:var(--ink-3);font-weight:600}
+.tvr-clip{display:inline-flex;align-items:center;gap:6px}
+.tvr-play{width:44px;height:44px;min-width:44px;padding:0;border-radius:50%;border:1.5px solid var(--ember-lo);background:var(--paper-hi);color:var(--ember-lo);display:inline-grid;place-items:center;cursor:pointer;box-shadow:none}
+.tvr-play svg{width:20px;height:20px;fill:currentColor}
+.tvr-play.on{background:var(--ember);color:#fff;border-color:var(--ember)}
+.tvr-play:focus-visible,.tvr-del:focus-visible,.tvr-yes:focus-visible,.tvr-no:focus-visible,.tvr-delall:focus-visible,.tvr-sw:focus-visible{outline:3px solid var(--glow);outline-offset:2px}
+.tvr-time{font-size:15px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.tvr-time small{color:var(--ink-3);font-size:13px}
+.tvr-del,.tvr-no,.tvr-yes,.tvr-delall,.tvr-sw{min-height:44px;min-width:44px;padding:0 12px;border-radius:6px;font:600 14.5px var(--f-body);cursor:pointer;border:1px solid var(--rule);background:transparent;color:var(--ink-2);box-shadow:none}
+.tvr-del{color:var(--rust);border-color:transparent;text-decoration:underline;text-underline-offset:3px}
+.tvr-yes{background:var(--rust);border-color:var(--rust);color:#fff}
+.tvr-delall{color:var(--rust);border-color:var(--rust)}
+.tvr-ask{flex-basis:100%;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:4px 0;padding:6px 10px;border-radius:6px;background:#fbe9e2;border:1px solid #e7b9a8}
+.tvr-q{font-weight:600;margin-right:4px}
+.tvr-msg{flex-basis:100%;margin:2px 0;font-size:14.5px;color:var(--rust)}
+details.tvr-fold{margin-top:16px;border-top:1px solid var(--rule);padding-top:8px}
+details.tvr-fold>summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:10px;font-weight:700}
+.tvr-fs{font-weight:500;font-size:14.5px;color:var(--ink-3)}
+.tvr-fb{padding:2px 0 6px 4px}
+.tvr-line{margin:4px 0}
+.tvr-small{color:var(--ink-3);font-size:14.5px}
+.tvr-orphs{display:flex;flex-direction:column;align-items:flex-start;gap:4px;margin:6px 0}
+.tvr-swl{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.tvr-sw{color:var(--ink)}
