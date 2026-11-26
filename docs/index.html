@@ -4,27 +4,27 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Word World</title>
-<link rel="stylesheet" href="fonts.css?v=202611260000">
-<link rel="stylesheet" href="ui.css?v=202611260000">
+<link rel="stylesheet" href="fonts.css?v=202611261649">
+<link rel="stylesheet" href="ui.css?v=202611261649">
 <!-- Backend. On claude.ai these two files stand in for the database (progress stays in this browser).
      On the real site, load supabase-js and config.js here instead. -->
-<script src="bank.js?v=202611260000"></script>
-<script src="probes.js?v=202611260000"></script>
-<script src="rude.js?v=202611260000"></script>
-<script src="vendor/supabase.js?v=202611260000"></script>
-<script src="config.js?v=202611260000"></script>
-<script src="common.js?v=202611260000"></script>
-<script src="zh.js?v=202611260000"></script>
-<script src="audio.js?v=202611260000"></script>
-<script src="patterns.js?v=202611260000"></script>
-<script src="pool.js?v=202611260000"></script>
-<script src="first.js?v=202611260000"></script>
-<script src="picker.js?v=202611260000"></script>
-<script src="img/words/pics.js?v=202611260000"></script>
-<script src="img/school/pics.js?v=202611260000"></script>
-<script src="story.js?v=202611260000"></script>
-<script src="pairs.js?v=202611260000"></script>
-<script src="voice.js?v=202611260000"></script>
+<script src="bank.js?v=202611261649"></script>
+<script src="probes.js?v=202611261649"></script>
+<script src="rude.js?v=202611261649"></script>
+<script src="vendor/supabase.js?v=202611261649"></script>
+<script src="config.js?v=202611261649"></script>
+<script src="common.js?v=202611261649"></script>
+<script src="zh.js?v=202611261649"></script>
+<script src="audio.js?v=202611261649"></script>
+<script src="patterns.js?v=202611261649"></script>
+<script src="pool.js?v=202611261649"></script>
+<script src="first.js?v=202611261649"></script>
+<script src="picker.js?v=202611261649"></script>
+<script src="img/words/pics.js?v=202611261649"></script>
+<script src="img/school/pics.js?v=202611261649"></script>
+<script src="story.js?v=202611261649"></script>
+<script src="pairs.js?v=202611261649"></script>
+<script src="voice.js?v=202611261649"></script>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -134,17 +134,17 @@
   <div id="full" class="modal full" hidden><div class="journal"><div class="cover"></div><article class="page paper modal-card"><button type="button" class="pgclose" id="fullClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button><div id="fullBody"></div></article></div></div>
 </div>
 
-<script src="vendor/three.min.js?v=202611260000"></script>
-<script src="vendor/GLTFLoader.js?v=202611260000"></script>
-<script src="models/hero.js?v=202611260000"></script>
-<script src="models/heroidle.js?v=202611260000"></script>
-<script src="models/tower.js?v=202611260000"></script>
-<script src="models/pod.js?v=202611260000"></script>
-<script src="models/tree.js?v=202611260000"></script>
-<script src="models/watchfire.js?v=202611260000"></script><!-- night watch (raid team): the watch-fire he owns -->
-<script src="world3d.js?v=202611260000"></script>
-<script src="orbit3d.js?v=202611260000"></script>
-<script src="raid3d.js?v=202611260000"></script><!-- night watch (raid team): the island test as a watch at the gate -->
+<script src="vendor/three.min.js?v=202611261649"></script>
+<script src="vendor/GLTFLoader.js?v=202611261649"></script>
+<script src="models/hero.js?v=202611261649"></script>
+<script src="models/heroidle.js?v=202611261649"></script>
+<script src="models/tower.js?v=202611261649"></script>
+<script src="models/pod.js?v=202611261649"></script>
+<script src="models/tree.js?v=202611261649"></script>
+<script src="models/watchfire.js?v=202611261649"></script><!-- night watch (raid team): the watch-fire he owns -->
+<script src="world3d.js?v=202611261649"></script>
+<script src="orbit3d.js?v=202611261649"></script>
+<script src="raid3d.js?v=202611261649"></script><!-- night watch (raid team): the island test as a watch at the gate -->
 <script>
 (function () {
   const W = window.WT, $ = id => document.getElementById(id);
@@ -2238,7 +2238,7 @@
   };
   if (ZH) ZH.add({
     "Your outpost": "你的营地", "Sunny Island": "阳光岛", "Jungle": "丛林", "Under the Sea": "海底", "Ice Cave": "冰洞", "Sky Castle": "天空城堡",
-    "Your hut, your mailbox and your buildings.": "你的小屋、信箱和建筑。", "Back to the outpost": "回到营地",
+    "Your hut, your mailbox and your buildings.": "你的小屋、信箱和建筑。", "Back to the outpost": "回到营地", "Open the mailbox": "打开信箱",
     "Island test: your tricky words.": "小岛测验：你的难词。", "Practise again": "再练一次",
     "Opens tomorrow. Two levels a day!": "明天开启。每天最多两关！", "No words here yet. Ask your teacher.": "这里还没有单词。问问你的老师。",
     "Opens on your start day.": "到你开始的那天就开启。", "All 50 levels done!": "50 关全部完成！", "Open today's word cards first.": "先打开今天的单词卡。",
@@ -2290,11 +2290,13 @@
       const fresh = dayWords(n).filter(w => w.level === 0).length, old = dueReviews().length, row = questRow(n);
       const parts = []; if (fresh) parts.push(cmCount(fresh, "new word")); if (old) parts.push(cmCount(old, "old word") + " to check");
       const lines = [parts.join(" · ")]; if (test) lines.push("Island test: your tricky words.");
-      if (!levelMailRead(n)) lines.push("Open today's word cards first.");   // its mail first, also for a second level today
+      const needMail = !levelMailRead(n);
+      if (needMail) lines.push("Open today's word cards first.");   // its mail first, also for a second level today
       if (!parts.length && !test) lines[0] = row && !row.completed ? "Tap Go on." : "Tap Start.";   // the line names the button he sees
-      return { eyebrow: "Level " + n + " · Today", lines, btn: (row && !row.completed ? "Go on with level " : "Start level ") + n, primary: true, go: () => {
-        // every level's new word cards come first (a second level on the same day too: levelMailRead, 10-mail.js)
-        if (!levelMailRead(n)) { cmNote("Open today's word cards first."); showMailPopup(); return; }
+      // Its word cards not read yet: the button says where they are and takes him there. The cards open at the mailbox in
+      // the outpost, as from the level's end page ("Open the mailbox"), never on top of the map (the tutor, 26 November).
+      return { eyebrow: "Level " + n + " · Today", lines, btn: needMail ? "Open the mailbox" : (row && !row.completed ? "Go on with level " : "Start level ") + n, primary: true, go: () => {
+        if (!levelMailRead(n)) { showPage("world"); openSpot("mail"); return; }
         startQuest(n);
       } };
     }
@@ -3249,7 +3251,7 @@
     // "say" (the old drum page) is no longer a game: an old save that lists it is ignored
     const weak = (w.weak_types || []).filter(t => t === "bubbles" || (t === "gap" && has.gap) || (t === "talk" && has.talk));
     const pool = ["bubbles"].concat(has.gap ? ["gap"] : []).concat(has.talk ? ["talk"] : []);
-    if (type === "extra") return [weak.length ? weak[(w.wrong_streak || 0) % weak.length] : pool[w.level % pool.length]]; // ONE extra game when an old word was not right (his weak kinds take turns)
+    if (type === "extra") return [weak.length ? weak[(w.wrong_streak || 0) % weak.length] : pool[w.level % pool.length]]; // ONE extra game when an old word was not right (the kinds he slipped on take turns)
     return ["listen"];
   }
   // The island test's words, the monster game (the owners, 25 November): the 10 words he has spelled wrong most often and has
@@ -3296,14 +3298,14 @@
   }
   window.WW_ISLAND = Object.freeze({ choice: level => islandChoice(level).then(r => ({ by: r.by, words: r.words.map(w => w.word) })) });
   // Up to two older words for the mixed round: on the ladder, from this island (earlier islands if none), not due today,
-  // not seen today, not in today's other parts; weakest first.
+  // not seen today, not in today's other parts; least-known first.
   function olderWords(day, skip) {
     const t = today(), zi = zoneOf(day);
     const ok = w => w.level >= 1 && w.quest_day && w.quest_day !== day && !(w.due && w.due <= t) && w.last_seen !== t && !skip.has(w.id);
-    const weakest = (a, b) => a.level !== b.level ? a.level - b.level : (b.wrong_streak || 0) - (a.wrong_streak || 0);
+    const leastKnown = (a, b) => a.level !== b.level ? a.level - b.level : (b.wrong_streak || 0) - (a.wrong_streak || 0);
     let pool = words.filter(w => ok(w) && zoneOf(w.quest_day) === zi);
     if (!pool.length) pool = words.filter(w => ok(w) && zoneOf(w.quest_day) < zi);
-    return pool.sort(weakest).slice(0, 2);
+    return pool.sort(leastKnown).slice(0, 2);
   }
   const ROUNDS = ["meet", "type", "build"];   // "Tap the beats" is part of "Meet the word"; "Write it" is gone (21 November)
   // Which rounds of today's new words are already behind him. Kept on the device for today only, so that "Stop here" in the
@@ -4506,7 +4508,7 @@
   ]);
   // ============ school words (owner: school team; prefix sc-) ============
   // The school gives a spelling list each week and a dictation on a set day. At the watchtower ("School" in the dock):
-  //  - the daily go: up to 5 words of the current list, weakest first. A word he has not yet typed right from memory is
+  //  - the daily go: up to 5 words of the current list, least-known first. A word he has not yet typed right from memory is
   //    first learned in three small moves, one calm page each: Look (the word, its Chinese, the picture when the game has one,
   //    said slowly twice; "Next"), Copy (he types it with the word in view; a miss marks the first letter that differs), Cover
   //    (the word hides; he hears it and types it from memory, with the Hint button of 80-level.js). A word he has typed right
@@ -4560,8 +4562,8 @@
     const date = dates[0];
     return { date, rows: scRows.filter(r => r.dictation_date === date).sort((a, b) => (a.added_at || "") < (b.added_at || "") ? -1 : (a.added_at || "") > (b.added_at || "") ? 1 : 0) };
   }
-  // Weakest first: never seen, then last time not right, then lowest share right, then longest not seen.
-  function scWeakest(rows) {
+  // Least-known first: never seen, then last time not right, then lowest share right, then longest not seen.
+  function scLeastKnown(rows) {
     const rank = r => !r.tries ? 0 : r.last_right === false ? 1 : 2;
     const share = r => r.tries ? (r.right || 0) / r.tries : 0;
     return rows.slice().sort((a, b) => rank(a) - rank(b) || share(a) - share(b) || ((a.last_seen || "") < (b.last_seen || "") ? -1 : (a.last_seen || "") > (b.last_seen || "") ? 1 : 0));
@@ -4789,7 +4791,7 @@
   function scStartDrill(list) {
     // the words of an earlier go today wait (last_seen is today), unless the list has no others
     const t = today(), notToday = list.rows.filter(r => r.last_seen !== t), rest = list.rows.filter(r => r.last_seen === t);
-    const rows = scWeakest(notToday).concat(scWeakest(rest)).slice(0, SC_DRILL);
+    const rows = scLeastKnown(notToday).concat(scLeastKnown(rest)).slice(0, SC_DRILL);
     scRun = { kind: "drill", list, rows, queue: rows.map(r => ({ r, move: scKnown(r) ? "cover" : "look", learn: !scKnown(r) })), i: 0, first: {}, ready: {}, backAdded: false, hints: {}, startedAt: Date.now() };
     logEvent("school_drill_start", { dictation_date: list.date, words: rows.map(r => r.word), learn: rows.filter(r => !scKnown(r)).map(r => r.word) });
     scStep();
@@ -5477,6 +5479,9 @@
 
   // The level's pages of the island test, while the watch runs.
   function renderRaid(it) {
+    // The map must go: when the island test is the first page opened from the map (no old words before it), nothing else
+    // hides it (every other level page does so in qp), and it would cover the path where the Murks stand (26 November).
+    $("pathWrap").hidden = true;
     if (!rd || rd.q !== q) rdBegin();
     qb.innerHTML = "";   // the journal page is not used during the watch
     const R = rdW(), qq = q, k = rdK(it);
