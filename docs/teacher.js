@@ -826,7 +826,7 @@
       : '<p class="lead">No level finished yet. The words of each level he finishes show here, with the day.</p>';
     const how = on
       ? "One spelling pattern a week. Each level gets 2 new words. First come the words he did not know in the quick check and your own words for the week's pattern: one of each while both are waiting. Your words that did not fit in their week come the week after. Then long words with that pattern, chosen by how he did: when he gets most words right the first time, the next words are a little harder; when many are not yet right, they are a little easier. Long words get a lesson; short words get a quick check first."
-      : "The game takes the next 2 words of a fixed list, in order, for each level, after the words he did not know in the quick check and your own words for the week. In Settings you can let the game choose his words by how he did.";
+      : "The game takes the next 2 words of a fixed list, in order, for each level, after the words he did not know in the quick check and your own words for the week.";
     view.innerHTML = '<div class="words">' +
       '<section class="box"><div class="bh"><h2>How the game chooses his words</h2></div><p>' + how + '</p><p class="lead" id="wBand"></p>' +
       "<p>Each new word comes back after 1, 4 and 14 days, so he practises it again. When he spells it right each time, he knows it well. Every 10th level is a short spelling test of the island's words. His school spelling list comes on top: he practises 5 of those words a day.</p></section>" +
@@ -1102,13 +1102,28 @@
     });
     return by;
   }
-  function gIslandSystem(t) {
+  // The fill-up to 10 (27 November), line for line as in the game (80-level.js islandMix, islandChoice): missed words first,
+  // then learned words mixed by chance (this island's, then earlier islands', then his other learned words; a word met
+  // that day last). gIslandSystem(t, level) returns the words; gIslandMissedN(t, level) how many of them are missed ones.
+  const gZoneOf = d => Math.min(ZONE_NAMES.length - 1, Math.floor((d - 1) / PER_ZONE));
+  const gIslandMix = (id, level) => { const k = String(id) + "|" + (student ? student.id : "") + "|" + level; let h = 2166136261; for (let i = 0; i < k.length; i++) { h ^= k.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
+  function gIslandBoth(t, level) {
+    const row = (quests || []).find(x => x.quest_day === level), done = row && !row.completed ? (row.test_total || 0) : 0, room = Math.max(0, ISLAND_N - done);
     const by = gMisses(), open = w => w.level > 0 && w.level < W.DIAMOND && w.last_seen !== t;
-    return gWords().filter(w => open(w) && by[w.id] && by[w.id].n > 0)
-      .sort((a, b) => by[b.id].n - by[a.id].n || (by[a.id].last < by[b.id].last ? 1 : by[a.id].last > by[b.id].last ? -1 : 0) || a.level - b.level)
-      .slice(0, ISLAND_N);
+    const missed = gWords().filter(w => open(w) && by[w.id] && by[w.id].n > 0)
+      .sort((a, b) => by[b.id].n - by[a.id].n || (by[a.id].last < by[b.id].last ? 1 : by[a.id].last > by[b.id].last ? -1 : 0) || a.level - b.level);
+    const list = missed.slice(0, room), nMissed = list.length;
+    if (list.length < room && level) {
+      const has = new Set(list.map(w => w.id)), z = gZoneOf(level);
+      const rank = w => (w.quest_day && w.quest_day < level ? (gZoneOf(w.quest_day) === z ? 0 : 1) : 2) + (w.last_seen === t ? 3 : 0);
+      gWords().filter(w => w.level > 0 && w.level < W.DIAMOND && !has.has(w.id))
+        .sort((a, b) => rank(a) - rank(b) || gIslandMix(a.id, level) - gIslandMix(b.id, level) || (String(a.id) < String(b.id) ? -1 : 1))
+        .some(w => { list.push(w); return list.length >= room; });
+    }
+    return { words: list, missed: nMissed };
   }
-  const gIsland = (level, t) => { const mine = gIslandTutor(level); return mine.length ? { words: mine, by: "tutor" } : { words: gIslandSystem(t), by: "system" }; };
+  const gIslandSystem = (t, level) => gIslandBoth(t, level).words;
+  const gIsland = (level, t) => { const mine = gIslandTutor(level); return mine.length ? { words: mine, by: "tutor" } : { words: gIslandSystem(t, level), by: "system" }; };
   // His next level and the day the old words are worked out for: a level open now, today; when today's levels are done, the
   // next one tomorrow (a level waiting for words, or paused, as if he started it now).
   function owNext() {
@@ -1201,16 +1216,16 @@
     const away = L - now, by = gMisses();
     const missN = w => (by[w.id] && by[w.id].n) || 0;
     const when = away <= 0 ? "Level " + L + " is his next level: an island test." : "Level " + L + " is the next island test, " + many(away, "level") + " from now (his next level is " + now + ").";
-    const sys = gIslandSystem(t), mine = gIslandTutor(L), saved = gIslandMap()[String(L)];
+    const both = gIslandBoth(t, L), sys = both.words, mine = gIslandTutor(L), saved = gIslandMap()[String(L)];
     const savedList = Array.isArray(saved) ? saved : [];
     const dropped = savedList.filter(x => !mine.some(w => W.key(w.word) === W.key(x)));
     const metToday = gWords().filter(w => w.level > 0 && w.level < W.DIAMOND && w.last_seen === t && missN(w) > 0);
     const timesN = n => n === 1 ? "missed once" : n === 2 ? "missed twice" : "missed " + n + " times";
     const sysHtml = '<div class="mg-col"><h3>The game’s choice now</h3>' + (sys.length
-      ? '<ol class="mg-list" id="mgGame">' + sys.map(w => '<li><b>' + esc(w.word) + "</b>" + zhOf(w) + ' <span class="mg-n">' + timesN(missN(w)) + "</span></li>").join("") + "</ol>"
-      : '<p class="ow-none" id="mgGame">' + (metToday.length ? "None yet." : "He has missed no word that is still coming back.") + "</p>") +
+      ? '<ol class="mg-list" id="mgGame">' + sys.map((w, i) => '<li><b>' + esc(w.word) + "</b>" + zhOf(w) + ' <span class="mg-n">' + (i < both.missed ? timesN(missN(w)) : "added to make " + ISLAND_N) + "</span></li>").join("") + "</ol>"
+      : '<p class="ow-none" id="mgGame">He has learned no word yet.</p>') +
       (metToday.length ? '<p class="ow-note">Missed today: ' + metToday.map(w => esc(w.word)).join(", ") + ". Words he meets on a day are left out of that day’s choice, so " + (metToday.length === 1 ? "it counts" : "they count") + " from tomorrow.</p>" : "") +
-      '<p class="ow-note">The words he missed most, then the ones he missed last. Up to ' + ISLAND_N + ", never filled up with other words. Finished words and words he meets that day are left out. This changes as he plays.</p></div>";
+      '<p class="ow-note">First the words he missed most, then the ones he missed last. When these are fewer than ' + ISLAND_N + ", the game adds other words he is still learning, mixed by chance, to make " + ISLAND_N + ". Finished words are never added. Words he meets that day come last. This changes as he plays.</p></div>";
     let herHtml;
     if (mgEdit) {
       const taught = gWords().filter(w => w.level > 0).sort((a, b) => missN(b) - missN(a) || (W.key(a.word) < W.key(b.word) ? -1 : 1));
@@ -1231,7 +1246,7 @@
     }
     const use = mine.length ? mine : sys;
     const verdict = use.length ? '<p class="mg-use" id="mgUse"><b>On level ' + L + ":</b> the monster game asks " + many(use.length, "word") + ", from " + (mine.length ? "your list" : "the game’s choice") + ".</p>"
-      : '<p class="mg-use" id="mgUse">No monster game on level ' + L + " yet: " + (metToday.length ? "the words he missed were met today; they count from tomorrow." : "he has missed no word.") + " The level still has his old words.</p>";
+      : '<p class="mg-use" id="mgUse">No monster game on level ' + L + " yet: he has learned no word yet. The level still has his old words.</p>";
     return head + '<p class="lead">' + when + " In it, a monster game asks the words he missed. You can choose them yourself.</p>" + verdict + '<div class="mg-cols">' + sysHtml + herHtml + "</div>" +
       '<p class="ow-msg" id="mgMsg" aria-live="polite"></p>';
   }
@@ -1305,7 +1320,7 @@
       "<td>" + (w.approved ? '<span class="tagok">in the game</span>' : '<span class="tagw">hidden</span>') + "</td>" +
       "<td>" + (ladder[w.level] || "") + (w.level > 0 && w.level < W.DIAMOND ? '<br><span class="muted">next on ' + (w.due <= t ? "today" : esc(w.due)) + "</span>" : "") + (w.wrong_streak ? '<br><span class="ny">not yet right ' + w.wrong_streak + " times in a row</span>" : "") + (w.level > 0 ? '<br><button type="button" class="ghost mini" data-retest="' + w.id + '">Add to tomorrow\'s game</button>' : "") + "</td>" +
       "<td>" + esc(w.student_sentence) + '</td><td><button type="button" class="ghost mini" data-edit="' + w.id + '">Change</button></td></tr>').join("");
-    return '<p class="lead">Every word with all its details: the beats, a picture, the letters in colour, the spelling rule, the short talk. A word you add or paste here is hidden from him: it waits in “Words set aside” until you put it in a level.</p>' +
+    return '<p class="lead">Every word with all its details: the beats, a picture, the letters in colour, the short talk. A word you add or paste here is hidden from him: it waits in “Words set aside” until you put it in a level.</p>' +
       '<div class="row"><button type="button" id="addBtn">Add a word with every detail</button><button type="button" class="ghost" id="bulkBtn">Paste many words</button></div>' +
       '<div id="editor"></div>' +
       '<h3>All his words <small class="muted">' + words.filter(w => w.approved && w.level === 0).length + " still to learn, " + words.filter(w => w.level > 0).length + " learned, " + setAside().length + " set aside</small></h3>" +
@@ -1335,9 +1350,7 @@
       '<label class="f">Word (kept as typed: February, don\'t)<input type="text" id="f_word" value="' + v("word") + '" ' + (w && w.level > 0 ? "readonly" : "") + "></label>" +
       '<label class="f">Parts of the word, as he claps them (um-brel-la)<input type="text" id="f_chunks" value="' + v("chunks") + '"></label>' +
       '<label class="f">Picture (a photo or a saved picture)<input type="file" id="f_pic" accept="image/*">' + (w && w.picture ? '<img src="' + w.picture + '" alt="" class="prev">' : "") + "</label>" +
-      '<label class="f">Letters in colour (the spelling rule, for example ll)<input type="text" id="f_focus" value="' + v("focus") + '" maxlength="6"></label>' +
-      '<label class="f">Spelling rule, one line (shown with the word)<input type="text" id="f_rule" value="' + v("rule_en") + '" placeholder="After a short vowel, double the letter"></label>' +
-      '<label class="f">Spelling rule in Chinese<input type="text" id="f_rulezh" value="' + v("rule_zh") + '"></label>' +
+      '<label class="f">Letters in colour (for example ll)<input type="text" id="f_focus" value="' + v("focus") + '" maxlength="6"></label>' +
       '<label class="f">Place in the list<input type="number" id="f_order" value="' + (w ? w.sort_order : (words.length ? Math.max(...words.map(x => x.sort_order)) + 1 : 1)) + '"></label>' +
       '<label class="f">Level (1 to 50, or empty for none yet)<input type="number" id="f_day" min="1" max="99" value="' + (w && w.quest_day ? w.quest_day : "") + '"></label>' +
       '<label class="f">Meaning (simple English)<input type="text" id="f_en" value="' + v("meaning_en") + '"></label>' +
@@ -1363,7 +1376,7 @@
       if ($("f_ok").value === "true" && lv && words.filter(x => x.approved && x.quest_day === lv && (!w || x.id !== w.id)).length >= 2) {
         $("ferr").textContent = "Level " + lv + " already has 2 words. On the line above, add it as your own word to choose which word it replaces."; return; }
       const row = { student_id: student.id, word, chunks, sort_order: +$("f_order").value || 0, quest_day: +$("f_day").value || null, meaning_en: $("f_en").value.trim(), meaning_zh: $("f_zh").value.trim(), sentence_en: sen, sentence_zh: $("f_szh").value.trim(), dialogue_q: dq, dialogue_a: da, approved: $("f_ok").value === "true",
-        focus, rule_en: $("f_rule").value.trim(), rule_zh: $("f_rulezh").value.trim() };
+        focus };   // rule_en and rule_zh are not sent any more (27 November: his pages no longer show a rule): a word keeps what it has
       const f = $("f_pic").files && $("f_pic").files[0]; if (f) { const data = await W.shrinkImage(f, 480); if (data) row.picture = data; else { $("ferr").textContent = "That picture could not be read."; return; } }
       const r = w ? await sb.from("words").update(row).eq("id", w.id) : await sb.from("words").insert(row);
       if (r.error) { $("ferr").textContent = r.error.message; return; }
@@ -1438,7 +1451,6 @@
     view.innerHTML = '<div class="settings">' +
       '<p class="intro">The things you set once. Each part says what it does.</p>' +
       loginCard() + detailsCard() + '<section class="box rmode" id="rmSet">' + modeHtml("rms") + "</section>" + voiceCard() +
-      '<section class="box" id="pkBox"><div class="bh"><h2>Choosing his new words</h2></div><p class="lead">Loading…</p></section>' +
       '<details class="box fold" id="logBox"' + (openFolds.logBox ? " open" : "") + '><summary><span class="sum-t">Everything the game saved</span><span class="sum-s">A list of everything he did in the game, day by day. You will rarely need it.</span></summary><div id="logBody"><p class="lead">Loading…</p></div></details>' +
       "</div>";
     view.querySelector("#logBox").ontoggle = e => { openFolds.logBox = e.target.open; };

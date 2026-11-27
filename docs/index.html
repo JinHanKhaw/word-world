@@ -4,27 +4,27 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Word World</title>
-<link rel="stylesheet" href="fonts.css?v=202611261649">
-<link rel="stylesheet" href="ui.css?v=202611261649">
+<link rel="stylesheet" href="fonts.css?v=202611271414">
+<link rel="stylesheet" href="ui.css?v=202611271414">
 <!-- Backend. On claude.ai these two files stand in for the database (progress stays in this browser).
      On the real site, load supabase-js and config.js here instead. -->
-<script src="bank.js?v=202611261649"></script>
-<script src="probes.js?v=202611261649"></script>
-<script src="rude.js?v=202611261649"></script>
-<script src="vendor/supabase.js?v=202611261649"></script>
-<script src="config.js?v=202611261649"></script>
-<script src="common.js?v=202611261649"></script>
-<script src="zh.js?v=202611261649"></script>
-<script src="audio.js?v=202611261649"></script>
-<script src="patterns.js?v=202611261649"></script>
-<script src="pool.js?v=202611261649"></script>
-<script src="first.js?v=202611261649"></script>
-<script src="picker.js?v=202611261649"></script>
-<script src="img/words/pics.js?v=202611261649"></script>
-<script src="img/school/pics.js?v=202611261649"></script>
-<script src="story.js?v=202611261649"></script>
-<script src="pairs.js?v=202611261649"></script>
-<script src="voice.js?v=202611261649"></script>
+<script src="bank.js?v=202611271414"></script>
+<script src="probes.js?v=202611271414"></script>
+<script src="rude.js?v=202611271414"></script>
+<script src="vendor/supabase.js?v=202611271414"></script>
+<script src="config.js?v=202611271414"></script>
+<script src="common.js?v=202611271414"></script>
+<script src="zh.js?v=202611271414"></script>
+<script src="audio.js?v=202611271414"></script>
+<script src="patterns.js?v=202611271414"></script>
+<script src="pool.js?v=202611271414"></script>
+<script src="first.js?v=202611271414"></script>
+<script src="picker.js?v=202611271414"></script>
+<script src="img/words/pics.js?v=202611271414"></script>
+<script src="img/school/pics.js?v=202611271414"></script>
+<script src="story.js?v=202611271414"></script>
+<script src="pairs.js?v=202611271414"></script>
+<script src="voice.js?v=202611271414"></script>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -134,17 +134,17 @@
   <div id="full" class="modal full" hidden><div class="journal"><div class="cover"></div><article class="page paper modal-card"><button type="button" class="pgclose" id="fullClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button><div id="fullBody"></div></article></div></div>
 </div>
 
-<script src="vendor/three.min.js?v=202611261649"></script>
-<script src="vendor/GLTFLoader.js?v=202611261649"></script>
-<script src="models/hero.js?v=202611261649"></script>
-<script src="models/heroidle.js?v=202611261649"></script>
-<script src="models/tower.js?v=202611261649"></script>
-<script src="models/pod.js?v=202611261649"></script>
-<script src="models/tree.js?v=202611261649"></script>
-<script src="models/watchfire.js?v=202611261649"></script><!-- night watch (raid team): the watch-fire he owns -->
-<script src="world3d.js?v=202611261649"></script>
-<script src="orbit3d.js?v=202611261649"></script>
-<script src="raid3d.js?v=202611261649"></script><!-- night watch (raid team): the island test as a watch at the gate -->
+<script src="vendor/three.min.js?v=202611271414"></script>
+<script src="vendor/GLTFLoader.js?v=202611271414"></script>
+<script src="models/hero.js?v=202611271414"></script>
+<script src="models/heroidle.js?v=202611271414"></script>
+<script src="models/tower.js?v=202611271414"></script>
+<script src="models/pod.js?v=202611271414"></script>
+<script src="models/tree.js?v=202611271414"></script>
+<script src="models/watchfire.js?v=202611271414"></script><!-- night watch (raid team): the watch-fire he owns -->
+<script src="world3d.js?v=202611271414"></script>
+<script src="orbit3d.js?v=202611271414"></script>
+<script src="raid3d.js?v=202611271414"></script><!-- night watch (raid team): the island test as a watch at the gate -->
 <script>
 (function () {
   const W = window.WT, $ = id => document.getElementById(id);
@@ -3258,9 +3258,10 @@
   // not mastered yet. Per word of his: the first tries that were not right in the level's own parts (new, review, test, mixed;
   // the last round saves every try, so only its first try per question counts; never the quick check, hints-only pages or the
   // school words). Star words are left out, and so is a word already met today (nothing is asked twice in a day). Order: most
-  // misses first, then the most recent miss, then the lowest step. At most 10, and NOT filled up (the owners' correction, 25
-  // November): 3 missed words give a 3-word game; no missed word gives no game at all: the level then runs like the others
-  // (its old words), ends with its end page and pays what a finished island test pays (86-raid.js raidMorning, rdPay).
+  // misses first, then the most recent miss, then the lowest step. At most 10. Filled up to 10 with learned words since
+  // 27 November (see islandChoice below; from 25 to 27 November it was not filled up). Only a student with no learned
+  // word at all gets no game: the level then runs like the others (its old words), ends with its end page and pays
+  // what a finished island test pays (86-raid.js raidMorning, rdPay).
   // The tutor's own list wins (students.island_words: { "10": ["because", ...] }): those words, only words that are his, in
   // her order, at most 10. islandChoice(level) -> { words, by: "tutor" | "system" }; quest_start saves both.
   const ISLAND_N = 10;
@@ -3287,16 +3288,32 @@
     } catch (e) {}
     return by;
   }
-  async function islandChoice(level) {
+  // The fill-up (the owners, 27 November, in place of "not filled up"): the monster game has 10 words. First the words he
+  // missed, as above. When these are fewer than 10, words he is still learning are added (on the ladder, never a star
+  // word), mixed by chance: this island's first, then earlier islands', then his other words; a word already met today
+  // only when nothing else is left. Fewer than 10 such words: as many as there are.
+  // islandMix: the chance order. It stays the same for one level of one student, so a stop and a new start go on with the
+  // same words, and the tutor's page (site/teacher.js gIslandSystem, the same lines) shows the list the game will take.
+  const islandMix = (id, level) => { const k = String(id) + "|" + (student ? student.id : "") + "|" + level; let h = 2166136261; for (let i = 0; i < k.length; i++) { h ^= k.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
+  // done: how many of this test's words he has answered already (the level's row, test_total): a new start asks the rest.
+  async function islandChoice(level, done) {
     const mine = islandTutor(level);
     if (mine.length) return { words: mine, by: "tutor" };
-    const t = today(), by = await islandMisses();
+    const t = today(), by = await islandMisses(), room = Math.max(0, ISLAND_N - (done || 0));
     const open = w => w.level > 0 && w.level < W.DIAMOND && w.last_seen !== t;
     const missed = words.filter(w => open(w) && by[w.id] && by[w.id].n > 0)
       .sort((a, b) => by[b.id].n - by[a.id].n || (by[a.id].last < by[b.id].last ? 1 : by[a.id].last > by[b.id].last ? -1 : 0) || a.level - b.level);
-    return { words: missed.slice(0, ISLAND_N), by: "system" };
+    const list = missed.slice(0, room), nMissed = list.length;
+    if (list.length < room) {
+      const has = new Set(list.map(w => w.id)), z = zoneOf(level);
+      const rank = w => (w.quest_day && w.quest_day < level ? (zoneOf(w.quest_day) === z ? 0 : 1) : 2) + (w.last_seen === t ? 3 : 0);
+      words.filter(w => w.level > 0 && w.level < W.DIAMOND && !has.has(w.id))   // never a star word: it is finished, and a miss here would take its star away
+        .sort((a, b) => rank(a) - rank(b) || islandMix(a.id, level) - islandMix(b.id, level) || (String(a.id) < String(b.id) ? -1 : 1))
+        .some(w => { list.push(w); return list.length >= room; });
+    }
+    return { words: list, by: "system", missed: nMissed };
   }
-  window.WW_ISLAND = Object.freeze({ choice: level => islandChoice(level).then(r => ({ by: r.by, words: r.words.map(w => w.word) })) });
+  window.WW_ISLAND = Object.freeze({ choice: level => islandChoice(level).then(r => ({ by: r.by, words: r.words.map(w => w.word), missed: r.missed || 0 })) });
   // Up to two older words for the mixed round: on the ladder, from this island (earlier islands if none), not due today,
   // not seen today, not in today's other parts; least-known first.
   function olderWords(day, skip) {
@@ -3360,7 +3377,7 @@
     }
     const t = today();
     // the island test's words first: a due word that is one of them is asked there, not twice (its right answer counts as its check)
-    const island = isTest(day) && !row.completed ? await islandChoice(day) : null;
+    const island = isTest(day) && !row.completed ? await islandChoice(day, row.test_total || 0) : null;
     const testWords = island ? island.words : [];
     const due = dueReviews().filter(w => testWords.indexOf(w) < 0);
     const reviews = [];
@@ -6340,7 +6357,9 @@
     const held = typeof rdHeld === "function" && rdHeld();   // raid hook: a monster game that was stopped holds the day (86-raid.js rdHeld)
     const story = typeof storyPart === "function" ? storyPart() : null;
     const school = typeof schoolPart === "function" ? schoolPart() : null;
-    const r1done = L >= 1 && !held && (!story || story.done) && (!school || school.done);
+    // School words are an EXTRA since 27 November (the tutor: "school words become optional and he may go to the second
+    // level without them"): they never hold the day, the free play or a second level. They stay on the list, marked opt.
+    const r1done = L >= 1 && !held && (!story || story.done);
     // The second level of a day is HIS CHOICE (the owners: "if he plays again"). After the first level and its parts the day is
     // done and the plate says so; round 2 begins only when he has fetched its two cards ("I am ready" in the mailbox:
     // levelMailRead) or has started that level. more: a second level waits in the mailbox (the strip says so in one line).
@@ -6363,10 +6382,10 @@
     // the story page and the school words after the level: in round 2 only once the second level is finished
     if (round === 1 || L >= 2) {
       if (story) parts.push(Object.assign({ key: "story", go: "hut" }, story));
-      if (school) parts.push(Object.assign({ key: "school", go: "tower" }, school));
+      if (school) parts.push(Object.assign({ key: "school", go: "tower", opt: true }, school, school.done ? {} : { label: "School words, if you like" }));
     }
     let wait = false; try { wait = typeof scToday === "function" && scRows === null; } catch (e) { wait = false; }
-    const next = ritualDone() && unreadCount() > 0 ? parts[0] : parts.find(p => !p.done) || null;
+    const next = ritualDone() && unreadCount() > 0 ? parts[0] : parts.find(p => !p.done && !p.opt) || null;   // an extra part is never "next"
     return { parts, next, wait: wait && !next, round, more: second && !begun };
   }
   // Today's task (the tutor, 21 November): today's mail, today's level (old words and new words), one go of school words
@@ -6380,7 +6399,7 @@
     if (doneToday() === 0 && openDay()) return false;
     if (typeof rdHeld === "function" && rdHeld()) return false;   // raid hook: stopped in the monster game: nothing else opens until it is finished
     if (student.pause_new && pl.parts.some(p => p.key === "old" && !p.done)) return false;   // "No new words for now": his old words are the task
-    return pl.parts.every(p => (p.key !== "school" && p.key !== "story") || p.done);
+    return pl.parts.every(p => p.key !== "story" || p.done);   // the school words are an extra (27 November): they do not hold the task
   }
   // The lock follows the task: the 3D world stops taps on the ground and the arrow keys (WW3D.walkLock); the plate, the dock,
   // the place tags and Enter by a place still walk him to each part. Building is shut by sleepGate (36-sleep slOpen).
@@ -6394,7 +6413,7 @@
     if (!pl || !pl.parts.length || pl.wait) { el.hidden = true; return; }
     const nextKey = pl.next ? pl.next.key : "";
     el.innerHTML = '<p class="hd-th zhk">' + (pl.round === 2 ? "Second level" : "Today") + '</p><ol>' + pl.parts.map(p => {   // the parts of the level he is on
-      const st = p.done ? "done" : p.key === nextKey ? "now" : "todo";
+      const st = p.done ? "done" : p.key === nextKey ? "now" : p.opt ? "todo hd-opt" : "todo";
       return '<li class="hd-' + st + '"><i aria-hidden="true">' + (p.done ? ICON("check") : "") + '</i><span class="zhk">' + W.esc(p.label) + "</span>" +
         '<span class="sr">' + (p.done ? "done" : p.key === nextKey ? "next" : "later") + "</span></li>";
     }).join("") + "</ol>" + (pl.more ? '<p class="hd-more zhk">One more level? Open the mail.</p>' : "");
@@ -6412,9 +6431,9 @@
   // The old row of parts stays in the page, hidden (the rule tests read it).
   function renderToday() {
     const el = $("todayline"); if (!el || !student) return;
-    const pl = hdPlan(), n = pl.next, done = pl.parts.filter(p => p.done).length;
+    const pl = hdPlan(), n = pl.next, req = pl.parts.filter(p => !p.opt), done = req.filter(p => p.done).length;   // the dots: the parts he must do (an extra such as the school words has no dot)
     const row = pl.parts.map(p => '<span class="part nozh' + (p.done ? " done" : p === n ? " now" : "") + '"><b>' + (p.done ? ICON("check") : p.n) + '</b><span class="zhk">' + p.label + "</span></span>").join('<i class="sep" aria-hidden="true"></i>');
-    const dots = '<span class="hd-dots" role="img" aria-label="' + done + " of " + pl.parts.length + ' done">' + pl.parts.map(p => "<i" + (p.done ? ' class="on"' : "") + "></i>").join("") + "</span>";
+    const dots = '<span class="hd-dots" role="img" aria-label="' + done + " of " + req.length + ' done">' + req.map(p => "<i" + (p.done ? ' class="on"' : "") + "></i>").join("") + "</span>";
     const [icon, label] = n ? HD_NEXT[n.key] : ["check", "Done for today"];
     const inner = '<span class="hd-ic">' + ICON(icon) + '</span><span class="hd-txt"><span class="hd-label zhk">' + label + "</span>" + dots + "</span>" + (n ? '<span class="hd-arrow">' + ICON("arrow") + "</span>" : "");
     const key = (n ? n.key : "done") + "|" + pl.parts.map(p => +p.done).join("") + "|" + pl.wait + "|" + row;
@@ -6563,7 +6582,7 @@
     "Can't load": "加载不了", "Tap Try again. If it still does not work, ask your teacher.": "点“再试一次”。如果还是不行，问老师。",
     "Try again": "再试一次", "Word World": "单词世界", "Loading…": "正在加载…",
     "Next: Mail": "下一步：信箱", "Next: Old words": "下一步：旧单词", "Next: New words": "下一步：新单词", "Next: School words": "下一步：学校单词", "Next: Today's story": "下一步：今天的故事", "Story": "故事",
-    "Done for today": "今天完成了", "One more level? Open the mail.": "还想再玩一关？打开信箱。", "Days you played this week.": "你这周玩了几天。", "Diamonds: for building.": "钻石：用来建造。", "Star words: you kept them.": "星星单词：你记住了。",
+    "Done for today": "今天完成了", "One more level? Open the mail.": "还想再玩一关？打开信箱。", "School words, if you like": "学校单词，想做就做", "Days you played this week.": "你这周玩了几天。", "Diamonds: for building.": "钻石：用来建造。", "Star words: you kept them.": "星星单词：你记住了。",
     "For the teacher: config.js is missing or still has the example values. See deploy/README.md.": "给老师：config.js 缺失或还是示例值。请看 deploy/README.md。",
     "For the teacher: anonymous sign-in is off in Supabase, or there is no internet. See deploy/README.md step M2.": "给老师：Supabase 没有打开匿名登录，或者没有网络。请看 deploy/README.md 的 M2 步。"
   }, [[/^Hi (.+)!$/, "你好，$1！"]]);
