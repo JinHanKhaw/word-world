@@ -20,7 +20,7 @@
      school, school_retry (drill), school_test (dictation on the laptop) ........ -> School words
    events (type, the logEvent calls in src/js and site/audio.js):
      Mail: mail_opened, card_turned, card_heard, flashcard_viewed, say, voice_ok, voice_self, voice (with a word), card_game_done,
-           game_meaning, game_sentence, ready; piece_tapped outside a level
+           game_meaning, game_sentence, ready; piece_tapped outside a level; letter_reply (he wrote back to her letter: one line, his text is on the Letters tab)
      Level frame (start, stop, end): quest_start, quest_pause, part_done, quest_complete; practice_start (practice, nothing saved)
      Hints on a typing page: hint (n, auto), rescue ("Look and copy") -> joined to the try they came before
      New words: Meet: clap (on: "meet"), piece_tapped inside a level
@@ -101,7 +101,7 @@
     story: "the story", school: "school words", play: "free play", island: "building his island", start: "the start of the game", old: "old words" };
   const EV_PART = {
     mail_opened: "mail", card_turned: "mail", card_heard: "mail", flashcard_viewed: "mail", say: "mail", voice_ok: "mail", voice_self: "mail",
-    card_game_done: "mail", game_meaning: "mail", game_sentence: "mail", ready: "mail",
+    card_game_done: "mail", game_meaning: "mail", game_sentence: "mail", ready: "mail", letter_reply: "mail",
     clap: "new", training_start: "training", training_done: "training", quick: "quick", quick_done: "quick", pair: "pairs", pairs_done: "pairs",
     sentence_copied: "sentence", sentence_skipped: "sentence", sentence_none: "sentence", sentence_saved: "sentence",
     probe: "probe", probe_slow: "probe", again: "again",
@@ -295,6 +295,8 @@
       summary = wordsOf.length ? many(wordsOf.length, "new word") + ": he heard " + (heardN === wordsOf.length ? (wordsOf.length === 2 ? "both" : wordsOf.length === 1 ? "it" : "all") : heardN) +
         ", said " + (saidN === wordsOf.length ? (wordsOf.length === 1 ? "it" : "each") : saidN) : "He opened his mail" + (ev("mail_opened").length ? " at " + clock(ev("mail_opened")[0].created_at) : "") + ".";
       if (!wordsOf.length && ev("mail_opened").length) rows = [];
+      // he wrote back to her letter (event letter_reply { letter, length }); his text itself is on the Letters tab only
+      ev("letter_reply").forEach(e => rows.push('<div class="tdv-q tdv-reply"><div class="tdv-qh"><span class="tdv-rl">He wrote back to your letter.</span><span class="tdv-t">' + clock(e.created_at) + "</span></div></div>"));
     } else if (p === "review") {
       if (!qs.length && !ev("old_start").length) return null;
       const main = qs.filter(q => !/^game:/.test(q.sub)), extra = qs.filter(q => /^game:/.test(q.sub));

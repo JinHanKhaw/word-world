@@ -391,6 +391,9 @@ ul.ln-ws{display:grid;gap:0}
 .ln-w .pic{width:56px;height:56px}
 .ln-w.plan .pic{opacity:.85}
 .ln-none{display:block;padding:10px 0;font-size:15.5px}
+/* her extra words of a level (words.extra): a small tag, and the line with the number of new words and the minutes */
+.ln-st.ln-extra{border-color:var(--plum);color:var(--plum);background:rgba(42,27,44,.04)}
+.ln-mins{margin:6px 0 0;padding-top:8px;border-top:1px dotted var(--rule);font-size:15.5px;color:var(--ink-2)}
 .ln-top{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 12px}
 .ln-word{font-family:var(--f-display);font-weight:400;font-size:22px;letter-spacing:.02em}
 .ln-top .zh{font-size:18px;color:var(--ink-2)}

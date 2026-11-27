@@ -329,6 +329,22 @@ button.glass:focus-visible,.btn:focus-visible,.beat:focus-visible,.chip:focus-vi
 .ml-letter{display:flex;flex-direction:column}
 .ml-letter #ml-ltext{overflow:auto;min-height:0}
 .ml-lnext{align-self:flex-end;margin-top:calc(var(--u)*10);min-height:calc(var(--u)*32);padding:0 calc(var(--u)*12);font-size:calc(var(--u)*14)}
+/* he writes back: "Reply" and "Skip" under the letter; the one-line box with "Send" and "Back"; the calm line after Send.
+   The buttons look small on the letter; each one's tap area reaches calc(var(--u)*56) (44 px on the smallest screen) through ::before. */
+.ml-lact,.ml-ract{display:flex;align-items:center;gap:calc(var(--u)*14);margin-top:calc(var(--u)*12);flex:none}
+.ml-lbtn{min-height:calc(var(--u)*38);padding:0 calc(var(--u)*14);font-size:calc(var(--u)*15)}
+.ml-lbtn.quiet{min-height:0;padding:calc(var(--u)*3) calc(var(--u)*8);font-size:calc(var(--u)*15)}
+.ml-lbtn::before{content:"";position:absolute;left:50%;top:50%;width:max(100%,calc(var(--u)*56));height:calc(var(--u)*56);transform:translate(-50%,-50%)}
+.ml-lbtn .ic{font-size:calc(var(--u)*16)}
+.ml-rbox{margin-top:calc(var(--u)*12);flex:none}
+.ml-letter.ml-replying{max-height:calc(var(--u)*440)}   /* the box open: room for the letter and the box together */
+.ml-rline{display:block;padding:calc(var(--u)*4) 0}
+.ml-rline textarea{display:block;width:100%;height:calc(var(--u)*84);margin:0;padding:calc(var(--u)*6) calc(var(--u)*8);border:calc(var(--u)*1.5) solid var(--ink);border-radius:calc(var(--u)*8);background:rgba(255,255,255,.35);font-family:var(--f-body);font-size:calc(var(--u)*16.5);line-height:1.4;color:var(--ink);outline:none;caret-color:var(--ember);resize:none;box-sizing:border-box}
+.ml-rline textarea:focus{border-color:var(--ember);box-shadow:0 0 0 calc(var(--u)*1.5) var(--ember)}
+.ml-rline textarea::placeholder{color:rgba(139,116,96,.75);font-size:calc(var(--u)*15)}
+.ml-letter p.ml-rmsg{margin:calc(var(--u)*6) 0 0;font-size:calc(var(--u)*14);color:var(--ink-2);min-height:0}
+.ml-letter p.ml-rmsg:empty{display:none}
+.ml-letter p.ml-sent{margin:calc(var(--u)*4) 0;font-family:var(--f-display);font-size:calc(var(--u)*19);color:var(--ink)}
 .ml-mailcard{position:relative}
 .ml-stack{width:calc(var(--u)*286)}
 .ml-empty{justify-content:center;gap:calc(var(--u)*12)}

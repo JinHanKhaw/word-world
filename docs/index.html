@@ -4,27 +4,27 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Word World</title>
-<link rel="stylesheet" href="fonts.css?v=202611271414">
-<link rel="stylesheet" href="ui.css?v=202611271414">
+<link rel="stylesheet" href="fonts.css?v=202611271437">
+<link rel="stylesheet" href="ui.css?v=202611271437">
 <!-- Backend. On claude.ai these two files stand in for the database (progress stays in this browser).
      On the real site, load supabase-js and config.js here instead. -->
-<script src="bank.js?v=202611271414"></script>
-<script src="probes.js?v=202611271414"></script>
-<script src="rude.js?v=202611271414"></script>
-<script src="vendor/supabase.js?v=202611271414"></script>
-<script src="config.js?v=202611271414"></script>
-<script src="common.js?v=202611271414"></script>
-<script src="zh.js?v=202611271414"></script>
-<script src="audio.js?v=202611271414"></script>
-<script src="patterns.js?v=202611271414"></script>
-<script src="pool.js?v=202611271414"></script>
-<script src="first.js?v=202611271414"></script>
-<script src="picker.js?v=202611271414"></script>
-<script src="img/words/pics.js?v=202611271414"></script>
-<script src="img/school/pics.js?v=202611271414"></script>
-<script src="story.js?v=202611271414"></script>
-<script src="pairs.js?v=202611271414"></script>
-<script src="voice.js?v=202611271414"></script>
+<script src="bank.js?v=202611271437"></script>
+<script src="probes.js?v=202611271437"></script>
+<script src="rude.js?v=202611271437"></script>
+<script src="vendor/supabase.js?v=202611271437"></script>
+<script src="config.js?v=202611271437"></script>
+<script src="common.js?v=202611271437"></script>
+<script src="zh.js?v=202611271437"></script>
+<script src="audio.js?v=202611271437"></script>
+<script src="patterns.js?v=202611271437"></script>
+<script src="pool.js?v=202611271437"></script>
+<script src="first.js?v=202611271437"></script>
+<script src="picker.js?v=202611271437"></script>
+<script src="img/words/pics.js?v=202611271437"></script>
+<script src="img/school/pics.js?v=202611271437"></script>
+<script src="story.js?v=202611271437"></script>
+<script src="pairs.js?v=202611271437"></script>
+<script src="voice.js?v=202611271437"></script>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -134,17 +134,17 @@
   <div id="full" class="modal full" hidden><div class="journal"><div class="cover"></div><article class="page paper modal-card"><button type="button" class="pgclose" id="fullClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button><div id="fullBody"></div></article></div></div>
 </div>
 
-<script src="vendor/three.min.js?v=202611271414"></script>
-<script src="vendor/GLTFLoader.js?v=202611271414"></script>
-<script src="models/hero.js?v=202611271414"></script>
-<script src="models/heroidle.js?v=202611271414"></script>
-<script src="models/tower.js?v=202611271414"></script>
-<script src="models/pod.js?v=202611271414"></script>
-<script src="models/tree.js?v=202611271414"></script>
-<script src="models/watchfire.js?v=202611271414"></script><!-- night watch (raid team): the watch-fire he owns -->
-<script src="world3d.js?v=202611271414"></script>
-<script src="orbit3d.js?v=202611271414"></script>
-<script src="raid3d.js?v=202611271414"></script><!-- night watch (raid team): the island test as a watch at the gate -->
+<script src="vendor/three.min.js?v=202611271437"></script>
+<script src="vendor/GLTFLoader.js?v=202611271437"></script>
+<script src="models/hero.js?v=202611271437"></script>
+<script src="models/heroidle.js?v=202611271437"></script>
+<script src="models/tower.js?v=202611271437"></script>
+<script src="models/pod.js?v=202611271437"></script>
+<script src="models/tree.js?v=202611271437"></script>
+<script src="models/watchfire.js?v=202611271437"></script><!-- night watch (raid team): the watch-fire he owns -->
+<script src="world3d.js?v=202611271437"></script>
+<script src="orbit3d.js?v=202611271437"></script>
+<script src="raid3d.js?v=202611271437"></script><!-- night watch (raid team): the island test as a watch at the gate -->
 <script>
 (function () {
   const W = window.WT, $ = id => document.getElementById(id);
@@ -421,7 +421,7 @@
   const GD_RIGHT_KEY = { memory: "memory", retry: "retry", old: "old", test: "test_right" };
   const GD_STEPS = ["meet", "beats", "write", "type", "build", "mixed", "sentence", "listen", "test"];
   const GD_NUM = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"];
-  const gdNum = n => (n >= 0 && n < GD_NUM.length ? GD_NUM[n] : String(n));
+  const gdNum = n => (n >= 0 && n <= 10 ? GD_NUM[n] : String(n));   // above ten as digits (a level may hold up to 12 new words)
   const gdCap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 
   // ---- what is remembered per student (localStorage, inside try/catch; the game works without it) ----
@@ -1049,7 +1049,7 @@
       m.dayShown = t;
       let key, v = gdDayVars();
       let first = !m.met; try { first = first && totalDays() <= 1 && !quests.some(x => x.completed); } catch (e) {}
-      if (first) key = "first_day";
+      if (first && !(v.new > 2)) key = "first_day";   // "Two new words a day." only when it is true (her extra words: the count below)
       else if (v.new && v.old) key = "day";
       else if (v.new === 1) key = "day_one";
       else if (v.new) key = "day_new";
@@ -1114,6 +1114,66 @@
     return rudeHits(s).length ? "\u2026" : s;
   }
   let mail = null; // { cards: [{ w, turned, heard }], i, ritual, day, letter }
+  // ---- he can write back (the owner, 27 November: "he can read and press skip or reply, when he clicks reply he can reply
+  // and send like a normal message"). Under each letter: "Reply" and "Skip". Skip puts the letter away (the next one shows,
+  // if there is one). Reply opens a one-line box (200 characters) with "Send" and "Back"; Send saves his line as a message
+  // (from_role "student", deploy/letters-reply.sql), says "Sent to <her name>." and puts the letter away. Nothing is
+  // marked: no check of spelling, no score. A listed rude word: "Use kind words." and nothing is saved, as for his own
+  // sentences once (site/rude.js, rudeHits in 80-level.js). His replies are never listed in the game; her Letters tab shows them.
+  const ML_REPLY_MAX = 200;
+  function mlLetterHtml(letters) {
+    return '<div class="page paper ml-letter" id="ml-letter"><span class="eyebrow" id="ml-ln">' + (letters.length > 1 ? "Letter 1 of " + letters.length : "A letter for you") + '</span><b class="ml-from nozh">' + W.esc(TN()) + '</b><p class="nozh" id="ml-ltext">' + W.esc(mlLetter(letters[0].text)) + "</p>" +
+      (letters.length > 1 ? '<button type="button" class="btn quiet ml-lnext" id="ml-lnext">Next letter' + ICON("arrow") + "</button>" : "") +
+      '<div class="ml-lact" id="ml-lact"><button type="button" class="btn ml-lbtn" id="ml-lreply">' + ICON("pencil") + 'Reply</button><button type="button" class="btn quiet ml-lbtn ml-lskip" id="ml-lskip">Skip</button></div>' +
+      '<form class="ml-rbox" id="ml-rbox" autocomplete="off" hidden><label class="ml-rline"><textarea id="ml-rin" rows="3" maxlength="' + ML_REPLY_MAX + '" placeholder="' + W.esc("Write to " + TN() + ".") + '" aria-label="' + W.esc("Write to " + TN() + ".") + '" spellcheck="false" autocapitalize="sentences"></textarea></label>' +   // three lines that wrap: he sees his whole message (the lead, 27 November)
+        '<p class="ml-rmsg" id="ml-rmsg" aria-live="polite"></p>' +
+        '<div class="ml-ract"><button type="submit" class="btn primary ml-lbtn" id="ml-rsend">Send</button><button type="button" class="btn quiet ml-lbtn" id="ml-rback">Back</button></div></form>' +
+      '<p class="ml-sent" id="ml-sent" aria-live="polite" hidden></p></div>';
+  }
+  function mlLetterWire(letters) {
+    const list = letters.slice(); let li = 0, busy = false, sentT = 0;
+    const page = $("ml-letter"), box = $("ml-rbox"), inp = $("ml-rin"), msg = $("ml-rmsg");
+    const part = (on) => { ["ml-ln", "ml-ltext", "ml-lact"].forEach(id => { $(id).hidden = !on; }); page.querySelector(".ml-from").hidden = !on; };
+    const show = () => {
+      $("ml-ltext").textContent = mlLetter(list[li].text);
+      $("ml-ln").textContent = list.length > 1 ? "Letter " + (li + 1) + " of " + list.length : "A letter for you";
+      const nx = $("ml-lnext"); if (nx) nx.hidden = list.length < 2;
+      box.hidden = true; page.classList.remove("ml-replying"); $("ml-sent").hidden = true; part(true); msg.textContent = ""; inp.value = "";
+      if (ZH && ZH.apply) ZH.apply();
+    };
+    // the letter is put away: the next one shows; with none left the letter's page goes (after Send it keeps the calm line)
+    const away = keepLine => {
+      list.splice(li, 1); if (li >= list.length) li = 0;
+      if (list.length) { if (!keepLine) show(); else sentT = setTimeout(() => { if (page.isConnected) show(); }, 1800); }
+      else if (!keepLine) page.remove();
+    };
+    if ($("ml-lnext")) $("ml-lnext").onclick = () => { if (list.length < 2) return; li = (li + 1) % list.length; show(); W.sfx("page"); };
+    $("ml-lskip").onclick = () => { away(false); W.sfx("page"); };
+    $("ml-lreply").onclick = () => {
+      $("ml-lact").hidden = true; const nx = $("ml-lnext"); if (nx) nx.hidden = true;
+      box.hidden = false; page.classList.add("ml-replying"); msg.textContent = ""; inp.focus();
+      if (ZH && ZH.apply) ZH.apply();
+    };
+    $("ml-rback").onclick = () => { box.hidden = true; page.classList.remove("ml-replying"); msg.textContent = ""; inp.value = ""; $("ml-lact").hidden = false; const nx = $("ml-lnext"); if (nx) nx.hidden = list.length < 2; };
+    inp.onkeydown = e => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); if (box.requestSubmit) box.requestSubmit(); else $("ml-rsend").click(); } };   // Enter sends (a text box of several lines would start a new line)
+    box.onsubmit = async e => {
+      e.preventDefault();
+      if (busy) return;
+      const text = inp.value.replace(/\s+/g, " ").trim().slice(0, ML_REPLY_MAX), letter = list[li];   // one line of text, whatever he typed
+      if (!text) { inp.focus(); return; }   // an empty line does nothing
+      if (typeof rudeHits === "function" && rudeHits(text).length) { msg.textContent = "Use kind words."; if (ZH && ZH.apply) ZH.apply(); inp.focus(); return; }
+      busy = true; $("ml-rsend").disabled = true; msg.textContent = "";
+      let r = null; try { r = await sb.from("messages").insert({ student_id: student.id, from_role: "student", text }); } catch (x) { r = { error: x }; }
+      busy = false; $("ml-rsend").disabled = false;
+      if (!r || r.error) { msg.textContent = "It did not send. Try again later."; if (ZH && ZH.apply) ZH.apply(); return; }
+      logEvent("letter_reply", { letter: letter.id, length: text.length });
+      clearTimeout(sentT);
+      box.hidden = true; page.classList.remove("ml-replying"); part(false); const nx = $("ml-lnext"); if (nx) nx.hidden = true;
+      $("ml-sent").textContent = "Sent to " + TN() + "."; $("ml-sent").hidden = false; inp.value = "";
+      W.sfx("pop"); if (ZH && ZH.apply) ZH.apply();
+      away(true);
+    };
+  }
   // ONE thing to tap at a time. The control that asks for the tap gets a soft breathing ring and a small pointing hand;
   // controls for later steps are not shown yet. mlAsk(scope, el) moves the ring and the hand to el (null: nothing asks).
   const ML_HAND = '<svg class="ml-hand" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13.2V4.3a1.9 1.9 0 0 1 3.8 0v6.4M13.8 10.2V9a1.9 1.9 0 0 1 3.8 0v2.2M17.6 10.6a1.9 1.9 0 0 1 3.8 0v3.6a7.6 7.6 0 0 1-7.6 7.6h-1.7c-2.6 0-4.2-.8-5.6-2.2l-3.4-3.4a1.9 1.9 0 0 1 2.7-2.7L10 16"/></svg>';
@@ -1141,8 +1201,7 @@
       '<div class="caption glass ml-cap">' + ICON("mail") + '<span class="zhk">' + (cards.length ? "Today's magic words" : "Mailbox") + "</span>" + (cards.length ? '<small class="zhk" id="ml-capn"></small>' : "") + "</div>" +
       (ritual ? '<div class="ml-days glass"><span class="pips" aria-hidden="true">' + [0, 1, 2, 3, 4].map(k => "<i" + (k < wk ? ' class="on"' : "") + "></i>").join("") + "</span><p>Day " + totalDays() + ". This week: " + (weekDays() > 5 ? weekDays() + " days." : weekDays() + " of 5.") + "</p></div>" : "") +
       '<div class="ml-row"><div class="ml-side">' +
-        (letters.length ? '<div class="page paper ml-letter"><span class="eyebrow" id="ml-ln">' + (letters.length > 1 ? "Letter 1 of " + letters.length : "A letter for you") + '</span><b class="ml-from nozh">' + W.esc(TN()) + '</b><p class="nozh" id="ml-ltext">' + W.esc(mlLetter(letters[0].text)) + "</p>" +
-          (letters.length > 1 ? '<button type="button" class="btn quiet ml-lnext" id="ml-lnext">Next letter' + ICON("arrow") + "</button>" : "") + "</div>" : "") +
+        (letters.length ? mlLetterHtml(letters) : "") +
       "</div>" +
       (cards.length ? '<div id="mailcard" class="ml-mailcard"></div>'
         : '<div class="card paper ml-empty"><span class="eyebrow">Mailbox</span><p class="do">No new words today.</p></div>') +
@@ -1158,7 +1217,7 @@
         '<button type="button" class="gbtn glass primary" id="readyBtn"></button>' +
       "</div></div>", ritual, "mailmode ml-mail");
     W.sfx("pop");
-    if (letters.length > 1) { let li = 0; $("ml-lnext").onclick = () => { li = (li + 1) % letters.length; $("ml-ltext").textContent = mlLetter(letters[li].text); $("ml-ln").textContent = "Letter " + (li + 1) + " of " + letters.length; W.sfx("page"); if (ZH && ZH.apply) ZH.apply(); }; }
+    if (letters.length) mlLetterWire(letters);
     logEvent("mail_opened", { unread: fresh.length, cards: cards.length, day: d, streak: n });
     if (fresh.length) { const now = new Date().toISOString(); fresh.forEach(m => m.read_at = now); sb.from("messages").update({ read_at: now }).in("id", fresh.map(m => m.id)).then(() => drawWorld()); }
     if (cards.length) {
@@ -1557,7 +1616,8 @@
     "Say it 3 times. Tap each time.": "说3遍。每说一遍点一下。", "I said it": "我说了", "Done. You said it 3 times.": "完成了。你说了3遍。",
     "Tap Two small games.": "点“两个小游戏”。", "Play one game.": "玩一个游戏。", "Play one game": "玩一个游戏",
     "Meaning game": "意思游戏", "Sentence game": "句子游戏", "Tap Back to the cards.": "点“回到卡片”。",
-    "No sound here. Read it out loud.": "这里没有声音。大声读出来。", "Read it": "看信", "Next letter": "下一封信", "The quest marker is jumping. Go to the map table!": "任务标记在跳。去地图桌！"
+    "No sound here. Read it out loud.": "这里没有声音。大声读出来。", "Read it": "看信", "Next letter": "下一封信",
+    "Reply": "回信", "Skip": "跳过", "Send": "发送", "Back": "返回", "Use kind words.": "请用友好的话。", "It did not send. Try again later.": "没有发出去。等一会儿再试。", "The quest marker is jumping. Go to the map table!": "任务标记在跳。去地图桌！"
   }, [
     [/^card (\d+) of (\d+)$/, "第 $1 张，共 $2 张"],
     [/^Letter (\d+) of (\d+)$/, "第 $1 封信，共 $2 封"],
@@ -1566,7 +1626,9 @@
     [/^Magic word · (.+)$/, "魔法单词 · $1"],
     [/^Tap the mic\. Say (.+)\.$/, "点麦克风。说 $1。"],
     [/^Yes\. I heard (.+)\.$/, "对。我听到了 $1。"],
-    [/^New mail from (.+)\.$/, "$1 给你发来了新信。"]
+    [/^New mail from (.+)\.$/, "$1 给你发来了新信。"],
+    [/^Write to (.+)\.$/, "给$1写信。"],
+    [/^Sent to (.+)\.$/, "已经发给$1了。"]
   ]);
   // ============ his voice, kept for the tutor (25 November) ============
   // The tutor: "save it so that I can replay how he speaks in my teacher dashboard"; his mother agreed. The promised limits:
@@ -3439,7 +3501,14 @@
   function planMixed(news, olds) {
     const A = news[0], B = news[1];
     let seq;
-    if (!olds.length) seq = B ? [A, B, A, B] : [A];
+    // more than 2 new words (the tutor's extra words, 27 November): each new word once, the older words after the first
+    // and the second, then the first new word not right yet once more (at the end, if it is not the last already)
+    if (news.length > 2) {
+      seq = news.slice(0, 1).concat(olds.slice(0, 1), news.slice(1, 2), olds.slice(1, 2), news.slice(2));
+      const x = news.find(notRight);
+      if (x && seq[seq.length - 1] !== x) seq.push(x);
+    }
+    else if (!olds.length) seq = B ? [A, B, A, B] : [A];
     else {
       seq = [A, olds[0], B, olds[1]].filter(Boolean);
       const x = news.find(notRight) || A;
@@ -5685,6 +5754,11 @@
   // his band. A waiting word is not added again: the same call gives it the level. Every 10th level is the island test: it gets no new words. "No new words for now" (student.pause_new,
   // the tutor's switch): nothing is added (see the old words without a lesson below).
   const PK_FIRST = 4;
+  // The game's 2 words of level d: its words without the tutor's EXTRA words (words.extra, deploy/own-words.sql; the owner,
+  // 27 November). Her extra words come on top (up to 10 a level) and never take one of the 2 places; everything that fills
+  // or counts the 2 (this picker, the test account's "Go to level") uses this. Everything else (the cards, the level, the
+  // map) takes every word of the level (dayWords).
+  function pkGame(d) { return dayWords(d).filter(w => !w.extra); }
   let pkBusy = null;
   function pkNextLevel() { let d = 1; while (d <= maxDay() && dayDone(d)) d++; return d; }
   // One run at a time on this page; a second call waits for the first.
@@ -5708,7 +5782,7 @@
     if (!P || !student || practising() || pkPaused()) return false;
     const d = pkNextLevel();
     if (d < PK_FIRST || d > LEVELS || isTest(d) || dayState(d) === "locked") return false;
-    if (dayWords(d).length >= 2) return false;
+    if (pkGame(d).length >= 2) return false;
     const [a, e, mineR] = await Promise.all([
       sb.from("attempts").select("*").eq("student_id", student.id).in("kind", ["new", "review", "test", "probe"]),
       sb.from("events").select("*").eq("student_id", student.id).in("type", ["rescue", "picked"]),
@@ -5721,7 +5795,7 @@
     const all = () => words.concat(((mineR && !mineR.error && mineR.data) || []).filter(r => !words.some(x => x.id === r.id)));
     const plan = () => P.plan({ student: student.id, level: d, quests, attempts: a.data || [], events: e.data || [], words,
       pool: window.WW_POOL || [], bank: window.WW_BANK || [], mine: all().map(w => w.word), avoid, have: dayWords(d).map(w => w.word),
-      need: 2 - dayWords(d).length, pics: window.WW_PICS || null, patterns: window.WW_PATTERNS || null, on: student.picker !== false,
+      need: 2 - pkGame(d).length, pics: window.WW_PICS || null, patterns: window.WW_PATTERNS || null, on: student.picker !== false,
       waiting: pkWaiting(words), weeks: (window.WW_FIRST && window.WW_FIRST.weeks) || [] });
     let pl = plan();
     if (!pl.words.length) return false;
@@ -5735,12 +5809,12 @@
     };
     if (!(await tryAdd(pl.words))) {
       if (!(await pkReload(d))) return false;   // no internet: nothing was saved; the next start asks again
-      if (dayWords(d).length >= 2) return true;
+      if (pkGame(d).length >= 2) return true;
       // a word the database refused (a draft of the tutor's with the same word): the next ones, one at a time
       pl = plan();
       const pre = w => W.key(w).slice(0, 3);
       for (const w of pl.words.concat(pl.spare)) {
-        if (dayWords(d).length >= 2) break;
+        if (pkGame(d).length >= 2) break;
         if (dayWords(d).some(x => pre(x.word) === pre(w.word))) continue;
         await tryAdd([w]);
       }
@@ -5849,11 +5923,11 @@
       const P = window.WW_PICKER, s = me(); if (!P || !D.addPoolWords) return;
       const mineOf = () => T().words.filter(w => w.student_id === s.id);
       for (let d = 4; d <= target; d++) {
-        const have = mineOf().filter(w => w.quest_day === d && w.approved); if (have.length >= 2 || done(d)) continue;
+        const all = mineOf().filter(w => w.quest_day === d && w.approved), have = all.filter(w => !w.extra); if (have.length >= 2 || done(d)) continue;   // her extra words do not count
         const ev = T().events.filter(x => x.student_id === s.id), avoid = [];
         ev.forEach(x => { if (x.type === "picked" && x.detail && Array.isArray(x.detail.words)) avoid.push(...x.detail.words); });
         const pl = P.plan({ student: s.id, level: d, quests: T().quests.filter(x => x.student_id === s.id), attempts: T().attempts.filter(x => x.student_id === s.id), events: ev, words: mineOf(),
-          pool: window.WW_POOL || [], bank: window.WW_BANK || [], mine: mineOf().map(w => w.word), avoid, have: have.map(w => w.word), need: 2 - have.length,
+          pool: window.WW_POOL || [], bank: window.WW_BANK || [], mine: mineOf().map(w => w.word), avoid, have: all.map(w => w.word), need: 2 - have.length,
           pics: window.WW_PICS || null, patterns: window.WW_PATTERNS || null, on: s.picker !== false });
         const r = pl.words.length ? D.addPoolWords(d, pl.words.map(w => w.word)) : null;
         if (r && r.data) T().events.push({ id: "ts-pk" + d, student_id: s.id, session_id: null, type: "picked", created_at: iso(0),
@@ -6101,11 +6175,11 @@
       const r = await sb.from("quests").update({ finished_at: taIso(1) }).eq("id", x.id).eq("student_id", sid); if (r.error) throw r.error; x.finished_at = taIso(1);
     }
     for (let d = taFirstOpen(); d < n; d++) {
-      if (!isTest(d) && dayWords(d).length < 2) await pkFill();
+      if (!isTest(d) && pkGame(d).length < 2) await pkFill();   // the game's 2 words (her extra words do not count)
       if (!isTest(d) && !dayWords(d).length) return taFail("Go to level", { message: "There are no words for level " + d + "." });
       await taFinish(d, n - d);
     }
-    if (!isTest(n) && dayWords(n).length < 2) await pkFill();
+    if (!isTest(n) && pkGame(n).length < 2) await pkFill();   // the game's 2 words (her extra words do not count)
     if (!isTest(n) && !dayWords(n).length) return taFail("Go to level", { message: "There are no words for level " + n + "." });
     await taMailRead();
     await taReload(isTest(n) ? "Level " + n + ": the island test." : "Level " + n + " is open.", go || "level");

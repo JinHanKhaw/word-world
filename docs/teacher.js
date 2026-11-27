@@ -500,7 +500,7 @@
           '<div class="stamps">' + STAMPS.map((x, k) => '<button type="button" class="stampbtn" data-stamp="' + k + '">' + esc(x) + "</button>").join("") + '<button type="button" class="ghost mini" data-write>' + ICON("pencil") + "Write a reply</button></div>" +
           '<form class="replyf" hidden><input type="text" maxlength="200" placeholder="Your reply, short and in English"><button type="submit">Send</button></form>') + "</li>").join("") + "</ul>" : '<p class="lead">No sentences from him yet. They show here when he writes one in the game.</p>') +
       '</section><section class="box"><div class="bh"><h2>Letters to him</h2></div>' +
-      '<p class="lead">Your newest letter is waiting in his mailbox when he opens the game. In his game your name is <b>' + esc(student.teacher_name || "WordWizard") + "</b>. Keep letters short; he cannot write back.</p>" +
+      '<p class="lead">Your newest letter is waiting in his mailbox when he opens the game. In his game your name is <b>' + esc(student.teacher_name || "WordWizard") + "</b>. Keep letters short. He can write back: his replies show here.</p>" +
       '<div class="chat" id="chat">' + (messages.length ? messages.map(m => '<div class="msg ' + (m.from_role === "teacher" ? "me" : "him") + '"><span>' + (m.from_role === "teacher" ? "You · " : esc(student.name) + " · ") + day3(ld(m.created_at)) + " " + W.fmtTime(m.created_at) + (m.from_role === "teacher" ? (m.read_at ? " · he opened it" : " · not opened yet") : "") + "</span>" + esc(m.text) + "</div>").join("") : '<p class="muted">No letters yet.</p>') + "</div>" +
       '<form id="cf" class="row" autocomplete="off"><input type="text" id="ctext" maxlength="300" placeholder="Write a short letter to him…"><button type="submit">Send</button></form></section></div>';
     const chat = $("chat"); chat.scrollTop = chat.scrollHeight;
@@ -705,12 +705,12 @@
     let waiting = waitingWords();
     const out = [];
     for (let d = first; d <= LEVELS; d++) {
-      const set = levelWords(d), test = isTest(d);
+      const set = levelWords(d), test = isTest(d), game = set.filter(w => !w.extra);   // her extra words do not take the game's 2 places
       let plan = [];
-      if (P && !test && d >= 4 && set.length < 2) {
+      if (P && !test && d >= 4 && game.length < 2) {
         try {
           const pl = P.plan({ student: student.id, level: d, quests, attempts: lineAE.A, events: lineAE.E, words: shown, pool: window.WW_POOL || [], bank: window.WW_BANK || [],
-            mine, avoid, have: set.map(w => w.word), need: 2 - set.length, pics: window.WW_PICS || null, patterns: window.WW_PATTERNS || null, on, waiting, weeks: weeksOf() });
+            mine, avoid, have: set.map(w => w.word), need: 2 - game.length, pics: window.WW_PICS || null, patterns: window.WW_PATTERNS || null, on, waiting, weeks: weeksOf() });
           plan = pl.words;
         } catch (e) { plan = []; }
         plan.forEach(w => { mine.push(w.word); if (w.from === "waiting") waiting = waiting.filter(x => x.id !== w.id); });
@@ -719,15 +719,22 @@
     }
     return out;
   }
-  // The rows a level's words go into: its set words, then the game's choices (for the replace question).
-  const levelEntries = (m, d) => { const L = (m || []).find(x => x.d === d); return L ? L.set.map(r => ({ row: r })).concat(L.plan.map(p => ({ plan: p }))) : []; };
+  // The rows a level's words go into: its set words, then the game's choices (for the replace question). Her extra words
+  // (words.extra) are not one of the game's 2 places, so they are never offered to be replaced.
+  const levelEntries = (m, d) => { const L = (m || []).find(x => x.d === d); return L ? L.set.filter(r => !r.extra).map(r => ({ row: r })).concat(L.plan.map(p => ({ plan: p }))) : []; };
+  // ---- her own words are EXTRA words of a level (the owner, 27 November: "flexible up to 10 depends on how much i want to
+  // add per level per day"): words.extra = true (deploy/own-words.sql), on top of the game's 2, at most 10 in one level.
+  const EXTRA_MAX = 10;
+  const MIN_PER_WORD = 4;   // an estimate, not a measure: about 4 minutes of the level for each new word (cards, Meet, Type, Build, last round, sentence)
+  const extrasOf = (d, skipId) => levelWords(d).filter(w => w.extra && w.id !== skipId);
+  const extraFull = d => "Level " + d + " already has " + EXTRA_MAX + " extra words. Choose another level.";
   const entryWord = e => e.row ? e.row.word : e.plan.word;
   const nextOrder = () => (words.length ? Math.max(...words.map(x => x.sort_order || 0)) : 0) + 1;
   // Put an entry of the line aside: a row leaves the game (no level); a planned word becomes a row that is not in the game,
   // so the game never takes it by itself.
   async function entryAside(e, memo) {
     if (e.row) {
-      const was = isWaiting(e.row) ? { waiting: true } : { level: e.row.quest_day };   // read before the change
+      const was = isWaiting(e.row) ? { waiting: true } : e.row.extra ? { level: e.row.quest_day, extra: true } : { level: e.row.quest_day };   // read before the change
       const { error } = await sb.from("words").update({ approved: false, quest_day: null }).eq("id", e.row.id);
       if (error) { banner(error.message); return false; }
       memoSet(e.row.id, memo === false ? null : was);
@@ -825,8 +832,8 @@
     }).join("") + (extra.length ? '<li><div class="lv-h"><b>Words he goes over again, without a level</b></div><ul class="wl">' + extra.map(wordLine).join("") + "</ul></li>" : "") + "</ol>"
       : '<p class="lead">No level finished yet. The words of each level he finishes show here, with the day.</p>';
     const how = on
-      ? "One spelling pattern a week. Each level gets 2 new words. First come the words he did not know in the quick check and your own words for the week's pattern: one of each while both are waiting. Your words that did not fit in their week come the week after. Then long words with that pattern, chosen by how he did: when he gets most words right the first time, the next words are a little harder; when many are not yet right, they are a little easier. Long words get a lesson; short words get a quick check first."
-      : "The game takes the next 2 words of a fixed list, in order, for each level, after the words he did not know in the quick check and your own words for the week.";
+      ? "One spelling pattern a week. Each level gets 2 new words. A word you add with “Add your own word” comes on top of them (up to " + EXTRA_MAX + " a level). First come the words he did not know in the quick check and your own words for the week's pattern: one of each while both are waiting. Your words that did not fit in their week come the week after. Then long words with that pattern, chosen by how he did: when he gets most words right the first time, the next words are a little harder; when many are not yet right, they are a little easier. Long words get a lesson; short words get a quick check first."
+      : "The game takes the next 2 words of a fixed list, in order, for each level (a word you add with “Add your own word” comes on top, up to " + EXTRA_MAX + " a level), after the words he did not know in the quick check and your own words for the week.";
     view.innerHTML = '<div class="words">' +
       '<section class="box"><div class="bh"><h2>How the game chooses his words</h2></div><p>' + how + '</p><p class="lead" id="wBand"></p>' +
       "<p>Each new word comes back after 1, 4 and 14 days, so he practises it again. When he spells it right each time, he knows it well. Every 10th level is a short spelling test of the island's words. His school spelling list comes on top: he practises 5 of those words a day.</p></section>" +
@@ -835,7 +842,7 @@
       '<section class="box ow" id="oldW">' + oldWordsHtml() + "</section>" +
       '<section class="box mg" id="monster">' + monsterHtml() + "</section>" +
       '<section class="box rmode" id="rmWords">' + modeHtml("rmw") + "</section>" +
-      '<section class="box"><div class="bh"><h2>Words he has learned</h2></div><p class="lead">The 2 words of each level he finished, newest first, with the day he finished it. <b>Repeat…</b> sets when a word is asked again and how many more times.</p>' + doneHtml + "</section>" +
+      '<section class="box"><div class="bh"><h2>Words he has learned</h2></div><p class="lead">The new words of each level he finished, newest first, with the day he finished it. <b>Repeat…</b> sets when a word is asked again and how many more times.</p>' + doneHtml + "</section>" +
       '<details class="box fold" id="wEdit"' + (openFolds.wEdit ? " open" : "") + '><summary><span class="sum-t">Add or change words yourself</span><span class="sum-s">All his words in one table, with every detail of a word. You rarely need this: the line above does the everyday changes.</span></summary>' + wordTools() + "</details></div>";
     view.querySelector("#wEdit").ontoggle = ev => { openFolds.wEdit = ev.target.open; };
     view.querySelectorAll("details.ln-week").forEach(x => { x.ontoggle = () => { openFolds["wk" + x.dataset.wk] = x.open; }; });
@@ -885,17 +892,20 @@
     const when = L.d === first ? (st === "paused" ? "Next for him · waits: no new words for now" : st === "open" ? "Next for him · ready now" : st === "locked" && L.d > 1 ? "Next for him · opens tomorrow" : "Next for him") : "After level " + (L.d - 1);
     const title = '<div class="ln-lh"><b>Level ' + L.d + "</b>" + (L.test ? '<span class="ln-test">Spelling test with the monster</span>' : "") + '<span class="muted">' + when + "</span></div>";
     if (L.test && !L.set.length) return '<li class="ln-lv test">' + title + '<p class="lead">He hears up to 10 words from levels ' + (L.d - PER_ZONE + 1) + " to " + (L.d - 1) + " and types them. No new words.</p></li>";
-    const items = L.set.map(r => ({ d: L.d, row: r })).concat(L.plan.map(p => ({ d: L.d, plan: p })));
-    const empty = 2 - items.length;
+    const game = L.set.filter(r => !r.extra), extras = L.set.filter(r => r.extra);
+    const items = game.map(r => ({ d: L.d, row: r })).concat(L.plan.map(p => ({ d: L.d, plan: p })));
+    const empty = 2 - items.length, n = items.length + extras.length;   // the "No word yet" places: the game's 2 only
     return '<li class="ln-lv' + (L.d === first ? " now" : "") + '">' + title + '<ul class="ln-ws">' + items.map(wordItemHtml).join("") +
-      (empty > 0 ? '<li class="ln-w ln-none"><span class="muted">' + (L.d < 4 ? "No word yet. Add your own word for this level." : "No word yet. The game has no word left to choose here; add your own word.") + "</span></li>" : "") + "</ul></li>";
+      (empty > 0 ? '<li class="ln-w ln-none"><span class="muted">' + (L.d < 4 ? "No word yet." : "No word yet. The game has no word left to choose here.") + "</span></li>" : "") +
+      extras.map(r => wordItemHtml({ d: L.d, row: r })).join("") + "</ul>" +
+      (extras.length ? '<p class="ln-mins">' + n + " new words in this level: about " + n * MIN_PER_WORD + " minutes for him.</p>" : "") + "</li>";
   }
   function wordItemHtml(it) {
     const i = lineItems.push(it) - 1, w = it.row || it.plan, src = sourceOf(w.word, it.row, it.plan && it.plan.from);
     return '<li class="ln-w ' + (it.row ? "set" : "plan") + '" data-i="' + i + '">' + picHtml(w) +
       '<div class="ln-wt"><div class="ln-top"><b class="ln-word">' + esc(w.word) + "</b>" + (w.meaning_zh ? '<span class="zh" lang="zh-CN">' + esc(w.meaning_zh) + "</span>" : "") + "</div>" +
       (w.sentence_en ? '<div class="ln-sen">' + esc(w.sentence_en) + "</div>" : "") +
-      '<div class="ln-tags"><span class="ln-src">' + esc(src) + '</span><span class="ln-st ' + (it.row ? "set\">Set" : "plan\">The game’s choice for now") + "</span>" + (noRec(w.word) ? NOREC_TAG : "") + "</div></div>" +
+      '<div class="ln-tags"><span class="ln-src">' + esc(src) + '</span><span class="ln-st ' + (it.row ? "set\">Set" : "plan\">The game’s choice for now") + "</span>" + (it.row && it.row.extra ? '<span class="ln-st ln-extra">your extra word</span>' : "") + (noRec(w.word) ? NOREC_TAG : "") + "</div></div>" +
       '<div class="ln-acts"><button type="button" class="ghost mini" data-ln-edit="' + i + '">Edit</button><button type="button" class="ghost mini" data-ln-pause="' + i + '">Pause</button></div>' +
       '<div class="ln-ed" hidden></div></li>';
   }
@@ -940,9 +950,9 @@
         const bad = textIssue(word, zh, sen) || levelIssue(d); if (bad) { err.textContent = bad; return; }
         const dup = words.find(x => W.key(x.word) === W.key(word));
         if (dup) { err.textContent = "“" + dup.word + "” is already one of his words" + (dup.quest_day ? " (level " + dup.quest_day + ")" : !dup.approved ? " (in Words set aside)" : "") + "."; return; }
-        if (!(await makeRoom(d, "lnRep", f, err))) return;
+        if (extrasOf(d).length >= EXTRA_MAX) { err.textContent = extraFull(d); return; }   // an extra word: never the replace question
         const pr = poolRow(word), row = { student_id: student.id, word, chunks: pr && W.key(String(pr[1]).replace(/-/g, "")) === W.key(word) ? pr[1] : word, meaning_en: pr ? pr[2] : "", meaning_zh: zh, sentence_en: sen,
-          sentence_zh: pr && pr[4] === sen ? pr[5] : "", approved: true, quest_day: d, level: 0, sort_order: nextOrder() };
+          sentence_zh: pr && pr[4] === sen ? pr[5] : "", approved: true, quest_day: d, level: 0, sort_order: nextOrder(), extra: true };
         const { error } = await sb.from("words").insert(row);
         if (error) { err.textContent = error.message; return; }
         openFolds["wk" + (weekOf(d) ? "w" + weekOf(d).number : "")] = true;
@@ -996,7 +1006,8 @@
       let r = null;
       if (m.planned && !w.level) r = await sb.from("words").delete().eq("id", w.id);   // the game's choice: it is the game's to choose again
       else if (m.waiting) r = await sb.from("words").update({ approved: true, quest_day: null }).eq("id", w.id);
-      else if (m.level && !levelIssue(m.level) && levelWords(m.level).length < 2) r = await sb.from("words").update({ approved: true, quest_day: m.level }).eq("id", w.id);
+      else if (m.extra && w.extra && m.level && !levelIssue(m.level) && extrasOf(m.level).length < EXTRA_MAX) r = await sb.from("words").update({ approved: true, quest_day: m.level }).eq("id", w.id);   // her extra word, back on top of its level
+      else if (m.level && !m.extra && !levelIssue(m.level) && levelWords(m.level).filter(x => !x.extra).length < 2) r = await sb.from("words").update({ approved: true, quest_day: m.level, extra: false }).eq("id", w.id);
       if (!r) { const p = b.closest("li").querySelector("[data-tr-put]"); if (p) p.click(); return; }   // its level has no room now: she chooses
       if (r.error) { banner(r.error.message); return; }
       memoSet(w.id, null); await reload();
@@ -1015,7 +1026,7 @@
         const d = Math.round(+fe(f, "level").value), bad = levelIssue(d); if (bad) { err.textContent = bad; return; }
         if (!w.sentence_en || !W.hasWord(w.sentence_en, w.word) || !w.meaning_zh) { err.textContent = "This word needs its Chinese meaning and a sentence first: change it in “Add or change words yourself” below."; return; }
         if (!(await makeRoom(d, "trRep" + w.id, f, err))) return;
-        const { error } = await sb.from("words").update({ approved: true, quest_day: d, level: 0 }).eq("id", w.id);
+        const { error } = await sb.from("words").update({ approved: true, quest_day: d, level: 0, extra: false }).eq("id", w.id);   // one of the game's 2 places
         if (error) { err.textContent = error.message; return; }
         memoSet(w.id, null); await reload();
       };
@@ -1373,10 +1384,16 @@
       const err = checkWord(word, chunks, sen, dq, da, focus, w && w.id);
       if (err) { $("ferr").textContent = err; return; }
       const lv = +$("f_day").value || null;
-      if ($("f_ok").value === "true" && lv && words.filter(x => x.approved && x.quest_day === lv && (!w || x.id !== w.id)).length >= 2) {
-        $("ferr").textContent = "Level " + lv + " already has 2 words. On the line above, add it as your own word to choose which word it replaces."; return; }
+      // A word she gives a level that already has the game's 2 words becomes an EXTRA word of it (up to 10); a word that is
+      // extra on this level already stays extra. Otherwise it is a game word.
+      let extra = false;
+      if ($("f_ok").value === "true" && lv) {
+        const game = words.filter(x => x.approved && x.quest_day === lv && !x.extra && (!w || x.id !== w.id)).length;
+        extra = !!(w && w.extra && w.quest_day === lv) || game >= 2;
+        if (extra && extrasOf(lv, w && w.id).length >= EXTRA_MAX) { $("ferr").textContent = extraFull(lv); return; }
+      }
       const row = { student_id: student.id, word, chunks, sort_order: +$("f_order").value || 0, quest_day: +$("f_day").value || null, meaning_en: $("f_en").value.trim(), meaning_zh: $("f_zh").value.trim(), sentence_en: sen, sentence_zh: $("f_szh").value.trim(), dialogue_q: dq, dialogue_a: da, approved: $("f_ok").value === "true",
-        focus };   // rule_en and rule_zh are not sent any more (27 November: his pages no longer show a rule): a word keeps what it has
+        focus, extra };   // rule_en and rule_zh are not sent any more (27 November: his pages no longer show a rule): a word keeps what it has
       const f = $("f_pic").files && $("f_pic").files[0]; if (f) { const data = await W.shrinkImage(f, 480); if (data) row.picture = data; else { $("ferr").textContent = "That picture could not be read."; return; } }
       const r = w ? await sb.from("words").update(row).eq("id", w.id) : await sb.from("words").insert(row);
       if (r.error) { $("ferr").textContent = r.error.message; return; }
@@ -1585,7 +1602,7 @@
       (P ? now : '<p class="lead">This part of the game is not on this page.</p>') +
       '<details class="inner"><summary>Words the game chose so far (' + n + ")</summary>" +
       (rows ? '<div class="scroll"><table class="pk-t"><tr><th>Level</th><th>Words</th><th>When</th></tr>' + rows + "</table></div>" : '<p class="lead">None yet.</p>') +
-      '<ul class="pk-how"><li>To give a level your own word: on the Words tab, press \u201cAdd your own word\u201d and choose the level. The game only fills what is missing.</li>' +
+      '<ul class="pk-how"><li>To give a level your own word: on the Words tab, press \u201cAdd your own word\u201d and choose the level. Your word comes on top of the game\u2019s 2 words.</li>' +
       "<li>To change a coming word: press Edit beside it on the Words tab. To take it out: press Pause; it waits in \u201cWords set aside\u201d.</li><li>For an exam week or a holiday: switch on \u201cNo new words for now\u201d on the Words tab.</li></ul></details>";
     $("pkSwitch").onclick = async () => {
       const { error } = await sb.from("students").update({ picker: !on }).eq("id", student.id);
