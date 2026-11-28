@@ -1,0 +1,18 @@
+/* Word World, the tutor's page: the box "Notifications on this phone" on the Settings tab (site/teacher-notify.js).
+   Built on teacher.css (.box, .bh, button, button.ghost); this file adds only the steps, the buttons' row, the messages and
+   the list of what she gets. Loaded as it is (not built), so sizes are in px, as in teacher.css. */
+.tn-box .tn-now>p{margin:6px 0}
+.tn-steps{margin:8px 0 4px;padding-left:26px}
+.tn-steps li{margin:6px 0;padding-left:4px}
+.tn-steps li::marker{font-family:var(--f-display);color:var(--ember-lo)}
+.tn-acts{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:14px 0 4px}
+.tn-acts button{min-height:44px;min-width:44px}
+.tn-acts .tn-primary{background:linear-gradient(180deg,#f58a3a,#e2631a);color:#fff6e6;border-color:#8e380c;box-shadow:0 2px 0 #8e380c}
+.tn-msg{margin:10px 0 2px;font-weight:600;color:var(--ink-2)}
+.tn-msg.ok{color:var(--leaf)}
+.tn-msg.err{color:var(--rust)}
+.tn-why{margin:2px 0;font-size:14px;color:var(--ink-3);overflow-wrap:anywhere}
+.tn-get{margin-top:16px;padding-top:10px;border-top:1px solid var(--rule);color:var(--ink-2)}
+.tn-gh{margin:0 0 2px;font-weight:700}
+.tn-list{margin:0;padding-left:20px}
+.tn-list li{margin:3px 0}

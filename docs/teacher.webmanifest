@@ -1,0 +1,13 @@
+{
+  "name": "Word World Teacher",
+  "short_name": "WW Teacher",
+  "start_url": "teacher.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#2a1b2c",
+  "theme_color": "#3a2538",
+  "icons": [
+    { "src": "img/teacher-icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "img/teacher-icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

@@ -1490,6 +1490,7 @@
     };
     pickerBox();
     renderLog();
+    if (window.WW_TEACHER_NOTIFY) window.WW_TEACHER_NOTIFY.render(view.querySelector(".settings"), { sb });   // the box "Notifications on this phone": site/teacher-notify.js
   }
   // His login: name and password (26 November, the owners: "like any other website"). Every time he opens the game he types
   // his name and this password (students.pin, the column kept its name); deploy/schema.sql student_login checks them with
