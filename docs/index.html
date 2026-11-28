@@ -4,27 +4,34 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Word World</title>
-<link rel="stylesheet" href="fonts.css?v=202611281358">
-<link rel="stylesheet" href="ui.css?v=202611281358">
+<!-- the game on his tablet's Home Screen (his reminders: src/js/12-remind.js) -->
+<link rel="manifest" href="game.webmanifest">
+<link rel="apple-touch-icon" href="img/game-icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Word World">
+<meta name="theme-color" content="#2a1b2c">
+<link rel="stylesheet" href="fonts.css?v=202611281443">
+<link rel="stylesheet" href="ui.css?v=202611281443">
 <!-- Backend. On claude.ai these two files stand in for the database (progress stays in this browser).
      On the real site, load supabase-js and config.js here instead. -->
-<script src="bank.js?v=202611281358"></script>
-<script src="probes.js?v=202611281358"></script>
-<script src="rude.js?v=202611281358"></script>
-<script src="vendor/supabase.js?v=202611281358"></script>
-<script src="config.js?v=202611281358"></script>
-<script src="common.js?v=202611281358"></script>
-<script src="zh.js?v=202611281358"></script>
-<script src="audio.js?v=202611281358"></script>
-<script src="patterns.js?v=202611281358"></script>
-<script src="pool.js?v=202611281358"></script>
-<script src="first.js?v=202611281358"></script>
-<script src="picker.js?v=202611281358"></script>
-<script src="img/words/pics.js?v=202611281358"></script>
-<script src="img/school/pics.js?v=202611281358"></script>
-<script src="story.js?v=202611281358"></script>
-<script src="pairs.js?v=202611281358"></script>
-<script src="voice.js?v=202611281358"></script>
+<script src="bank.js?v=202611281443"></script>
+<script src="probes.js?v=202611281443"></script>
+<script src="rude.js?v=202611281443"></script>
+<script src="vendor/supabase.js?v=202611281443"></script>
+<script src="config.js?v=202611281443"></script>
+<script src="common.js?v=202611281443"></script>
+<script src="zh.js?v=202611281443"></script>
+<script src="audio.js?v=202611281443"></script>
+<script src="patterns.js?v=202611281443"></script>
+<script src="pool.js?v=202611281443"></script>
+<script src="first.js?v=202611281443"></script>
+<script src="picker.js?v=202611281443"></script>
+<script src="img/words/pics.js?v=202611281443"></script>
+<script src="img/school/pics.js?v=202611281443"></script>
+<script src="story.js?v=202611281443"></script>
+<script src="pairs.js?v=202611281443"></script>
+<script src="voice.js?v=202611281443"></script>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -134,17 +141,17 @@
   <div id="full" class="modal full" hidden><div class="journal"><div class="cover"></div><article class="page paper modal-card"><button type="button" class="pgclose" id="fullClose" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button><div id="fullBody"></div></article></div></div>
 </div>
 
-<script src="vendor/three.min.js?v=202611281358"></script>
-<script src="vendor/GLTFLoader.js?v=202611281358"></script>
-<script src="models/hero.js?v=202611281358"></script>
-<script src="models/heroidle.js?v=202611281358"></script>
-<script src="models/tower.js?v=202611281358"></script>
-<script src="models/pod.js?v=202611281358"></script>
-<script src="models/tree.js?v=202611281358"></script>
-<script src="models/watchfire.js?v=202611281358"></script><!-- night watch (raid team): the watch-fire he owns -->
-<script src="world3d.js?v=202611281358"></script>
-<script src="orbit3d.js?v=202611281358"></script>
-<script src="raid3d.js?v=202611281358"></script><!-- night watch (raid team): the island test as a watch at the gate -->
+<script src="vendor/three.min.js?v=202611281443"></script>
+<script src="vendor/GLTFLoader.js?v=202611281443"></script>
+<script src="models/hero.js?v=202611281443"></script>
+<script src="models/heroidle.js?v=202611281443"></script>
+<script src="models/tower.js?v=202611281443"></script>
+<script src="models/pod.js?v=202611281443"></script>
+<script src="models/tree.js?v=202611281443"></script>
+<script src="models/watchfire.js?v=202611281443"></script><!-- night watch (raid team): the watch-fire he owns -->
+<script src="world3d.js?v=202611281443"></script>
+<script src="orbit3d.js?v=202611281443"></script>
+<script src="raid3d.js?v=202611281443"></script><!-- night watch (raid team): the island test as a watch at the gate -->
 <script>
 (function () {
   const W = window.WT, $ = id => document.getElementById(id);
@@ -1772,6 +1779,225 @@
   window.addEventListener("pagehide", () => vrStop("left"));
   try { window.WWVoiceRec = { start: vrStart, stop: vrStop, busy: () => !!vrCur, can: word => !!vrCheck(word), limits: { ms: VR_MAX_MS, perWord: VR_PER_WORD, bps: VR_BPS } }; } catch (e) {}
   if (ZH) ZH.add({ "Recording.": "正在录音。", "Say it now. Tap “I said it”.": "现在说。点“我说了”。" });
+  // ============ his reminders on his tablet (12-remind.js; prefix rm-) ============
+  // The owner, 28 November: a reminder on HIS iPad, Monday to Friday at 4 pm, and at 8 pm only when he has not finished a
+  // level that day. The lead's sending side: deploy/notify.sql (push_subs, push_key, notify_remind) and the Edge Function
+  // "notify". This part is the game's side: one item in the menu (#menuList), just above "Log out", with which a grown-up
+  // turns the reminders on for this device. It shows the state and at most one button:
+  //   home     iPad/iPhone in Safari, not opened from the Home Screen. Web Push works there only for a web app on the Home
+  //            Screen (iPadOS/iOS 16.4 or later); that app keeps its own storage, so he logs in once more inside it.
+  //   none     no Notification, serviceWorker or PushManager: this device cannot show reminders.
+  //   blocked  the permission was refused: where a grown-up allows it again.
+  //   off      "Turn on reminders". The tap asks for the permission FIRST, before any await (iOS asks only inside a tap),
+  //            then push_key (the server's public key; null: not made yet), then registers sw.js (the teacher page's
+  //            worker: the same file and scope, it is not this part's file), then subscribes (a subscription made with
+  //            another key is dropped first), then saves the row in push_subs (the database makes it a 'child' row of
+  //            the student of this login), then logs "reminders_on".
+  //   on       permission granted, a subscription, and its push_subs row can be read. "Turn off" asks once, in place, as
+  //            "Log out" does (90-boot.js hdLogoutItem); yes: the row goes, the subscription goes, "reminders_off".
+  //   teacher  the row of this device is the tutor's own ('teacher': her phone, her laptop): nothing to do here.
+  // Nothing runs on page load. The item is drawn when the menu opens (again on every toggle and on the 中文 switch, as
+  // "Log out" is), and a service worker is registered only inside the "Turn on reminders" tap: the game is unchanged for
+  // everyone who never turns this on. The test account (89-testacct.js) shows the same item and does the same.
+  const RM_T = {   // [what he reads, its Chinese]
+    home: ["Ask a grown-up to set this up.", "请大人帮你设置。"],
+    none: ["This device cannot show reminders.", "这台设备不能显示提醒。"],
+    blocked: ["Reminders are blocked on this device.", "这台设备关掉了提醒。"],
+    on: ["Reminders are on.", "提醒已打开。"],
+    teacher: ["This device gets the teacher's messages.", "这台设备接收老师的消息。"],
+    fail: ["That did not work. Try again.", "没有成功，再试一次。"],
+    notready: ["Not ready yet. Try again soon.", "还没准备好。等一会儿再试。"],
+    ask: ["Turn off reminders?", "要关掉提醒吗？"],
+    turnOn: ["Turn on reminders", "打开提醒"],
+    turnOff: ["Turn off", "关掉"],
+    yes: ["Yes, turn off", "是的，关掉"],
+    keep: ["Keep", "留着"],
+    wait: ["Wait…", "等一下…"]
+  };
+  const RM_ADULT = {   // for the grown-up beside him: English only, small
+    home: "For grown-ups: in Safari tap Share, then Add to Home Screen. Open Word World from the Home Screen, log in, then tap Reminders here.",
+    iosBlocked: "Settings, Notifications, Word World, Allow Notifications.",
+    blocked: "Allow notifications in the browser's site settings."
+  };
+  const RM_WAIT = 25000;   // a step that has had no answer for this long (no network) ends in "That did not work."
+  // rmSt: what the item shows ({ v, ios, ask, msg, busy }); null until the first look when the menu opens.
+  let rmSt = null, rmBusy = false, rmCheck = 0, rmZhWas = null;
+  const rmZh = () => document.documentElement.classList.contains("zh-on");
+  const rmWithin = (ms, p) => Promise.race([p, new Promise((ok, no) => setTimeout(() => no(new Error("no answer in " + ms / 1000 + " s")), ms))]);
+  const rmSay = (...a) => { try { console.warn("reminders:", ...a); } catch (e) {} };   // the technical reason: the console only
+
+  // What this device can do. iPadOS Safari reports itself as a Mac: a "Mac" with a touch screen is an iPad.
+  function rmEnv() {
+    const n = navigator, ua = String(n.userAgent || "");
+    const ios = /iPad|iPhone|iPod/.test(ua) || (n.platform === "MacIntel" && n.maxTouchPoints > 1);
+    let standalone = n.standalone === true;
+    try { standalone = standalone || !!(window.matchMedia && window.matchMedia("(display-mode: standalone)").matches); } catch (e) {}
+    const push = typeof Notification !== "undefined" && !!n.serviceWorker && typeof PushManager !== "undefined";
+    return { ios, standalone, push };
+  }
+  // The state, looked up when the menu opens. Only reads: getRegistration never registers anything.
+  async function rmLook() {
+    const env = rmEnv();
+    if (env.ios && !env.standalone) return { v: "home", ios: true };
+    if (!env.push) return { v: "none", ios: env.ios };
+    const perm = Notification.permission;
+    if (perm === "denied") return { v: "blocked", ios: env.ios };
+    if (perm !== "granted") return { v: "off", ios: env.ios };
+    const reg = await navigator.serviceWorker.getRegistration("./");
+    const sub = reg && reg.pushManager ? await reg.pushManager.getSubscription() : null;
+    if (!sub || !sub.endpoint) return { v: "off", ios: env.ios };
+    const r = await sb.from("push_subs").select("endpoint, role").eq("endpoint", sub.endpoint);
+    if (r.error) throw new Error("push_subs: " + (r.error.message || r.error));
+    const row = (r.data || []).find(x => x && x.endpoint === sub.endpoint);
+    return { v: !row ? "off" : row.role === "teacher" ? "teacher" : "on", ios: env.ios };
+  }
+
+  // ---- drawing (the look of the Log out item; its Chinese follows the 中文 switch: html.zh-on) ----
+  function rmHtml(st, zh) {
+    // two sentences: one under the other ("That did not work." / "Try again."); "grown-up" is never cut in two
+    const en = k => { const s = RM_T[k][0].replace(/\.\s+/g, ".\n").split("\n").map(x => W.esc(x).replace("grown-up", '<span class="rm-nw">grown-up</span>'));
+      return s.length > 1 ? s.map(x => '<span class="rm-s">' + x + "</span>").join(" ") : s[0]; };
+    const line = k => en(k) + (zh ? '<span class="zhx" lang="zh-Hans">' + RM_T[k][1] + "</span>" : "");
+    const say = (k, live) => '<p class="rm-say nozh"' + (live ? ' role="status"' : "") + ">" + line(k) + "</p>";
+    const adult = t => '<p class="rm-adult nozh">' + W.esc(t) + "</p>";
+    const btn = (id, k, busy) => '<button type="button" class="rm-b" id="' + id + '"' + (busy ? ' disabled aria-busy="true"' : "") + ">" + line(k) + "</button>";
+    if (st.v === "home") return say("home") + adult(RM_ADULT.home);
+    if (st.v === "none") return say("none");
+    if (st.v === "blocked") return say("blocked") + adult(st.ios ? RM_ADULT.iosBlocked : RM_ADULT.blocked);
+    if (st.v === "teacher") return say("teacher", true);
+    // the question: "Keep" first, where "Turn off" was, so a quick second tap keeps them (in Log out's question the
+    // question line takes that place; here the line "Reminders are on." already stood above the button)
+    if (st.v === "on") return st.ask ? say("ask", true) + btn("rmKeep", "keep") + btn("rmYes", "yes")
+      : say(st.msg || "on", !!st.msg) + btn("rmOff", st.busy ? "wait" : "turnOff", st.busy);
+    return (st.msg ? say(st.msg, true) : "") + btn("rmOn", st.busy ? "wait" : "turnOn", st.busy);   // off
+  }
+  function rmDraw(focus) {
+    const list = $("menuList"); if (!list || !student) return;
+    let box = $("rmItem");
+    if (!box) { box = document.createElement("div"); box.id = "rmItem"; box.className = "rm"; box.setAttribute("role", "group"); box.setAttribute("aria-label", "Reminders"); }
+    const lo = $("hdLogout");   // "Log out" stays the last item: this one sits just above it
+    if (lo && lo.parentNode === list) { if (lo.previousElementSibling !== box) list.insertBefore(box, lo); }
+    else if (box.parentNode !== list) list.appendChild(box);
+    box.hidden = !rmSt;   // the first time, until the state is known (a moment after the menu opens)
+    const had = !focus && box.contains(document.activeElement) ? document.activeElement.id : "";
+    rmZhWas = rmZh();
+    if (rmSt) box.innerHTML = rmHtml(rmSt, rmZhWas);
+    const b = id => $(id);
+    if (b("rmOn")) b("rmOn").onclick = rmTurnOn;
+    if (b("rmOff")) b("rmOff").onclick = e => { e.stopPropagation(); if (rmBusy) return; rmSt = { v: "on", ios: rmSt.ios, ask: true }; rmDraw("rmKeep"); };
+    if (b("rmYes")) b("rmYes").onclick = rmTurnOff;
+    if (b("rmKeep")) b("rmKeep").onclick = e => { e.stopPropagation(); rmSt = { v: "on", ios: rmSt.ios }; rmDraw("rmOff"); };
+    const f = $(focus || had); if (f && !f.disabled) f.focus();
+  }
+  // The menu opened: the last state at once (none the first time), then the state as it is now.
+  function rmOpen() {
+    if (rmSt && !rmBusy) rmSt = { v: rmSt.v, ios: rmSt.ios };   // no question or message from the last time
+    rmDraw();
+    if (rmBusy) return;   // turning on or off is still at work: its own view stays
+    const run = ++rmCheck;
+    rmLook().catch(err => { rmSay(err); return { v: "off", ios: rmEnv().ios }; })
+      .then(st => { if (run !== rmCheck || rmBusy) return; rmSt = st; rmDraw(); });
+  }
+  document.addEventListener("toggle", e => {
+    if (!e.target || e.target.id !== "menu" || !student) return;
+    if (e.target.open) rmOpen();
+    else if (rmSt && !rmBusy && (rmSt.ask || rmSt.msg)) { rmSt = { v: rmSt.v, ios: rmSt.ios }; rmDraw(); }   // closed: the plain item next time
+  }, true);
+  try { new MutationObserver(() => { if ($("rmItem") && rmSt && rmZh() !== rmZhWas) rmDraw(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["class"] }); } catch (e) {}
+
+  // ---- turning on ----
+  // The permission question, inside the tap: no await may come before this call (iOS). The old callback form too.
+  function rmAskPermission() {
+    try {
+      return new Promise(ok => {
+        const r = Notification.requestPermission(ok);
+        if (r && typeof r.then === "function") r.then(ok, () => ok(Notification.permission));
+      });
+    } catch (e) { return Promise.resolve(typeof Notification === "undefined" ? "default" : Notification.permission); }
+  }
+  function rmTurnOn(e) {
+    if (e) e.stopPropagation();
+    if (rmBusy) return;
+    const asked = rmAskPermission();   // FIRST
+    rmBusy = true; rmCheck++;
+    rmSt = { v: "off", ios: rmEnv().ios, busy: true }; rmDraw();
+    rmOnSteps(asked).catch(err => { rmSay(err); return { v: "off", ios: rmEnv().ios, msg: "fail" }; })
+      .then(st => { rmBusy = false; rmCheck++; rmSt = st; rmDraw(st.v === "on" ? "rmOff" : st.v === "off" ? "rmOn" : ""); });
+  }
+  async function rmOnSteps(asked) {
+    const p = await asked, ios = rmEnv().ios;
+    if (p === "denied") return { v: "blocked", ios };
+    if (p !== "granted") return { v: "off", ios };   // the question was closed without an answer
+    return rmWithin(RM_WAIT, (async () => {
+      const k = await sb.rpc("push_key");
+      if (k.error) throw new Error("push_key: " + (k.error.message || k.error));
+      const key = typeof k.data === "string" ? k.data.trim() : "";
+      if (!key) return { v: "off", ios, msg: "notready" };   // the server makes its key a moment after this first ask
+      const reg = await navigator.serviceWorker.register("sw.js", { scope: "./" });
+      await rmActive(reg);
+      const app = rmKeyBytes(key);
+      let sub = await reg.pushManager.getSubscription();
+      if (sub && rmOtherKey(sub, app)) { await sub.unsubscribe(); sub = null; }
+      if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: app });
+      const j = typeof sub.toJSON === "function" ? sub.toJSON() : {}, keys = j.keys || {};
+      const r = await sb.from("push_subs").upsert({ endpoint: j.endpoint || sub.endpoint, p256dh: keys.p256dh, auth: keys.auth, role: "child" }, { onConflict: "endpoint" });
+      if (r.error) {
+        if (/already gets the teacher notifications/i.test(String(r.error.message || ""))) return { v: "teacher", ios };   // her own device: stop
+        throw new Error("push_subs: " + (r.error.message || r.error));
+      }
+      logEvent("reminders_on", {});
+      return { v: "on", ios };
+    })());
+  }
+  // A new worker has to be active before it can subscribe.
+  function rmActive(reg) {
+    if (!reg) return Promise.reject(new Error("no service worker registration"));
+    if (reg.active) return Promise.resolve(reg);
+    const w = reg.installing || reg.waiting;
+    if (!w) return navigator.serviceWorker.ready;
+    return new Promise((ok, no) => {
+      const f = () => {
+        if (w.state === "activated") { w.removeEventListener("statechange", f); ok(reg); }
+        else if (w.state === "redundant") { w.removeEventListener("statechange", f); no(new Error("the service worker did not start")); }
+      };
+      w.addEventListener("statechange", f); f();
+    });
+  }
+  // The key as push_key gives it (base64url text) -> its bytes, for applicationServerKey.
+  function rmKeyBytes(b64) {
+    const s = String(b64).replace(/-/g, "+").replace(/_/g, "/"), bin = atob(s + "===".slice((s.length + 3) % 4));
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+  // true when the subscription was made with another server key (a key it does not tell is kept)
+  function rmOtherKey(sub, app) {
+    const k = sub && sub.options && sub.options.applicationServerKey; if (!k) return false;
+    const a = ArrayBuffer.isView(k) ? new Uint8Array(k.buffer, k.byteOffset, k.byteLength) : new Uint8Array(k);
+    return a.length !== app.length || a.some((x, i) => x !== app[i]);
+  }
+
+  // ---- turning off (after "Yes, turn off"): the row first, then the subscription ----
+  function rmTurnOff(e) {
+    if (e) e.stopPropagation();
+    if (rmBusy) return;
+    rmBusy = true; rmCheck++;
+    const ios = rmEnv().ios;
+    rmSt = { v: "on", ios, busy: true }; rmDraw();
+    rmWithin(RM_WAIT, (async () => {
+      const reg = await navigator.serviceWorker.getRegistration("./");
+      const sub = reg && reg.pushManager ? await reg.pushManager.getSubscription() : null;
+      if (sub) {
+        const r = await sb.from("push_subs").delete().eq("endpoint", sub.endpoint).eq("role", "child");   // never a 'teacher' row
+        if (r.error) throw new Error("push_subs: " + (r.error.message || r.error));
+        try { await sub.unsubscribe(); } catch (x) { rmSay(x); }   // the row is gone: nothing is sent to it any more
+      }
+      logEvent("reminders_off", {});
+      return { v: "off", ios };
+    })()).catch(err => { rmSay(err); return { v: "on", ios, msg: "fail" }; })
+      .then(st => { rmBusy = false; rmCheck++; rmSt = st; rmDraw(st.v === "off" ? "rmOn" : "rmOff"); });
+  }
+  if (ZH) { const d = {}; Object.keys(RM_T).forEach(k => { d[RM_T[k][0]] = RM_T[k][1]; }); ZH.add(d); }
   // ============ his build: bricks he places himself ============
   const GC = 14, GR = 10; // grid columns and rows
   const COLORS = ["#b5442f", "#c89a62", "#868d99", "#a9ddff", "#7cc04d", "#f1c94b"]; // brick, wood, stone, glass, leaf, gold
